@@ -1,5 +1,5 @@
 # DDScope — AI Assistant (Claude)
-## Request for Comments — v0.9 — Draft — May 2026
+## Request for Comments — v1.0 — Draft — May 2026
 
 ---
 
@@ -16,6 +16,7 @@
 | 0.7     | May 2026 | Context format updated for multi-map model; active_map added; map actions excluded from v1 vocabulary |
 | 0.8     | May 2026 | stock_points renamed to skus; tags added on flows and skus; swim-lane position removed; plan validation resolved as all-or-nothing |
 | 0.9     | May 2026 | DataStore references replaced by neutral wording |
+| 1.0     | May 2026 | BOM actions added (section 3.6); project-specific instructions added (section 5.4); context format updated with boms and bom_components |
 
 ---
 
@@ -94,28 +95,42 @@ A SKU is the association between a node and a product. Tags express the nature o
 
 > Swim-lane deletion is excluded from v1 of the AI assistant to avoid unintended cascade on node assignments.
 
-### 3.6 Map actions — excluded from v1
+### 3.6 BOMs
+
+A BOM describes a transformation performed by a node: one output product manufactured from one or more input components. A node can have multiple BOMs (one per output product).
+
+| Action | Required fields | Optional fields |
+|---|---|---|
+| `add_bom` | `node_id`, `output_product_id` | `notes` |
+| `update_bom` | `bom_id` | `output_product_id`, `notes` |
+| `delete_bom` | `bom_id` | — |
+| `add_bom_component` | `bom_id`, `product_id`, `quantity` | `notes` |
+| `update_bom_component` | `bom_id`, `product_id` | `quantity`, `notes` |
+| `remove_bom_component` | `bom_id`, `product_id` | — |
+
+> `add_bom` accepts `"id": "new_bom_N"` when the BOM is referenced by subsequent `add_bom_component` actions in the same plan.
+
+> `delete_bom` implicitly removes all its `bom_components`. This cascade must be stated in `reasoning`.
+
+> Claude must verify that the output product and all component products exist as SKUs on the node before emitting BOM actions. If a required SKU is absent, Claude should state this in `reasoning` and propose the necessary `add_sku` actions first.
+
+### 3.7 Map actions — excluded from v1
 
 Map management (creating, renaming, duplicating, deleting maps) and map-scoped operations (adding or removing elements from a map, updating canvas positions) are excluded from the AI assistant action vocabulary in v1. These operations are performed manually via the map UI.
 
-The AI assistant operates on the **functional layer** only: nodes, flows, products, SKUs, and swim-lane definitions. It has no write access to `maps`, `map_nodes`, `map_flows`, or `map_swim_lanes`.
+The AI assistant operates on the **functional layer** only: nodes, flows, products, SKUs, swim-lane definitions, and BOMs. It has no write access to `maps`, `map_nodes`, `map_flows`, or `map_swim_lanes`.
 
-### 3.7 Type management — excluded from v1
+### 3.8 Type management — excluded from v1
 
-Node types and product types are configuration-level entities managed in the Settings tab. They are intentionally excluded from the AI assistant action vocabulary for v1, for two reasons:
+Node types and product types are configuration-level entities managed in the Settings tab. They are intentionally excluded from the AI assistant action vocabulary for v1.
 
-- A type error (wrong shape, wrong code) affects the visual rendering of all nodes using that type, not just the one being created.
-- Type deletion can silently break existing nodes or products that reference it.
-
-**Fallback behaviour:** if no existing `type_code` matches the intended entity type, Claude selects the closest available type from the project context and explains the choice in `reasoning`. The consultant is responsible for creating new types manually before invoking the assistant if needed.
+**Fallback behaviour:** if no existing `type_code` matches the intended entity type, Claude selects the closest available type from the project context and explains the choice in `reasoning`.
 
 ---
 
 ## 4. Project Context Format
 
-The following JSON structure is serialised from the current project state and transmitted to Claude with every request. IDs are DataStore record IDs serialised as strings. Canvas geometry (x, y, width, height) is omitted — it is map-specific and not relevant to functional reasoning.
-
-The `active_map` field identifies the map currently open in the UI. It is included for informational purposes — Claude does not write to map-scoped tables in v1, but may reference the active map when answering analytical questions (e.g. "which nodes are visible on this map").
+The following JSON structure is serialised from the current project state and transmitted to Claude with every request. IDs are record IDs serialised as strings. Canvas geometry (x, y, width, height) is omitted.
 
 ```json
 {
@@ -125,10 +140,6 @@ The `active_map` field identifies the map currently open in the UI. It is includ
     "description": "string"
   },
 
-  // description is a short free-text field set at project creation.
-  // It typically summarises the client context, the scope boundaries,
-  // or the purpose of the mapping exercise. Include it even if empty.
-
   "active_map": {
     "id": "string",
     "name": "string",
@@ -137,36 +148,18 @@ The `active_map` field identifies the map currently open in the UI. It is includ
     "swim_lane_ids": ["string"]
   },
 
-  // active_map reflects the map currently open in the UI.
-  // node_ids, flow_ids, and swim_lane_ids list the elements currently
-  // visible on this map. Claude may use this to answer questions about
-  // what is shown, but does not modify map visibility in v1.
-
   "maps": [
-    {
-      "id": "string",
-      "name": "string",
-      "position": "integer"
-    }
+    { "id": "string", "name": "string", "position": "integer" }
   ],
 
   "swim_lanes": [
-    {
-      "id": "string",
-      "name": "string"
-    }
+    { "id": "string", "name": "string" }
   ],
   "node_types": [
-    {
-      "code": "string",
-      "label": "string"
-    }
+    { "code": "string", "label": "string" }
   ],
   "product_types": [
-    {
-      "code": "string",
-      "label": "string"
-    }
+    { "code": "string", "label": "string" }
   ],
   "nodes": [
     {
@@ -206,6 +199,23 @@ The `active_map` field identifies the map currently open in the UI. It is includ
       "tags": ["string"],
       "notes": "string"
     }
+  ],
+  "boms": [
+    {
+      "id": "string",
+      "node_id": "string",
+      "output_product_id": "string",
+      "notes": "string"
+    }
+  ],
+  "bom_components": [
+    {
+      "id": "string",
+      "bom_id": "string",
+      "product_id": "string",
+      "quantity": "number",
+      "notes": "string"
+    }
   ]
 }
 ```
@@ -218,8 +228,6 @@ The `active_map` field identifies the map currently open in the UI. It is includ
 
 The system prompt is a **template string defined in the DDScope application**. It contains a single placeholder `{{ACTION_VOCABULARY}}` where the action list is injected at call time.
 
-The action vocabulary is a **separate constant** in the same application, formatted as a structured text block. Both evolve together and are versioned with the application. No external storage or admin interface is required.
-
 Assembly at call time:
 
 ```javascript
@@ -229,113 +237,33 @@ const systemPrompt = SYSTEM_PROMPT_TEMPLATE.replace(
 );
 ```
 
-### Last-turn context (multi-turn within a session)
+### 5.2 Last-turn context (multi-turn within a session)
 
-To support correction instructions (*"actually make it 20 days"*, *"also add product X to that flow"*), the previous turn is injected into the messages array before the current instruction. Only the immediately preceding turn is transmitted — not the full history — to limit token cost.
+To support correction instructions, the previous turn is injected into the messages array before the current instruction. Only the immediately preceding turn is transmitted.
 
 ```javascript
 // If a previous turn exists in DDS_AI.history:
 messages = [
   { role: 'user',      content: 'Previous instruction: ' + lastEntry.instruction },
   { role: 'assistant', content: JSON.stringify({ reasoning: lastEntry.reasoning, actions: lastEntry.actions }) },
+  // Project-specific instructions block (if defined — see §5.4)
+  { role: 'user',      content: 'Project-specific instructions:\n' + ai_instructions },
+  { role: 'assistant', content: 'Understood.' },
   { role: 'user',      content: 'Project context:\n' + JSON.stringify(context) + '\n\nInstruction: ' + instruction }
 ];
 
 // First turn (no history):
 messages = [
-  { role: 'user', content: 'Project context:\n' + JSON.stringify(context) + '\n\nInstruction: ' + instruction }
+  // Project-specific instructions block (if defined — see §5.4)
+  { role: 'user',      content: 'Project-specific instructions:\n' + ai_instructions },
+  { role: 'assistant', content: 'Understood.' },
+  { role: 'user',      content: 'Project context:\n' + JSON.stringify(context) + '\n\nInstruction: ' + instruction }
 ];
 ```
 
-The project context JSON is always included fresh in the current user message — it reflects the actual DataStore state after any previous Apply, so Claude sees new entities created in prior turns.
-
-**Template (with placeholder):**
-
-```
-You are an assistant embedded in DDScope, a supply chain mapping tool used during DDMRP implementation scoping workshops.
-
-Concepts used in this tool:
-- Node: any supply chain actor (supplier, plant, warehouse, customer). Nodes are positioned on a map.
-- Flow: a directed link between two nodes representing material movement. A flow can carry tags (e.g. transport mode) and may have no associated products.
-- Product: a material or item that flows between nodes.
-- SKU: the association between a node and a product. It represents the fact that this node handles this product in the scope of the project. The nature of the association (physical stock, buffer point, transit, etc.) is expressed through tags on the SKU.
-- Swim-lane: a named region grouping nodes by supply chain stage (e.g. Sourcing, Production, Distribution). A swim-lane's assignment to a node is shared across all maps; its visual position on the canvas is map-specific.
-- Map: a named view of the project. Each map shows a subset of the project's nodes, flows, and swim-lanes. The same node or flow can appear on multiple maps. The active_map field in the context identifies which map is currently open.
-- Tags: free-text labels attached to nodes, products, flows, or SKUs, used for grouping and filtering (e.g. "export", "pilot", "road", "buffer").
-
-You receive two inputs:
-1. A JSON snapshot of the current project (entities, IDs, tags, relationships, active map).
-2. A user instruction in natural language.
-
-You must respond with a single JSON object — no prose, no markdown, no explanation outside the JSON structure — containing exactly three fields:
-
-{
-  "reasoning": "string",
-  "answer": "string or null",
-  "actions": []
-}
-
-"reasoning": Explain in 2–5 sentences what you understood from the instruction, which entities you identified, and why you chose the proposed actions or answer.
-
-"answer": If the instruction is a question about the project (e.g. cumulative lead time, list of nodes, which products have no SKU, which nodes are on the active map), provide a clear natural language answer here. Set to null if the instruction is a modification request.
-
-"actions": An ordered array of action objects if the instruction is a modification request. Set to [] if the instruction is a question. Each action must have a "type" field matching exactly one of the allowed action types listed below. All referenced IDs must exist in the provided project context. Never invent IDs.
-
-| Scenario | answer | actions |
-|---|---|---|
-| Modification request | null | non-empty array |
-| Analytical question | non-null string | [] |
-| Ambiguous instruction | null | [] (clarification in reasoning) |
-
-Allowed action types and their fields:
-{{ACTION_VOCABULARY}}
-
-Rules:
-- Only use IDs present in the project context.
-- If an instruction implies creating a new entity (e.g. a new node, a new product), generate a temporary placeholder ID prefixed with "new_" (e.g. "new_node_1", "new_product_2"). Include this "id" field directly in the add_* action itself, so that subsequent actions in the same plan can reference it. DDScope will resolve these to real DataStore IDs at execution time, substituting each "new_*" reference before the next action runs.
-- If the instruction would cause a cascade deletion (node with flows, product on flows), list all implied actions explicitly in the actions array and mention the cascade in reasoning.
-- If no existing type_code matches the intended node or product type, use the closest available type from the project context and explain the choice in reasoning. Do not create new types — type management remains manual via the Settings tab.
-- Do not emit actions on maps or map-scoped entities (map_nodes, map_flows, map_swim_lanes). Map visibility is managed manually by the consultant via the UI.
-- If the instruction is ambiguous, return actions: [] and ask for clarification in reasoning.
-- Never return free text outside the JSON object.
-```
-
-### 5.2 New entity ID convention
-
-When an action creates a new entity that is referenced by a subsequent action in the same plan (e.g. `add_node` followed by `add_flow` targeting that node), Claude uses a temporary `new_*` ID. The `"id"` field must be included directly in the `add_*` action itself. DDScope resolves these references sequentially during execution: the real DataStore ID returned by step N is substituted into all subsequent steps referencing that `new_*` ID before they are executed.
-
-Example:
-
-```json
-{
-  "reasoning": "Creating a new warehouse node and connecting existing flows to it.",
-  "answer": null,
-  "actions": [
-    {
-      "type": "add_node",
-      "id": "new_node_1",
-      "name": "Export Warehouse",
-      "type_code": "WAREHOUSE",
-      "swim_lane_id": "sl_3"
-    },
-    {
-      "type": "reroute_flow",
-      "flow_id": "f_12",
-      "new_target_id": "new_node_1"
-    },
-    {
-      "type": "add_sku",
-      "node_id": "new_node_1",
-      "product_id": "p_4",
-      "tags": ["stock"]
-    }
-  ]
-}
-```
+The project-specific instructions block is omitted entirely when `project.ai_instructions` is empty or null.
 
 ### 5.3 Action vocabulary text (injected at `{{ACTION_VOCABULARY}}`)
-
-This is the exact content of `ACTION_VOCABULARY_TEXT` injected into the system prompt at call time. It must stay in sync with section 3.
 
 ```
 --- NODES ---
@@ -432,11 +360,64 @@ update_swim_lane
   Optional : name, color
 
 Note: swim_lane deletion is excluded from v1 of the AI assistant.
-Note: node_type and product_type creation are excluded from v1. Use the closest
-      existing type_code and explain the choice in reasoning.
+
+
+--- BOMs ---
+
+add_bom
+  Required : node_id, output_product_id
+  Optional : notes
+  Note     : include "id": "new_bom_N" in this action when referenced
+             by subsequent add_bom_component actions in the same plan.
+  Note     : verify that output_product_id exists as a SKU on the node.
+             If not, propose add_sku first.
+
+update_bom
+  Required : bom_id
+  Optional : output_product_id, notes
+
+delete_bom
+  Required : bom_id
+  Note     : implicitly removes all bom_components for this BOM.
+             State the cascade explicitly in reasoning.
+
+add_bom_component
+  Required : bom_id, product_id, quantity
+  Optional : notes
+  Note     : verify that product_id exists as a SKU on the node.
+             If not, propose add_sku first.
+
+update_bom_component
+  Required : bom_id, product_id
+  Optional : quantity, notes
+
+remove_bom_component
+  Required : bom_id, product_id
+
+
+Note: node_type and product_type creation are excluded from v1.
 Note: map management and map visibility (map_nodes, map_flows, map_swim_lanes)
       are excluded from v1. Do not emit actions on these entities.
 ```
+
+### 5.4 Project-specific instructions
+
+Each project can define a free-text block of instructions that contextualise Claude's behaviour for that specific project. Typical content includes naming conventions, geographic scope, preferred node types, client-specific terminology, and known constraints.
+
+**Storage:** `project.ai_instructions` — a free-text string field in the project metadata object, persisted in the JSON file alongside `name`, `description`, and `created_by`.
+
+**UI:** A dedicated button in the AI assistant panel header opens a modal with a textarea. Saving the modal marks the project as dirty (`DDS_STORE.markDirty()`). This modal is distinct from the project name/description modal.
+
+**Injection:** When `project.ai_instructions` is non-empty, a fake user/assistant turn is inserted into the `messages` array immediately before the current project context message:
+
+```javascript
+{ role: 'user',      content: 'Project-specific instructions:\n' + ai_instructions }
+{ role: 'assistant', content: 'Understood.' }
+```
+
+This pattern ensures Claude acknowledges and applies the instructions without embedding them in the system prompt, keeping the system prompt stable and versioned independently.
+
+**Absent:** If `project.ai_instructions` is null, undefined, or an empty string, the block is not injected.
 
 ---
 
@@ -465,20 +446,17 @@ The confirmation panel shows:
 
 - The `reasoning` text in full.
 - The `answer` text if present (for analytical questions — no actions to confirm).
-- A numbered list of actions, each rendered as a human-readable sentence (not raw JSON). Example:
-  - *Create node "Export Warehouse" (type: Warehouse, swim-lane: Distribution)*
-  - *Reroute flow f_12 → new target: Export Warehouse*
-  - *Add SKU: Export Warehouse × Product Fini A (tags: stock)*
+- A numbered list of actions, each rendered as a human-readable sentence (not raw JSON).
 - An action count summary: *"3 actions to apply"*
 - Two buttons: **Apply** and **Cancel**
 
 ### 6.3 Execution
 
-Actions are executed sequentially in the order returned by Claude. After each write, DDScope resolves `new_*` references for subsequent actions. If any action fails (integrity violation, unexpected error), execution halts and the user is informed of which action failed and which actions were already applied.
+Actions are executed sequentially in the order returned by Claude. After each write, DDScope resolves `new_*` references for subsequent actions. If any action fails, execution halts and the user is informed of which action failed and which actions were already applied.
 
 ### 6.4 Partial failure
 
-In v1, there is no automatic rollback. Validation is all-or-nothing from the user's perspective — Apply executes the full plan, Cancel executes nothing. If execution halts mid-plan due to an error, the user is shown the list of applied and unapplied actions and can take manual corrective action. Full rollback (undo) is deferred to a future version; the recommended mitigation before any AI session is to duplicate the project (Save As).
+In v1, there is no automatic rollback. Validation is all-or-nothing from the user's perspective. If execution halts mid-plan due to an error, the user is shown the list of applied and unapplied actions and can take manual corrective action. The recommended mitigation before any AI session is to duplicate the project (Save As).
 
 ---
 
@@ -486,12 +464,13 @@ In v1, there is no automatic rollback. Validation is all-or-nothing from the use
 
 | # | Question | Impact |
 |---|---|---|
-| 1 | Should the action list be embedded in the system prompt or injected dynamically per request? Dynamic injection allows versioning the vocabulary without changing the prompt. | System prompt design |
-| 2 | What is the maximum acceptable context size? Large projects (50+ nodes, 100+ flows) may approach token limits. A context trimming strategy (e.g. omitting notes fields) may be needed. | Scalability |
-| 3 | Should the user be able to edit the action plan before confirming? | **Resolved in v0.8:** validation is all-or-nothing. The confirmation panel is read-only. Apply executes the full plan; Cancel executes nothing. |
-| 4 | Should conversation history be maintained within a session (multi-turn)? | **Resolved in v0.5:** last turn only is transmitted (previous instruction + reasoning + actions). This allows correction instructions ("actually make it 20 days", "also add product X to that flow") without the token cost of full history. Full history remains out of scope. |
+| 1 | Should the action list be embedded in the system prompt or injected dynamically per request? | System prompt design |
+| 2 | What is the maximum acceptable context size? Large projects (50+ nodes, 100+ flows) may approach token limits. | Scalability |
+| 3 | Should the user be able to edit the action plan before confirming? | **Resolved in v0.8:** all-or-nothing. |
+| 4 | Should conversation history be maintained within a session (multi-turn)? | **Resolved in v0.5:** last turn only. |
 | 5 | Swim-lane deletion: under what conditions should it be allowed via the assistant? | Action vocabulary v2 |
-| 6 | Should the AI assistant gain write access to map-scoped entities in v2 (e.g. "add this node to the active map")? | Action vocabulary v2 |
+| 6 | Should the AI assistant gain write access to map-scoped entities in v2? | Action vocabulary v2 |
+| 7 | BOM SKU pre-check: should DDScope enforce SKU existence before executing add_bom / add_bom_component, or trust Claude's reasoning? | Execution robustness |
 
 ---
 
