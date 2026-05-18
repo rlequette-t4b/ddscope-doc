@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v1.4 — Draft — May 2026*
+*v1.5 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence.*
 
@@ -20,6 +20,7 @@
 | 1.2 | May 2026 | direction field added to maps; default_swim_lane_id added to node_types |
 | 1.3 | May 2026 | ai_instructions field added to project metadata |
 | 1.4 | May 2026 | waypoint_pct added to map_flows for taxi edge bend control |
+| 1.5 | May 2026 | tag_colors table added; legend_visible field added to maps |
 
 ---
 
@@ -30,7 +31,7 @@ The model prioritises flexibility over formalism. Entities have a small set of s
 Every entity includes the following system fields, not repeated in the field definitions below: `id` (integer, auto-incremented in memory), `created_at`, `updated_at` (ISO timestamps).
 
 **Functional vs presentation separation.** The model distinguishes two layers:
-- The **functional layer** (nodes, products, flows, SKUs, swim-lanes, BOMs) describes the supply chain as it exists — independent of any visual representation.
+- The **functional layer** (nodes, products, flows, SKUs, swim-lanes, BOMs, tag colors) describes the supply chain as it exists — independent of any visual representation.
 - The **presentation layer** (maps and map-scoped entities) describes how elements are arranged and which elements are visible on a given map.
 
 ---
@@ -46,7 +47,7 @@ A node represents any meaningful actor, location, or resource in the supply chai
 | name | text | Display label on the map |
 | type_code | text | Configurable per project — determines icon and shape; not enforced |
 | swim_lane_id | integer \| null | Reference to `swim_lanes[].id` (optional). Shared across all maps. |
-| tags | array | Free labels for grouping and filtering |
+| tags | array | Free labels for grouping, filtering, and tag-based coloring |
 | notes | text | Free-form observations, constraints, context |
 
 ---
@@ -161,7 +162,7 @@ Each project maintains its own list of node types and product types, seeded at p
 | code | text | Internal identifier (e.g. `SUPPLIER`, `PROD`) |
 | label | text | Display name |
 | shape | text | Cytoscape shape |
-| is_default | boolean | Pre-selected when adding a node |
+| is_default | boolean | Pre-selected when adding a node. Only one record may be default at a time — setting a new default clears the previous one. |
 | default_swim_lane_id | integer \| null | Swim-lane pre-selected in Add node modal. Cleared if the swim-lane is deleted. |
 
 **JSON array:** `product_types`
@@ -171,17 +172,36 @@ Each project maintains its own list of node types and product types, seeded at p
 | code | text | Internal identifier |
 | label | text | Display name |
 | shape | text | Cytoscape shape |
-| is_default | boolean | Pre-selected when adding a product |
+| color | text | Hex color for display |
+| is_default | boolean | Pre-selected when adding a product. Only one record may be default at a time. |
 
 ---
 
 ## 8. Tags
 
-Free-text labels stored as arrays. Not hierarchical. Applied to nodes, products, flows, and SKUs.
+Free-text labels stored as arrays. Not hierarchical. Applied to nodes, products, flows, and SKUs. Tags defined in `tag_colors` are offered as autocomplete suggestions wherever a tag input is available.
 
 ---
 
-## 9. Map
+## 9. Tag Colors
+
+Associates a tag label with a display color. Used to color node backgrounds on the map canvas: for each node, the first tag in the `tag_colors` table (by insertion order) that matches one of the node's tags determines the node's background color. Nodes with no matching tag use the default canvas color.
+
+**JSON array:** `tag_colors`
+
+| Field | Type | Description |
+|---|---|---|
+| tag | text | Tag label — free text, may or may not already exist in the project |
+| color | text | Hex color string — 8-colour palette |
+
+**Behavior:**
+- Priority: first match in `tag_colors` order wins when a node has multiple matching tags.
+- Copying: included in all three project copy modes (full project, swim-lanes & types, types only).
+- Autocomplete: the tag field in the Settings modal and the tag color table are populated with suggestions from all tags used in the project (nodes, flows, products, SKUs) union `tag_colors[].tag`.
+
+---
+
+## 10. Map
 
 A named view of a subset of the project's supply chain elements. Each project has at least one map. The last remaining map cannot be deleted.
 
@@ -192,10 +212,11 @@ A named view of a subset of the project's supply chain elements. Each project ha
 | name | text | Display label shown in the map tab |
 | position | integer | Tab order |
 | direction | text | Flow display direction — `right-left` (default) or `left-right` |
+| legend_visible | boolean | Whether the legend overlay is visible on this map. Defaults to `true`. Toggled via the Legend button in the map toolbar; persisted per map. |
 
 ---
 
-## 10. Map Node
+## 11. Map Node
 
 Canvas position of a node on a specific map. A node is visible on a map if and only if a `map_node` record exists.
 
@@ -209,7 +230,7 @@ Canvas position of a node on a specific map. A node is visible on a map if and o
 
 ---
 
-## 11. Map Flow
+## 12. Map Flow
 
 Records that a flow is visible on a specific map, and stores the taxi edge bend position.
 
@@ -225,7 +246,7 @@ Records that a flow is visible on a specific map, and stores the taxi edge bend 
 
 ---
 
-## 12. Map Swim-lane
+## 13. Map Swim-lane
 
 Canvas geometry of a swim-lane on a specific map.
 
@@ -241,7 +262,7 @@ Canvas geometry of a swim-lane on a specific map.
 
 ---
 
-## 13. Project
+## 14. Project
 
 Project metadata, stored under the `project` key (object, not array) in the JSON file.
 
@@ -254,7 +275,7 @@ Project metadata, stored under the `project` key (object, not array) in the JSON
 
 ---
 
-## 14. Adding and Removing Elements from a Map
+## 15. Adding and Removing Elements from a Map
 
 An element (node, flow, or swim-lane) can be added to or removed from any map without affecting the functional model.
 

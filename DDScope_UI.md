@@ -1,6 +1,6 @@
 # DDScope — User Interface
 
-*v1.2 — Draft — May 2026*
+*v1.3 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -19,6 +19,7 @@
 | 1.0     | May 2026 | Direction toggle on map toolbar; project name centred in nav with edit button; node type default swim-lane; dirty flag on Save button; Settings tab updated |
 | 1.1     | May 2026 | Flow table view added: inline edit and delete, all project flows, tab placed between Nodes and Products                                                     |
 | 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag |
+| 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle |
 
 ---
 
@@ -26,7 +27,7 @@
 
 DDScope is used primarily during or immediately after discovery workshops. The consultant operates the tool on their own device, entering information in real time or consolidating notes after a session.
 
-Typical workflow: create a project → define swim-lanes → add nodes → define products → connect them with flows → review SKUs → define BOMs → apply tags → switch between maps and views for presentation or export.
+Typical workflow: create a project → define swim-lanes → add nodes → define products → connect them with flows → review SKUs → define BOMs → apply tags → configure tag colors → switch between maps and views for presentation or export.
 
 ---
 
@@ -36,7 +37,7 @@ DDScope maintains a single underlying data model and derives multiple views from
 
 ### 2.1 Map
 
-Displays nodes and flows only. Swim-lanes are rendered as HTML overlay columns. Lead times are shown on flow edges. This is the only map rendering mode.
+Displays nodes and flows only. Swim-lanes are rendered as HTML overlay columns. Lead times are shown on flow edges. Node background colors reflect tag-based coloring when `tag_colors` entries are defined. This is the only map rendering mode.
 
 ### 2.2 Table — Nodes
 
@@ -51,7 +52,7 @@ Each row displays: source node name, target node name, products carried (comma-s
 Supported actions directly from the table:
 
 - **Edit** — inline editing of lead time, tags, and notes. Products are edited via an add/remove selector in the row. Source and target nodes are editable via a node selector.
-- **Delete** — removes the flow from the project. Triggers the standard cascade: SKU cleanup for all products on the flow (per §4 of DDScope_DataModel.md).
+- **Delete** — removes the flow from the project. Triggers the standard cascade: SKU cleanup for all products on the flow.
 
 No side panel is opened on row click. All editing is inline.
 
@@ -77,7 +78,7 @@ A pencil button (✎) appears on hover to the right of the project name. Clickin
 
 ### Save button
 
-The **Save** button is active only when the project has unsaved changes (`dirty = true`). It is disabled and visually greyed out after a Load, Save, or project open. It becomes active again on any modification to the model (insert, update, remove, or project metadata edit).
+The **Save** button is active only when the project has unsaved changes (`dirty = true`). It is disabled and visually greyed out after a Load, Save, or project open. It becomes active again on any modification to the model.
 
 ---
 
@@ -91,8 +92,8 @@ Each project contains one or more maps, displayed as a tab bar above the canvas.
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Map tab (click)                       | Switches the active map. Loads `map_nodes`, `map_flows`, and `map_swim_lanes` for the selected map and re-renders the canvas. |
 | Map name (double-click)               | Makes the name editable inline. Confirmed on Enter or blur.                                                                   |
-| **+ New map** button                  | Creates a new empty map (default name: "Map N", direction: `right-left`).                                                     |
-| **Duplicate map** button (active tab) | Creates a copy of the active map with all its `map_nodes`, `map_flows`, `map_swim_lanes`, and `direction`.                    |
+| **+ New map** button                  | Creates a new empty map (default name: "Map N", direction: `right-left`, `legend_visible: true`).                            |
+| **Duplicate map** button (active tab) | Creates a copy of the active map with all its `map_nodes`, `map_flows`, `map_swim_lanes`, `direction`, and `legend_visible`. |
 | **Delete map** button (active tab)    | Deletes the active map and all its map-scoped data. Disabled when only one map remains.                                       |
 
 ### Elements panel
@@ -101,7 +102,7 @@ An **Elements** button in the map toolbar opens a side panel listing all project
 
 A flow can only be added to a map if both its source and target nodes are already present on that map. Flows whose endpoint nodes are not both on the map are greyed out in the Elements panel.
 
-To remove an element from the active map, select it on the canvas and use the "Remove from this map" contextual action. This removes the corresponding `map_node`, `map_flow`, or `map_swim_lane` entry without affecting the functional model.
+To remove an element from the active map, select it on the canvas and use the "Remove from this map" contextual action.
 
 > Removing a node from a map automatically removes all flows where that node is source or target.
 
@@ -113,18 +114,16 @@ The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the 
 
 ### Node interactions
 
-- **Node creation** — via the Add node button; node is placed on the canvas (adding a `map_node` entry for the active map) and optionally assigned to a swim-lane. The initial canvas position is computed automatically:
-  - **Swim-lane assigned and visible on the active map** — the node is placed at the first free position inside the swim-lane rectangle. Positions are scanned row by row starting from the bottom of the swim-lane, left to right. A position is considered free if no existing node on the map falls within a minimum distance threshold. Grid step and distance threshold are defined as named constants in the layout module.
-  - **No swim-lane, or swim-lane not present on the active map** — the node is placed below the bounding box of all swim-lanes currently visible on the map, horizontally centred on that bounding box. If the position is occupied, the node is shifted left by a fixed step, repeated until a free position is found. If no swim-lanes are visible, the node is placed at the centre of the current viewport.
-- **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`. Vertical snap is applied on release (see §5 Vertical snap below).
+- **Node creation** — via the Add node button; initial canvas position is computed automatically (swim-lane grid, below swim-lanes, or viewport centre).
+- **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`. Vertical snap is applied on release.
 - **Selection** — click a node to open the side panel; click canvas background to close.
 
 ### Flow interactions
 
 - **Flow creation** — drag from the green handle that appears on node hover to a target node.
-- **Flow rerouting** — selecting a flow shows source (blue) and target (purple) endpoint handles on the respective nodes; dragging a handle and dropping it on another node updates the flow endpoint.
+- **Flow rerouting** — selecting a flow shows source (blue) and target (purple) endpoint handles; dragging a handle to another node updates the endpoint.
 - **Selection** — click an edge to open the side panel.
-- **Waypoint handle** — selecting a flow reveals a circular handle (`.dds-waypoint-handle`) positioned on the taxi bend. Drag the handle horizontally to reposition the bend; the change is applied in real time and persisted to `map_flows.waypoint_pct` on release. Double-click the handle to reset the bend to the midpoint (50%).
+- **Waypoint handle** — selecting a flow reveals a circular handle on the taxi bend. Drag to reposition; double-click to reset to midpoint (50%).
 
 ### Swim-lane interactions
 
@@ -134,59 +133,52 @@ The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the 
 | SHIFT + drag lane header          | Snap and grouping behaviour activated. Snaps to another lane within 40 canvas units; the two lanes align, share the same height, and a shared bounding box is rendered. |
 | SHIFT + drag on grouped lane      | Detaches lane from the group.                                                                                                                                           |
 | Drag resize handle (bottom-right) | Resize lane. All lanes in the same group adopt the same height.                                                                                                         |
-| Click lane header                 | Opens swim-lane side panel (distinguished from drag by movement threshold).                                                                                             |
+| Click lane header                 | Opens swim-lane side panel.                                                                                                                                             |
 
 ### Vertical snap
 
-When dragging a node manually, a dashed green guide line appears when the node's Y approaches a snap target (threshold: 6px canvas units). Snap is applied on release to avoid cursor detachment. Two snap rules apply:
+When dragging a node manually, a dashed green guide line appears when the node's Y approaches a snap target (threshold: 6px canvas units). Snap is applied on release. Two snap rules apply:
 
-1. **Direct neighbour** — snap to the Y of any node directly connected by a flow (amont or aval) on the active map.
-2. **Median of aligned neighbours** — if two neighbours on the same side (both amont or both aval) share the same X column (within 20px tolerance) and no other map node lies between them on that column, snap to their Y median.
+1. **Direct neighbour** — snap to the Y of any node directly connected by a flow on the active map.
+2. **Median of aligned neighbours** — if two neighbours on the same side share the same X column (within 20px tolerance) and no other map node lies between them on that column, snap to their Y median.
 
 ### Canvas controls
 
 | Control              | Behaviour                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Also triggered on project open and map tab switch. |
-| **Layout**           | BFS-based auto-layout per swim-lane (see below), free nodes via Dagre below swim-lanes. Positions saved to `map_nodes`.                   |
-| **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`. Refreshed on map tab switch.  |
+| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Positions saved to `map_nodes`.                      |
+| **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
+| **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
 
 ### Auto-layout behaviour
 
-The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map:
+The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Nodes without a swim-lane on the active map are left in place — their positions are not modified.
 
-1. A BFS rank is computed locally (flows internal to the lane only). Nodes with no internal predecessor are sources (rank 0). `rankMin` = longest-path from sources; `rankMax` = min(rankMin of successors) − 1, or last column if no successors.
-2. Each node is assigned to the column in `[rankMin, rankMax]` whose X is closest to its current canvas X. Repositioning a node before running Layout controls its column.
-3. Columns are evenly spaced (max 150px), centred in the swim-lane width.
-4. Within each column: nodes with 1–2 members preserve their pre-layout Y (clamped to lane bounds). Nodes in columns with 3+ members are spread evenly between the column's own YMin/YMax (pre-layout). Sort order within the column follows pre-layout Y (ascending) — drag a node up or down before Layout to control its position in the column.
+### Legend overlay
 
-Free nodes (no swim-lane on the active map) are laid out with Dagre below the swim-lane bounding box.
+The legend is an SVG inline overlay positioned at the bottom-left of the canvas. It displays one entry per (node type × tag color) combination present on the active map, grouped by node type and ordered by `tag_colors` insertion order within each type. Each entry shows the node shape (filled with the tag color) and the tag name as label.
+
+- Nodes without a type or without a matching tag color entry are excluded.
+- The legend is recalculated automatically when: the map changes, a node's tags are modified, or `tag_colors` is updated.
+- The **Legend** button in the toolbar toggles visibility; state is saved per map in `legend_visible`.
+- SVG inline rendering makes the legend compatible with html2canvas capture for future PDF export.
 
 ---
 
 ## 6. Side Panel
 
-A slide-in panel on the right edge provides inline editing for the selected element. Changes are saved on Save.
+A slide-in panel on the right edge provides inline editing for the selected element. Changes are saved immediately (auto-save on change/blur).
 
 ### Node panel
 
 Name, type, swim-lane, tags, notes.
 
-**SKUs section** — lists all SKUs associated with this node, derived automatically from the flows entering and leaving it. For each SKU:
+**Tags** — adding or removing a tag immediately updates the node's background color on the canvas (tag-based coloring) and refreshes the legend.
 
-- Product name (read-only — existence is derived from flows)
-- Tags (editable)
-- Notes (editable)
+**SKUs section** — lists all SKUs associated with this node, derived automatically from the flows entering and leaving it. For each SKU: product name (read-only), tags (editable), notes (editable). SKUs cannot be added or removed manually.
 
-SKUs cannot be added or removed manually. They appear when a product is added to a flow connected to this node, and disappear when the product no longer appears on any connected flow.
-
-**BOMs section** — lists all BOMs defined for this node. For each BOM:
-
-- Output product (selectable from the project's product list)
-- Component list: each component has a product (selectable) and a quantity (numeric, editable)
-- Actions: add a BOM, add/remove a component, edit quantities, delete a BOM
-
-A node can have multiple BOMs (one per output product). A given output product can only have one BOM per node.
+**BOMs section** — lists all BOMs defined for this node. For each BOM: output product, component list with quantities. Actions: add a BOM, add/remove a component, edit quantities, delete a BOM.
 
 ### Flow panel
 
@@ -202,13 +194,19 @@ Name, colour swatch selector (8 colours).
 
 ## 7. Settings Tab
 
-Provides tables for managing swim-lanes, node types, and product types for the current project.
+Provides tables for managing swim-lanes, node types, product types, and tag colors for the current project.
 
 **Swim-lanes** — name and colour swatch. Each swim-lane can be added, edited, or deleted. Deleting a swim-lane clears `default_swim_lane_id` on any node type that referenced it.
 
-**Node types** — code, label, shape, default swim-lane, and default flag. The default swim-lane is pre-selected in the Add node modal when a node of this type is created. Changing the type in the modal updates the swim-lane pre-selection accordingly.
+**Node types** — code, label, shape, default swim-lane, and default flag. Only one node type can be default at a time — setting a new default clears the previous one. The default swim-lane is pre-selected in the Add node modal when a node of this type is created.
 
-**Product types** — code, label, shape, colour, and default flag.
+**Product types** — code, label, shape, colour, and default flag. Only one product type can be default at a time.
+
+**Tag colors** — tag label and colour. Each entry associates a free-text tag with a display colour from the 8-colour palette. Entries are ordered by insertion order, which determines priority when a node matches multiple tagged entries. Actions: add (via the shared settings modal), delete. No inline edit — delete and recreate to change.
+
+Adding a tag color: the shared settings modal opens in `tagcolor` mode, showing only the tag field (with native autocomplete from all tags used in the project) and the colour swatch. No code or shape fields.
+
+Modifying or deleting tag colors immediately refreshes node colors on the canvas and updates the legend.
 
 All changes are persisted on Save. If no project is open, a placeholder is shown.
 

@@ -1,5 +1,5 @@
 # DDScope — Overview
-*v1.1 — Draft — May 2026*
+*v1.2 — Draft — May 2026*
 
 ---
 
@@ -15,6 +15,7 @@
 | 0.9 | May 2026 | Flow visibility rule resolved: flows require both endpoint nodes on map |
 | 1.0 | May 2026 | Persistence migrated to local JSON file; constraints updated accordingly |
 | 1.1 | May 2026 | Flow table view added to v1 feature list |
+| 1.2 | May 2026 | Tag colors + legend added to v1 feature list |
 
 ---
 
@@ -47,25 +48,27 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 - SKU management — node × product associations with tags expressing the nature of the association (stock, buffer, transit, etc.).
 - BOM management — bill of material per node: one output product, one or more input components with quantities. Accessible from the node side panel and the BOMs tab.
 - Free tagging of nodes, products, flows, and SKUs for grouping and filtering.
+- Tag colors — association of tags with display colors for node background coloring on the map. Configurable in the Settings tab. Priority: first match in insertion order. Copied in all three project copy modes.
+- Legend — SVG inline overlay on the map canvas (bottom-left), showing (node type × tag) combinations present on the active map, grouped by type. Toggle persisted per map. Compatible with html2canvas for future PDF export.
 - Swim-lane definition — name, colour, canvas geometry, optional grouping.
-- Configurable node types and product types per project — editable in the Settings tab.
+- Configurable node types and product types per project — editable in the Settings tab. Single-default enforcement: setting a new default clears the previous one.
 - Multi-map support — each project supports multiple named maps. The functional model is shared across maps; each map defines independently which elements are visible and their canvas geometry.
 - Map management — create, rename, duplicate, and delete maps.
 - Interactive Cytoscape.js map — node drag, flow creation, flow rerouting, pan, zoom.
 - Map view: nodes and flows only. Products are visible in the detail panels of flows and nodes.
-- Fit-to-canvas and auto-layout (Dagre).
+- Fit-to-canvas and auto-layout (BFS ranking per swim-lane; nodes without a swim-lane are not repositioned).
 - Table views: node list, flow list, and product list.
-- Side panel for editing node, flow, swim-lane, and SKU properties.
+- Side panel for editing node, flow, swim-lane, and SKU properties. Tag changes on nodes immediately refresh node color and legend.
 - JSON file operations — New, Load, Save, Save As. Each project is a standalone `.json` file on the consultant's machine.
 - Project copy modes — three levels of copy when creating a project from an existing source:
 
   | Mode | Functional entities copied | Maps copied |
   |---|---|---|
-  | **Full project** | All — swim-lanes, node types, product types, nodes, products, flows, SKUs, BOMs | All maps, with full `map_nodes`, `map_flows`, `map_swim_lanes` |
-  | **Swim-lanes & types** | Swim-lane definitions + node types + product types | First map only — swim-lane geometry copied; no nodes or flows |
-  | **Types only** | Node types and product types only | First map only — empty |
+  | **Full project** | All — swim-lanes, node types, product types, nodes, products, flows, SKUs, BOMs, tag colors | All maps, with full `map_nodes`, `map_flows`, `map_swim_lanes` |
+  | **Swim-lanes & types** | Swim-lane definitions + node types + product types + tag colors | First map only — swim-lane geometry copied; no nodes or flows |
+  | **Types only** | Node types and product types + tag colors | First map only — empty |
 
-  All IDs are remapped in memory — the new project is fully independent of the source. A file containing only a subset of keys (e.g. a type template) is valid — absent sections are initialised as empty.
+  All IDs are remapped in memory — the new project is fully independent of the source.
 
 - AI assistant — natural language modification of the functional model with human confirmation before any write.
 
@@ -79,6 +82,7 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 - Structured data export for DDOpt handoff.
 - PDF export of the map and tables.
 - Table view filtering by tag.
+- Tag autocompletion in all tag input fields (node panel, flow panel, table views).
 - Cumulative lead time display on the map.
 - SKU visibility per map.
 - Product visibility model (currently derived from flow visibility).

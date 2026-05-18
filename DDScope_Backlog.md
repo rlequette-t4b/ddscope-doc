@@ -19,11 +19,11 @@ _Idées relatives au canvas Cytoscape, swim-lanes, rendu visuel._
 
 - [ ] Afficher lead time swimlanes
 
-- [x] Améliorer le layout ✓ _(implémenté mai 2026 — BFS ranking local par swim-lane, centrage horizontal, plage rang min/max, répartition verticale bornée par YMin/YMax)_
+- [x] Améliorer le layout ✓ _(implémenté mai 2026 — BFS ranking local par swim-lane, centrage horizontal, plage rang min/max, répartition verticale bornée par YMin/YMax; nœuds hors swimlanes non déplacés)_
 
-- [ ] Utiliser les tags pour la visualisation
+- [x] Utiliser les tags pour la visualisation ✓ _(implémenté mai 2026 — tag_colors : association tag → couleur, coloriage background des nœuds par premier tag matché, mise à jour immédiate lors de l'édition des tags dans le side panel)_
 
-- [ ] Légende
+- [x] Légende ✓ _(implémenté mai 2026 — overlay SVG inline bas-gauche, entrées (type × tag) présentes sur la map active, groupées par type de nœud, toggle persisté dans maps.legend_visible, compatible html2canvas)_
 
 - [x] Contrôle du coude des arêtes taxi ✓ _(implémenté mai 2026 — waypoint handle draggable, waypoint_pct persisté dans map_flows, double-clic reset)_
 
@@ -35,7 +35,7 @@ _Idées relatives au canvas Cytoscape, swim-lanes, rendu visuel._
 
 _Idées relatives au modèle de données, champs, entités._
 
-- [ ] Ajouter les BOM
+- [x] Ajouter les BOM ✓ _(implémenté)_
 
 - [ ] Ajouter customer tolerance (demande lead time)
 
@@ -78,6 +78,8 @@ _Idées sans catégorie claire._
   - Panneau dédié 
 
 - [ ] Ajouter le flux information : rôles, entités
+
+- [ ] Autocomplétion des tags dans tous les champs de saisie de tags (nœud, flow, produit, SKU, table tag colors) — v2
 
 ---
 

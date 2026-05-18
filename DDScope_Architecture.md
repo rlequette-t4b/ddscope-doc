@@ -1,5 +1,5 @@
 # DDScope — Architecture
-*v1.2 — Draft — May 2026*
+*v1.3 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour.*
 
@@ -18,6 +18,7 @@
 | 1.0 | May 2026 | Dirty state extended: Save button gated on dirty flag; DDS_STORE.markDirty() and DDS_STORE.resetDirty() exposed publicly |
 | 1.1 | May 2026 | Node placement (DDS_LAYOUT) and auto-layout (DDS_MAP.runLayout) documented |
 | 1.2 | May 2026 | Auto-layout upgraded to custom BFS ranking per swim-lane; waypoint handle on taxi edges; vertical snap on drag |
+| 1.3 | May 2026 | tag_colors table added; legend_visible on maps; DDS_MAP tag color + legend functions documented |
 
 ---
 
@@ -40,7 +41,7 @@ DDScope runs entirely within the CommWise platform as a single-page CommWise Web
 
 ## 3. Data Model Structure
 
-The project is held entirely in memory as a single JSON object (`DDS.state.project`). It contains 14 named arrays corresponding to the functional and presentation layers of the data model. Entity definitions and field descriptions are in [DDScope_DataModel.md](DDScope_DataModel.md).
+The project is held entirely in memory as a single JSON object (`DDS.state.project`). It contains 15 named arrays corresponding to the functional and presentation layers of the data model. Entity definitions and field descriptions are in [DDScope_DataModel.md](DDScope_DataModel.md).
 
 ### Functional layer
 
@@ -55,12 +56,13 @@ The project is held entirely in memory as a single JSON object (`DDS.state.proje
 | `skus` | Node × product associations — derived from flows |
 | `boms` | BOM headers — one output product per node |
 | `bom_components` | BOM lines — input components with quantities |
+| `tag_colors` | Tag → color associations for node background coloring |
 
 ### Presentation layer
 
 | Key | Description |
 |---|---|
-| `maps` | Map definitions — name, tab order, direction |
+| `maps` | Map definitions — name, tab order, direction, legend_visible |
 | `map_nodes` | Node visibility and canvas position per map |
 | `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) |
 | `map_swim_lanes` | Swim-lane canvas geometry per map |
@@ -102,16 +104,16 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
 
 ### 4.4 Dirty state
 
-`DDS.state.dirty` is set to `true` on any `insert`, `update`, `remove`, or explicit `DDS_STORE.markDirty()` call (used for out-of-store mutations such as project name/description edits). A bullet indicator (`•`) is appended to the project name in the navigation bar, and the **Save** button becomes active.
+`DDS.state.dirty` is set to `true` on any `insert`, `update`, `remove`, or explicit `DDS_STORE.markDirty()` call. A bullet indicator (`•`) is appended to the project name in the navigation bar, and the **Save** button becomes active.
 
-`DDS.state.dirty` is reset to `false` — and the Save button disabled — on Load, Save, Save As, new project creation, and auto-reopen. `DDS_STORE.resetDirty()` is called at the end of `DDS.openProject()` to neutralise any inserts triggered internally during project open (e.g. the Map 1 safety insert).
+`DDS.state.dirty` is reset to `false` on Load, Save, Save As, new project creation, and auto-reopen.
 
 ### 4.5 File format
 
 ```json
 {
   "version": 1,
-  "project":        { "name": "...", "description": "...", "created_by": "..." },
+  "project":        { "name": "...", "description": "...", "created_by": "...", "ai_instructions": "..." },
   "swim_lanes":     [...],
   "node_types":     [...],
   "product_types":  [...],
@@ -121,6 +123,7 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
   "skus":           [...],
   "boms":           [...],
   "bom_components": [...],
+  "tag_colors":     [...],
   "maps":           [...],
   "map_nodes":      [...],
   "map_flows":      [...],
@@ -148,20 +151,9 @@ The algorithm applies in order:
 2. **No swim-lane, or swim-lane absent from the map** — the node is placed below the bounding box of all swim-lanes visible on the map, horizontally centred. If the position is occupied, the node shifts left by `FALLBACK_STEP`, repeated up to 20 times.
 3. **No swim-lanes on the map** — the node is placed at the centre of the current viewport.
 
-Tunable constants defined at the top of `DDS_LAYOUT` (SCRIPT 1250):
-
-| Constant | Default | Description |
-|---|---|---|
-| `GRID_X` | 160 | Horizontal grid step inside a swim-lane |
-| `GRID_Y` | 100 | Vertical grid step inside a swim-lane |
-| `MARGIN` | 80 | Inner padding from swim-lane edges |
-| `MIN_DIST` | 80 | Minimum distance to an existing node (occupied check) |
-| `FALLBACK_Y` | 80 | Vertical offset below the swim-lane bounding box |
-| `FALLBACK_STEP` | 160 | Horizontal shift step for the fallback position |
-
 ### Auto-layout
 
-`DDS_MAP.runLayout()` uses a custom BFS-based ranking algorithm per swim-lane, with Dagre v0.8.5 reserved for free nodes (nodes without a swim-lane on the active map).
+`DDS_MAP.runLayout()` uses a custom BFS-based ranking algorithm per swim-lane. Nodes without a swim-lane on the active map are not repositioned — their positions are preserved as-is.
 
 #### BFS ranking — `_computeRanksForLane(laneNodeIds)`
 
@@ -182,12 +174,8 @@ Column X positions are evenly spaced (max 150px between columns), centred within
 
 #### Vertical placement within a column
 
-- **1–2 nodes**: pre-layout Y is preserved, clamped to lane bounds with a 20px margin. The user controls vertical order by repositioning nodes before Layout.
+- **1–2 nodes**: pre-layout Y is preserved, clamped to lane bounds with a 20px margin.
 - **3+ nodes**: spread evenly between the column's own YMin/YMax (pre-layout), clamped to lane bounds with a 20px margin. Sort order within the column follows pre-layout Y (ascending).
-
-#### Free nodes
-
-Free nodes (no swim-lane on the active map) are laid out with Dagre (`rankDir` per map direction, `ranker: longest-path`), then translated below the bounding box of all swim-lanes.
 
 ### Taxi edge waypoint
 
@@ -202,6 +190,24 @@ During manual drag, a guide line (`.dds-snap-guide`) appears when the dragged no
 **Snap targets:**
 1. **Rule 1** — Y of any directly connected neighbour (amont or aval) visible on the active map.
 2. **Rule 2** — Y median of two same-side neighbours (both amont or both aval) sharing the same X column (within 20px tolerance), with no other map node between them on that column.
+
+### Tag-based node coloring
+
+`DDS_MAP.resolveNodeColor(nodeId)` returns the background color for a node: it iterates `tag_colors` in insertion order and returns the color of the first entry whose `tag` is present in the node's `tags` array. If no match is found, it returns `DDS_MAP.DEFAULT_NODE_COLOR` (`#e2e8f0`).
+
+`DDS_MAP.applyNodeColors()` applies `resolveNodeColor` to every node currently on the Cytoscape canvas. It is called at the end of `loadMap` and whenever `tag_colors` is modified (add or delete in Settings).
+
+Node color is also refreshed immediately in the side panel when a tag is added or removed from a node, without requiring a full map reload.
+
+### Legend overlay
+
+`DDS_MAP.renderLegend()` builds an SVG inline overlay positioned at the bottom-left of the canvas wrap (`.dds-legend`). It computes the set of (node_type × tag) combinations present on the active map, groups them by node type, and renders one SVG shape entry per combination (shape from `node_types[].shape`, fill from `tag_colors[].color`, label = tag name).
+
+`DDS_MAP.toggleLegend()` flips `legend_visible` on the active map record in `DDS_STORE` and re-renders. The state is persisted in the JSON file.
+
+The legend is recalculated on: `loadMap`, map tab switch, tag modification on a node, and `tag_colors` add/delete.
+
+The SVG shapes used in the legend (`rectangle`, `diamond`, `ellipse`, `hexagon`, `triangle`, `barrel`, `rhomboid`, `star`) are rendered as inline SVG — compatible with html2canvas capture for PDF export.
 
 ---
 
