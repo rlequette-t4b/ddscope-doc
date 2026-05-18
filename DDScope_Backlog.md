@@ -7,29 +7,33 @@
 
 ## UX / Interface
 
-_Idées relatives à l'expérience utilisateur, navigation, ergonomie.
+_Idées relatives à l'expérience utilisateur, navigation, ergonomie._
 
 ---
 
 ## Map / Visualisation
 
-_Idées relatives au canvas Cytoscape, swim-lanes, rendu visuel.
+_Idées relatives au canvas Cytoscape, swim-lanes, rendu visuel._
 
 - [ ] Afficher customer tolerance
 
 - [ ] Afficher lead time swimlanes
 
-- [ ] Ameliorer le layout
+- [x] Améliorer le layout ✓ _(implémenté mai 2026 — BFS ranking local par swim-lane, centrage horizontal, plage rang min/max, répartition verticale bornée par YMin/YMax)_
 
 - [ ] Utiliser les tags pour la visualisation
 
-- [ ] Legende
+- [ ] Légende
+
+- [x] Contrôle du coude des arêtes taxi ✓ _(implémenté mai 2026 — waypoint handle draggable, waypoint_pct persisté dans map_flows, double-clic reset)_
+
+- [x] Snap d'alignement vertical au drag ✓ _(implémenté mai 2026 — règle 1 : voisins directs ; règle 2 : médian de deux voisins alignés en colonne sans nœud intermédiaire)_
 
 ---
 
 ## Données / Modèle
 
-_Idées relatives au modèle de données, champs, entités.
+_Idées relatives au modèle de données, champs, entités._
 
 - [ ] Ajouter les BOM
 
@@ -53,27 +57,27 @@ _Idées relatives aux exports PDF, Excel, handoff DDOpt._
 
 ## Gestion de projet
 
-_Idées relatives à la liste de projets, duplication, templates.
+_Idées relatives à la liste de projets, duplication, templates._
 
-- [ ] Creation de projet, sans ou avec template: autre projet ou JSON, copie types et swimlanes en option
+- [ ] Création de projet, sans ou avec template : autre projet ou JSON, copie types et swimlanes en option
 
 ---
 
 ## Divers
 
-_Idées sans catégorie claire.
+_Idées sans catégorie claire._
 
 - [ ] Ajouter les painpoints/objectifs
   
-  - Faire un doc separe
+  - Faire un doc séparé
   
-  - categories: 7 raisons buffers DDMRP (ajout customs ?)
+  - Catégories : 7 raisons buffers DDMRP (ajout customs ?)
   
-  - Liens avec les noeuds et badge sur les noeuds
+  - Liens avec les nœuds et badge sur les nœuds
   
-  - panneau dedie 
+  - Panneau dédié 
 
-- [ ] Ajouter le flux information: roles, entites
+- [ ] Ajouter le flux information : rôles, entités
 
 ---
 

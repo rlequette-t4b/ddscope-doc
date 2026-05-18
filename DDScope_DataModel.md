@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v1.3 — Draft — May 2026*
+*v1.4 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence.*
 
@@ -19,6 +19,7 @@
 | 1.1 | May 2026 | project_id removed (single-project JSON file); DataStore references removed |
 | 1.2 | May 2026 | direction field added to maps; default_swim_lane_id added to node_types |
 | 1.3 | May 2026 | ai_instructions field added to project metadata |
+| 1.4 | May 2026 | waypoint_pct added to map_flows for taxi edge bend control |
 
 ---
 
@@ -210,7 +211,7 @@ Canvas position of a node on a specific map. A node is visible on a map if and o
 
 ## 11. Map Flow
 
-Records that a flow is visible on a specific map.
+Records that a flow is visible on a specific map, and stores the taxi edge bend position.
 
 **JSON array:** `map_flows`
 
@@ -218,6 +219,7 @@ Records that a flow is visible on a specific map.
 |---|---|---|
 | map_id | integer | Reference to `maps[].id` |
 | flow_id | integer | Reference to `flows[].id` |
+| waypoint_pct | float \| null | Taxi edge bend position — fraction of the horizontal distance between source and target (0–1). `null` or absent defaults to `0.5` (midpoint). Edited via the waypoint handle on the canvas. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 

@@ -1,6 +1,6 @@
 # DDScope — User Interface
 
-*v1.1 — Draft — May 2026*
+*v1.2 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -18,6 +18,7 @@
 | 0.9     | May 2026 | DataStore references removed; link to ProjectManagement replaced by Overview                                                                                |
 | 1.0     | May 2026 | Direction toggle on map toolbar; project name centred in nav with edit button; node type default swim-lane; dirty flag on Save button; Settings tab updated |
 | 1.1     | May 2026 | Flow table view added: inline edit and delete, all project flows, tab placed between Nodes and Products                                                     |
+| 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag |
 
 ---
 
@@ -115,7 +116,7 @@ The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the 
 - **Node creation** — via the Add node button; node is placed on the canvas (adding a `map_node` entry for the active map) and optionally assigned to a swim-lane. The initial canvas position is computed automatically:
   - **Swim-lane assigned and visible on the active map** — the node is placed at the first free position inside the swim-lane rectangle. Positions are scanned row by row starting from the bottom of the swim-lane, left to right. A position is considered free if no existing node on the map falls within a minimum distance threshold. Grid step and distance threshold are defined as named constants in the layout module.
   - **No swim-lane, or swim-lane not present on the active map** — the node is placed below the bounding box of all swim-lanes currently visible on the map, horizontally centred on that bounding box. If the position is occupied, the node is shifted left by a fixed step, repeated until a free position is found. If no swim-lanes are visible, the node is placed at the centre of the current viewport.
-- **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`.
+- **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`. Vertical snap is applied on release (see §5 Vertical snap below).
 - **Selection** — click a node to open the side panel; click canvas background to close.
 
 ### Flow interactions
@@ -123,6 +124,7 @@ The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the 
 - **Flow creation** — drag from the green handle that appears on node hover to a target node.
 - **Flow rerouting** — selecting a flow shows source (blue) and target (purple) endpoint handles on the respective nodes; dragging a handle and dropping it on another node updates the flow endpoint.
 - **Selection** — click an edge to open the side panel.
+- **Waypoint handle** — selecting a flow reveals a circular handle (`.dds-waypoint-handle`) positioned on the taxi bend. Drag the handle horizontally to reposition the bend; the change is applied in real time and persisted to `map_flows.waypoint_pct` on release. Double-click the handle to reset the bend to the midpoint (50%).
 
 ### Swim-lane interactions
 
@@ -134,13 +136,31 @@ The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the 
 | Drag resize handle (bottom-right) | Resize lane. All lanes in the same group adopt the same height.                                                                                                         |
 | Click lane header                 | Opens swim-lane side panel (distinguished from drag by movement threshold).                                                                                             |
 
+### Vertical snap
+
+When dragging a node manually, a dashed green guide line appears when the node's Y approaches a snap target (threshold: 6px canvas units). Snap is applied on release to avoid cursor detachment. Two snap rules apply:
+
+1. **Direct neighbour** — snap to the Y of any node directly connected by a flow (amont or aval) on the active map.
+2. **Median of aligned neighbours** — if two neighbours on the same side (both amont or both aval) share the same X column (within 20px tolerance) and no other map node lies between them on that column, snap to their Y median.
+
 ### Canvas controls
 
 | Control              | Behaviour                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Also triggered on project open and map tab switch. |
-| **Layout**           | Dagre-based auto-layout per swim-lane, free nodes below. Positions saved to `map_nodes`.                                                   |
+| **Layout**           | BFS-based auto-layout per swim-lane (see below), free nodes via Dagre below swim-lanes. Positions saved to `map_nodes`.                   |
 | **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`. Refreshed on map tab switch.  |
+
+### Auto-layout behaviour
+
+The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map:
+
+1. A BFS rank is computed locally (flows internal to the lane only). Nodes with no internal predecessor are sources (rank 0). `rankMin` = longest-path from sources; `rankMax` = min(rankMin of successors) − 1, or last column if no successors.
+2. Each node is assigned to the column in `[rankMin, rankMax]` whose X is closest to its current canvas X. Repositioning a node before running Layout controls its column.
+3. Columns are evenly spaced (max 150px), centred in the swim-lane width.
+4. Within each column: nodes with 1–2 members preserve their pre-layout Y (clamped to lane bounds). Nodes in columns with 3+ members are spread evenly between the column's own YMin/YMax (pre-layout). Sort order within the column follows pre-layout Y (ascending) — drag a node up or down before Layout to control its position in the column.
+
+Free nodes (no swim-lane on the active map) are laid out with Dagre below the swim-lane bounding box.
 
 ---
 

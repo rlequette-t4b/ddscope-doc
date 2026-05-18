@@ -1,5 +1,5 @@
 # DDScope — Architecture
-*v1.1 — Draft — May 2026*
+*v1.2 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour.*
 
@@ -17,6 +17,7 @@
 | 0.9 | May 2026 | Persistence migrated to local JSON file (DDS_STORE); DataStore/Supabase references removed; project_id removed |
 | 1.0 | May 2026 | Dirty state extended: Save button gated on dirty flag; DDS_STORE.markDirty() and DDS_STORE.resetDirty() exposed publicly |
 | 1.1 | May 2026 | Node placement (DDS_LAYOUT) and auto-layout (DDS_MAP.runLayout) documented |
+| 1.2 | May 2026 | Auto-layout upgraded to custom BFS ranking per swim-lane; waypoint handle on taxi edges; vertical snap on drag |
 
 ---
 
@@ -33,7 +34,7 @@ DDScope runs entirely within the CommWise platform as a single-page CommWise Web
 | Persistent storage | Local JSON file — in-memory store + File System Access API |
 | Map rendering | Cytoscape.js v3.33.1 (cdnjs) |
 | Swim-lane rendering | HTML overlay divs (not Cytoscape compounds) |
-| Auto-layout | Dagre v0.8.5 + cytoscape-dagre adapter |
+| Auto-layout | Custom BFS ranking per swim-lane (DDS_MAP.runLayout) + Dagre v0.8.5 for free nodes |
 
 ---
 
@@ -61,7 +62,7 @@ The project is held entirely in memory as a single JSON object (`DDS.state.proje
 |---|---|
 | `maps` | Map definitions — name, tab order, direction |
 | `map_nodes` | Node visibility and canvas position per map |
-| `map_flows` | Flow visibility per map |
+| `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) |
 | `map_swim_lanes` | Swim-lane canvas geometry per map |
 
 Every record includes system fields: `id` (integer, auto-incremented in memory), `created_at`, `updated_at` (ISO timestamps).
@@ -160,40 +161,47 @@ Tunable constants defined at the top of `DDS_LAYOUT` (SCRIPT 1250):
 
 ### Auto-layout
 
-`DDS_MAP.runLayout()` runs Dagre independently on each swim-lane group, then translates and scales the resulting positions to fit inside the swim-lane rectangle. The flow direction is read from `maps[].direction` for the active map and translated to Dagre's `rankDir` parameter (`LR` for left-right, `RL` for right-left).
+`DDS_MAP.runLayout()` uses a custom BFS-based ranking algorithm per swim-lane, with Dagre v0.8.5 reserved for free nodes (nodes without a swim-lane on the active map).
 
-Algorithm:
+#### BFS ranking — `_computeRanksForLane(laneNodeIds)`
 
-1. Nodes are grouped by swim-lane presence on the active map. Nodes whose assigned swim-lane is not on the map are treated as free nodes.
-2. For each swim-lane group, Dagre runs on the node subset (edges crossing swim-lanes are excluded from each sub-layout). The resulting positions are scaled to fit inside the swim-lane rectangle and centred within it.
-3. Free nodes are laid out together as a separate Dagre run, then translated below the bounding box of all swim-lanes on the map.
-4. All positions are persisted to `map_nodes` and `fitMap` is called.
+Ranks are computed **locally per swim-lane**, considering only flows where both endpoints belong to the lane. Flows entering from other swim-lanes are ignored — nodes with no internal predecessor are treated as sources (rank 0).
 
-Known limitation: flows that cross swim-lane boundaries are not considered when computing each swim-lane's internal layout. Inter-lane ordering remains as-is after layout.
+**rankMin** — longest-path from sources (Kahn topological sort, cycle-safe). Ensures a node is placed after all its internal predecessors.
 
-### Flow endpoint handles
+**rankMax** — second pass from rankMin:
+- `rankMax(n) = min(rankMin(successors)) − 1` — a node cannot be placed after any of its successors.
+- If no internal successors: `rankMax(n) = max(rankMin)` across the lane — the node may float to the last column.
+- `rankMax ≥ rankMin` is enforced.
 
-Rendered as Cytoscape overlay elements on the source and target nodes. Dragging a handle triggers a reroute that updates the `flows` array in memory and re-renders the map.
+#### Column assignment — `_placeLaneNodes`
 
-### Tab switching
+Each node is assigned to the column (rank value) in `[rankMin, rankMax]` whose canvas X is closest to the node's pre-layout X. This allows the user to control column placement by repositioning a node before running Layout.
 
-Switching to Nodes, Products, or Settings reads from `DDS.state.project` synchronously. Switching between map tabs loads `map_nodes`, `map_flows`, and `map_swim_lanes` for the selected map, and refreshes the direction toggle button to reflect `maps[].direction` for the newly active map. If no project is open, a "Select a project" placeholder is shown.
+Column X positions are evenly spaced (max 150px between columns), centred within the swim-lane width.
 
-### Swim-lane / Cytoscape sync
+#### Vertical placement within a column
 
-Swim-lane divs are kept in sync with the Cytoscape canvas via pan and zoom event listeners. Fit-to-canvas requires explicit bounding-box computation covering both layers because swim-lanes are outside the Cytoscape element tree. Geometry is read from `map_swim_lanes` for the active map.
+- **1–2 nodes**: pre-layout Y is preserved, clamped to lane bounds with a 20px margin. The user controls vertical order by repositioning nodes before Layout.
+- **3+ nodes**: spread evenly between the column's own YMin/YMax (pre-layout), clamped to lane bounds with a 20px margin. Sort order within the column follows pre-layout Y (ascending).
 
-### Active map state
+#### Free nodes
 
-`DDS_MAP.state.currentMapId` holds the ID of the active map. All canvas reads and writes (node positions, swim-lane geometry, flow visibility) are scoped to this ID. Switching map tabs updates `currentMapId` and triggers a full canvas reload.
+Free nodes (no swim-lane on the active map) are laid out with Dagre (`rankDir` per map direction, `ranker: longest-path`), then translated below the bounding box of all swim-lanes.
 
-### Node without swim-lane on active map
+### Taxi edge waypoint
 
-If a node has a `swim_lane_id` but the corresponding swim-lane has no `map_swim_lane` record for the active map, the node is rendered as free-floating — no swim-lane container is displayed for it on this map.
+Edges use `curve-style: taxi` with `taxi-direction: horizontal`. The bend position is controlled per-edge via `taxi-turn`, applied individually after `DDS_CY.add()` in `loadMap`.
 
-### Default swim-lane on node type
+`waypoint_pct` (float, 0–1, nullable) is stored in `map_flows` and loaded with each edge. Default: `0.5` (midpoint). A draggable handle (`.dds-waypoint-handle`) appears on the bend of the selected edge. Drag updates `taxi-turn` in real time; release persists `waypoint_pct` to `map_flows`. Double-click resets to `0.5`.
 
-`node_types[].default_swim_lane_id` pre-selects a swim-lane in the Add node modal when a type is chosen. The pre-selection updates dynamically when the type changes in the modal. If the referenced swim-lane is deleted via Settings, all node types that referenced it have `default_swim_lane_id` set to `null` automatically.
+### Vertical snap on node drag
+
+During manual drag, a guide line (`.dds-snap-guide`) appears when the dragged node's Y is within 6px canvas of a snap target. Snap is applied on `dragfree`, not during drag, to avoid cursor detachment.
+
+**Snap targets:**
+1. **Rule 1** — Y of any directly connected neighbour (amont or aval) visible on the active map.
+2. **Rule 2** — Y median of two same-side neighbours (both amont or both aval) sharing the same X column (within 20px tolerance), with no other map node between them on that column.
 
 ---
 
