@@ -1,6 +1,6 @@
 # DDScope — User Interface
 
-*v1.3 — Draft — May 2026*
+*v1.4 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -20,6 +20,7 @@
 | 1.1     | May 2026 | Flow table view added: inline edit and delete, all project flows, tab placed between Nodes and Products                                                     |
 | 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag |
 | 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle |
+| 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox |
 
 ---
 
@@ -102,7 +103,7 @@ An **Elements** button in the map toolbar opens a side panel listing all project
 
 A flow can only be added to a map if both its source and target nodes are already present on that map. Flows whose endpoint nodes are not both on the map are greyed out in the Elements panel.
 
-To remove an element from the active map, select it on the canvas and use the "Remove from this map" contextual action.
+To remove or delete an element from the active map, select it on the canvas and use the **Remove** button in the toolbar.
 
 > Removing a node from a map automatically removes all flows where that node is source or target.
 
@@ -150,6 +151,24 @@ When dragging a node manually, a dashed green guide line appears when the node's
 | **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Positions saved to `map_nodes`.                      |
 | **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
 | **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
+| **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal). |
+
+### Remove modal
+
+Clicking **Remove** with an element selected opens a confirmation modal titled *Remove Node*, *Remove Flow*, or *Remove Swim-lane* depending on the selection.
+
+The modal displays a summary of the consequences of a full delete (number of flows, SKUs, BOMs that will be removed by cascade).
+
+A **Remove only from map** checkbox is present, unchecked by default.
+
+| Checkbox state | Behaviour |
+| -------------- | --------- |
+| **Unchecked** (default) | The element is deleted from the functional model with full cascade: all dependent flows, SKUs, BOMs, and map references across all maps are removed. |
+| **Checked** | The element is removed from the active map only. The functional model is unchanged. The element remains available in the Elements panel for re-adding. |
+
+Two buttons: **Remove** (destructive) and **Cancel**.
+
+> For swim-lanes, an unchecked delete also deletes all nodes assigned to that swim-lane and their full cascade (flows, SKUs, BOMs).
 
 ### Auto-layout behaviour
 

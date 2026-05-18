@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v1.5 — Draft — May 2026*
+*v1.6 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence.*
 
@@ -21,6 +21,7 @@
 | 1.3 | May 2026 | ai_instructions field added to project metadata |
 | 1.4 | May 2026 | waypoint_pct added to map_flows for taxi edge bend control |
 | 1.5 | May 2026 | tag_colors table added; legend_visible field added to maps |
+| 1.6 | May 2026 | Section 15 rewritten: distinction between remove from map and delete from model |
 
 ---
 
@@ -275,15 +276,33 @@ Project metadata, stored under the `project` key (object, not array) in the JSON
 
 ---
 
-## 15. Adding and Removing Elements from a Map
+## 15. Removing and Deleting Elements
 
-An element (node, flow, or swim-lane) can be added to or removed from any map without affecting the functional model.
+DDScope distinguishes two operations when the user clicks **Remove** on a selected element:
 
-**Adding:** a side panel lists all project elements not yet on the active map.
+### Remove from map only
 
-**Removing:** a contextual action on the map removes the corresponding `map_node`, `map_flow`, or `map_swim_lane` record. The element itself is not deleted from the project.
+The element is removed from the **active map** only. The functional model is unchanged — the element still exists in the project and can be re-added to any map via the Elements panel.
 
-> Removing a node from a map automatically removes all flows where that node is source or target.
+| Element | What is removed |
+|---|---|
+| Node | `map_nodes` record for this map. All `map_flows` for flows where this node is source or target, on this map only. |
+| Flow | `map_flows` record for this map only. |
+| Swim-lane | `map_swim_lanes` record for this map. Nodes assigned to the lane remain on the map. |
+
+### Delete from the functional model (full delete)
+
+The element is permanently deleted from the project across all maps, with full cascade.
+
+| Element | What is deleted |
+|---|---|
+| Node | The `nodes` record. All flows where this node is source or target (all maps). All SKUs for this node. All BOMs and `bom_components` for this node. All `map_nodes` and `map_flows` records across all maps. |
+| Flow | The `flows` record. Orphan SKUs on source and target nodes (SKUs whose product no longer appears on any other connected flow). BOM cascade for each orphan SKU. All `map_flows` records across all maps. |
+| Swim-lane | The `swim_lanes` record. All nodes assigned to this swim-lane — with their full node cascade (flows, SKUs, BOMs). All `map_swim_lanes` records across all maps. Clears `default_swim_lane_id` on any node type that referenced this lane. |
+
+### UI
+
+The **Remove** button in the map toolbar is active when a node, flow, or swim-lane is selected. It opens a confirmation modal displaying the element name and a summary of the cascade consequences. A **Remove only from map** checkbox (unchecked by default) controls which operation is performed. Confirming with the checkbox unchecked performs the full delete; confirming with it checked performs the map-only removal.
 
 ---
 
