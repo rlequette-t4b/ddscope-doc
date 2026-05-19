@@ -1,6 +1,6 @@
 # DDScope — User Interface
 
-*v1.4 — Draft — May 2026*
+*v1.5 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -21,6 +21,7 @@
 | 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag |
 | 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle |
 | 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox |
+| 1.5     | May 2026 | Save button moved next to project name (after pencil button); "Show notes on map" checkbox added to flow panel |
 
 ---
 
@@ -69,17 +70,20 @@ Flat list of all BOMs in the project. Each row shows: node, output product, and 
 
 ## 3. Navigation Bar
 
-The nav bar is always visible and contains three zones: tabs on the left, project name centred, and actions on the right.
+The nav bar is always visible and contains three zones: tabs on the left, project name with actions in the centre, and file operations on the right.
 
-### Project name
+### Project name and inline actions
 
 When a project is open, the project name is displayed in bold at the centre of the nav bar. An unsaved indicator (`•`) is appended when the project has unsaved changes.
 
-A pencil button (✎) appears on hover to the right of the project name. Clicking it opens a modal to edit the project name and description. Saving the modal marks the project as dirty.
+Three controls appear inline with the project name:
 
-### Save button
+- **Pencil button (✎)** — opens a modal to edit the project name and description. Saving the modal marks the project as dirty.
+- **Save button** — positioned immediately to the right of the pencil button. Active only when the project has unsaved changes (`dirty = true`). Disabled and visually greyed out after a Load, Save, or project open. Becomes active again on any modification to the model.
 
-The **Save** button is active only when the project has unsaved changes (`dirty = true`). It is disabled and visually greyed out after a Load, Save, or project open. It becomes active again on any modification to the model.
+### File operations
+
+The right side of the nav bar contains: **New**, **Load**, and **Save As**. These are always visible regardless of whether a project is open.
 
 ---
 
@@ -201,7 +205,11 @@ Name, type, swim-lane, tags, notes.
 
 ### Flow panel
 
-Lead time (value + unit), tags, notes, and the list of products on the flow. Each product has a × button to remove it. A selector allows adding a product from the project's product list.
+Lead time (value + unit), tags, notes, and then:
+
+- **Show notes on map** — checkbox immediately below the notes field. When checked, the flow's `notes` text is rendered as a label on the edge on the active map. The flag is stored in `map_flows.show_notes_label` and is therefore map-specific: the same flow can show its label on one map and not on another. If notes are subsequently cleared, no label is rendered (the flag is preserved). The label uses the default Cytoscape edge label style (small text, light background). Updating the notes field while the checkbox is checked refreshes the label immediately.
+- **Edge style** — taxi (default) or straight.
+- **Products** — list of products on the flow, with add/remove controls.
 
 > Adding a product to a flow automatically creates the corresponding SKU on the source and target nodes if it does not already exist. Removing the last occurrence of a product on all flows connected to a node automatically deletes the SKU.
 

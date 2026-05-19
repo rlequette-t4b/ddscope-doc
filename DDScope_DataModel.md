@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v1.6 — Draft — May 2026*
+*v1.7 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence.*
 
@@ -22,6 +22,7 @@
 | 1.4 | May 2026 | waypoint_pct added to map_flows for taxi edge bend control |
 | 1.5 | May 2026 | tag_colors table added; legend_visible field added to maps |
 | 1.6 | May 2026 | Section 15 rewritten: distinction between remove from map and delete from model |
+| 1.7 | May 2026 | show_notes_label added to map_flows; edge label rendering from flow notes |
 
 ---
 
@@ -233,7 +234,7 @@ Canvas position of a node on a specific map. A node is visible on a map if and o
 
 ## 12. Map Flow
 
-Records that a flow is visible on a specific map, and stores the taxi edge bend position.
+Records that a flow is visible on a specific map, and stores presentation-layer attributes for the edge.
 
 **JSON array:** `map_flows`
 
@@ -242,6 +243,7 @@ Records that a flow is visible on a specific map, and stores the taxi edge bend 
 | map_id | integer | Reference to `maps[].id` |
 | flow_id | integer | Reference to `flows[].id` |
 | waypoint_pct | float \| null | Taxi edge bend position — fraction of the horizontal distance between source and target (0–1). `null` or absent defaults to `0.5` (midpoint). Edited via the waypoint handle on the canvas. |
+| show_notes_label | boolean | When `true`, the flow's `notes` text is displayed as a label on the edge. Defaults to `false`. Toggled via the "Show notes on map" checkbox in the flow side panel. If `notes` is empty, no label is rendered regardless of this flag. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 
