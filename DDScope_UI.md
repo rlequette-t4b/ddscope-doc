@@ -1,6 +1,6 @@
 # DDScope — User Interface
 
-*v1.5 — Draft — May 2026*
+*v1.6 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -22,6 +22,7 @@
 | 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle |
 | 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox |
 | 1.5     | May 2026 | Note overlay on nodes: Show note on map checkbox in node panel, ghost node drag on canvas |
+| 1.6     | May 2026 | Add product on map: toolbar button + modal (product search/create + swim-lane); is_product_node_default column in Settings node types |
 
 ---
 
@@ -119,6 +120,26 @@ The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the 
 - **Node creation** — via the Add node button; initial canvas position is computed automatically (swim-lane grid, below swim-lanes, or viewport centre).
 - **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`. Vertical snap is applied on release. Any visible note ghost follows the node automatically, preserving its relative offset.
 - **Selection** — click a node to open the side panel; click canvas background to close.
+
+### Add product on map
+
+The **+ Product** button in the map toolbar opens a modal that creates a node-product pair in a single action — the common pattern where a node represents a product stock point on the map.
+
+**Modal fields:**
+
+| Field | Behaviour |
+|---|---|
+| Product | Search input with live dropdown. Existing products are listed as matches. If the typed name does not exactly match any existing product, a `+ Create "…"` option appears at the bottom of the dropdown. The Add button is enabled only after a selection is made from the dropdown. |
+| Product type | Appears only when creating a new product (hidden for existing products). Pre-selected on the `is_default` product type. |
+| Swim-lane | Optional. Pre-selected on the `default_swim_lane_id` of the node type marked `is_product_node_default` (falls back to `is_default` type, then first type). |
+
+**On confirm:**
+1. Creates the product if new (name + selected type; tags and notes left empty).
+2. Resolves the node type: `is_product_node_default` → `is_default` → first type.
+3. Creates the node (name = product name, resolved type, selected swim-lane).
+4. Places the node on the active map via the standard placement algorithm (`DDS_LAYOUT.placeNode`).
+5. Creates the SKU (node × product, no tags).
+6. Applies node color immediately (`DDS_MAP.applyNodeColors`).
 
 ### Note ghost interactions
 
@@ -227,7 +248,7 @@ Provides tables for managing swim-lanes, node types, product types, and tag colo
 
 **Swim-lanes** — name and colour swatch. Each swim-lane can be added, edited, or deleted. Deleting a swim-lane clears `default_swim_lane_id` on any node type that referenced it.
 
-**Node types** — code, label, shape, default swim-lane, and default flag. Only one node type can be default at a time — setting a new default clears the previous one. The default swim-lane is pre-selected in the Add node modal when a node of this type is created.
+**Node types** — code, label, shape, color, default swim-lane, default flag, and product flag. The table displays a **Product** column showing a badge when `is_product_node_default` is set. Only one node type can be default at a time; only one can have `is_product_node_default` at a time — setting a new value clears the previous one. The default swim-lane is pre-selected in the Add node modal and in the Add product on map modal.
 
 **Product types** — code, label, shape, colour, and default flag. Only one product type can be default at a time.
 

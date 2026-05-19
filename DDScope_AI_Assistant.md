@@ -1,5 +1,5 @@
 # DDScope — AI Assistant (Claude)
-## Request for Comments — v1.0 — Draft — May 2026
+## Request for Comments — v1.1 — Draft — May 2026
 
 ---
 
@@ -17,6 +17,7 @@
 | 0.8     | May 2026 | stock_points renamed to skus; tags added on flows and skus; swim-lane position removed; plan validation resolved as all-or-nothing |
 | 0.9     | May 2026 | DataStore references replaced by neutral wording |
 | 1.0     | May 2026 | BOM actions added (section 3.6); project-specific instructions added (section 5.4); context format updated with boms and bom_components |
+| 1.1     | May 2026 | node_types context enriched with is_product_node_default, is_default, default_swim_lane_id; product_types with is_default; product-node pattern documented in action vocabulary (section 5.3) |
 
 ---
 
@@ -54,6 +55,18 @@ The following actions constitute the complete contract. Claude may only use acti
 > `delete_node` implicitly removes all flows where the node is source or target, and all SKUs for that node. This cascade must be stated explicitly in the `reasoning` field when applicable.
 
 > Note: `add_node` does not accept `x, y` fields. Canvas position is map-specific and is not set by the AI assistant in v1.
+
+#### Product-node pattern
+
+When the user asks to **place or add a product on the map** (e.g. "add product X on the map", "place product X in the Sourcing lane"), Claude applies the product-node pattern:
+
+1. Emit `add_product` if the product does not exist.
+2. Emit `add_node` with `name` = product name, `type_code` = the type marked `is_product_node_default` in `node_types` (fall back to `is_default`, then first type), `swim_lane_id` = `default_swim_lane_id` of that type unless the user specifies another lane.
+3. Emit `add_sku` for the node × product pair.
+
+When the user asks to **associate a product with a flow between two existing nodes** (e.g. "product X flows from node A to node B"), Claude uses `add_product_to_flow` — no node is created for the product.
+
+The product-node pattern applies only when the product is itself an **endpoint** (source or target) of a flow, or when the user explicitly asks to place it on the map.
 
 ### 3.2 Flows
 
@@ -156,10 +169,20 @@ The following JSON structure is serialised from the current project state and tr
     { "id": "string", "name": "string" }
   ],
   "node_types": [
-    { "code": "string", "label": "string" }
+    {
+      "code": "string",
+      "label": "string",
+      "is_default": "boolean",
+      "is_product_node_default": "boolean",
+      "default_swim_lane_id": "string | null"
+    }
   ],
   "product_types": [
-    { "code": "string", "label": "string" }
+    {
+      "code": "string",
+      "label": "string",
+      "is_default": "boolean"
+    }
   ],
   "nodes": [
     {
@@ -220,6 +243,10 @@ The following JSON structure is serialised from the current project state and tr
 }
 ```
 
+> `node_types` transmits `is_default`, `is_product_node_default`, and `default_swim_lane_id` so Claude can resolve the correct type and swim-lane for the product-node pattern without guessing.
+
+> `product_types` transmits `is_default` so Claude can select the correct default product type when creating a product.
+
 ---
 
 ## 5. System Prompt and Claude Contract
@@ -274,6 +301,18 @@ add_node
   Note     : x, y are NOT accepted — canvas position is map-specific and set manually.
   Note     : include "id": "new_node_N" in this action when referenced
              by subsequent actions in the same plan.
+
+  PRODUCT-NODE PATTERN: when the user asks to place/add a product on the map
+  (e.g. "add product X on the map", "place product X in the Sourcing lane"),
+  create a node whose name equals the product name, using the node type marked
+  is_product_node_default in the context (fall back to is_default, then first type).
+  Also emit add_sku for that node x product pair.
+  Use the node type's default_swim_lane_id for swim_lane_id unless the user specifies another lane.
+
+  PRODUCT IN A FLOW: when the user asks to associate a product with a flow between
+  two existing nodes, use add_product_to_flow — do NOT create a node for the product.
+  The product-node pattern applies only when the product is itself an endpoint
+  (source or target) of a flow, or when the user explicitly asks to place it on the map.
 
 update_node
   Required : node_id
@@ -367,8 +406,7 @@ Note: swim_lane deletion is excluded from v1 of the AI assistant.
 add_bom
   Required : node_id, output_product_id
   Optional : notes
-  Note     : include "id": "new_bom_N" in this action when referenced
-             by subsequent add_bom_component actions in the same plan.
+  Note     : include "id": "new_bom_N" when referenced by subsequent add_bom_component actions.
   Note     : verify that output_product_id exists as a SKU on the node.
              If not, propose add_sku first.
 

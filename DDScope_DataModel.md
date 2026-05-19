@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v1.7 — Draft — May 2026*
+*v1.8 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence.*
 
@@ -23,6 +23,7 @@
 | 1.5 | May 2026 | tag_colors table added; legend_visible field added to maps |
 | 1.6 | May 2026 | Section 15 rewritten: distinction between remove from map and delete from model |
 | 1.7 | May 2026 | note_visible, note_dx, note_dy added to map_nodes for node note overlay |
+| 1.8 | May 2026 | is_product_node_default added to node_types for "Add product on map" feature |
 
 ---
 
@@ -95,6 +96,8 @@ A SKU is the association between a node and a product. The nature of the associa
 - Created when a product is added to a flow and the corresponding node × product pair does not yet exist.
 - Deleted when a product no longer appears on any flow entering or leaving the node.
 
+SKUs can also be created independently via the "Add product on map" shortcut (see §7 and DDScope_UI.md §5). Such SKUs coexist with the flow-derived lifecycle: if no flow carries the product for that node, the SKU persists until explicitly removed or the node is deleted.
+
 **JSON array:** `skus`
 
 | Field | Type | Description |
@@ -165,7 +168,8 @@ Each project maintains its own list of node types and product types, seeded at p
 | label | text | Display name |
 | shape | text | Cytoscape shape |
 | is_default | boolean | Pre-selected when adding a node. Only one record may be default at a time — setting a new default clears the previous one. |
-| default_swim_lane_id | integer \| null | Swim-lane pre-selected in Add node modal. Cleared if the swim-lane is deleted. |
+| is_product_node_default | boolean | When `true`, this type is used automatically by the "Add product on map" shortcut and by the AI assistant's product-node pattern. Only one record may have this flag at a time — the same single-default rule as `is_default`. If no record has this flag, the shortcut falls back to `is_default`, then to the first available type. |
+| default_swim_lane_id | integer \| null | Swim-lane pre-selected in Add node modal and in the "Add product on map" modal. Cleared if the swim-lane is deleted. |
 
 **JSON array:** `product_types`
 
@@ -234,14 +238,6 @@ A node is visible on a map if and only if a `map_node` record exists.
 | note_visible | boolean | Whether `nodes.notes` is displayed as an overlay on this map. Defaults to `false`. Ignored if `nodes.notes` is empty. |
 | note_dx | numeric | Horizontal offset of the note overlay relative to the node centre, in canvas units. Defaults to `0`. |
 | note_dy | numeric | Vertical offset of the note overlay relative to the node centre, in canvas units. Defaults to `30`. |
-
-**Note overlay behaviour:**
-- The note is rendered as a Cytoscape ghost node (`id: note-{node_id}`) positioned at `(x + note_dx, y + note_dy)`.
-- Style: italic, 11px, colour `#64748b`, transparent background, no border, `text-wrap: wrap`, `text-max-width: 200px`.
-- The ghost node follows the parent node on drag (offsets preserved).
-- The ghost node is draggable independently; drag updates `note_dx` and `note_dy`.
-- Ghost nodes are excluded from fit-to-canvas and auto-layout calculations.
-- When the AI assistant sets a non-empty `notes` value via `update_node`, `note_visible` is automatically set to `true` on the active map.
 
 ---
 

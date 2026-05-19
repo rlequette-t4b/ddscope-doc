@@ -1,5 +1,5 @@
 # DDScope — Overview
-*v1.3 — Draft — May 2026*
+*v1.4 — Draft — May 2026*
 
 ---
 
@@ -17,6 +17,7 @@
 | 1.1 | May 2026 | Flow table view added to v1 feature list |
 | 1.2 | May 2026 | Tag colors + legend added to v1 feature list |
 | 1.3 | May 2026 | Node note overlay added to v1 feature list |
+| 1.4 | May 2026 | Add product on map shortcut added to v1 feature list |
 
 ---
 
@@ -52,6 +53,7 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 - Tag colors — association of tags with display colors for node background coloring on the map. Configurable in the Settings tab. Priority: first match in insertion order. Copied in all three project copy modes.
 - Legend — SVG inline overlay on the map canvas (bottom-left), showing (node type × tag) combinations present on the active map, grouped by type. Toggle persisted per map. Compatible with html2canvas for future PDF export.
 - Node note overlay — display of node notes as italic text directly on the map canvas. Toggled per node per map via a "Show note on map" checkbox in the node side panel. The overlay is draggable independently of the node, with relative offset persisted per map. Excluded from fit-to-canvas and auto-layout. When the AI assistant sets a note via `update_node`, the overlay is enabled automatically on the active map.
+- **Add product on map** — toolbar shortcut that creates a node-product pair in a single action. The user selects or creates a product, optionally picks a swim-lane, and DDScope creates the node (name = product name, type resolved via `is_product_node_default`), the `map_node`, and the SKU automatically. Intended for the common pattern where a node represents a product stock point. The `is_product_node_default` flag on `node_types` (single-default, same rule as `is_default`) identifies the type to use; `default_swim_lane_id` on that type pre-selects the swim-lane in the modal.
 - Swim-lane definition — name, colour, canvas geometry, optional grouping.
 - Configurable node types and product types per project — editable in the Settings tab. Single-default enforcement: setting a new default clears the previous one.
 - Multi-map support — each project supports multiple named maps. The functional model is shared across maps; each map defines independently which elements are visible and their canvas geometry.
@@ -72,7 +74,7 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 
   All IDs are remapped in memory — the new project is fully independent of the source.
 
-- AI assistant — natural language modification of the functional model with human confirmation before any write.
+- AI assistant — natural language modification of the functional model with human confirmation before any write. The assistant understands the product-node pattern: when asked to place a product on the map it creates the node + SKU; when asked to associate a product with a flow between existing nodes it uses `add_product_to_flow` without creating a node.
 
 ### 3.2 Future scope
 
