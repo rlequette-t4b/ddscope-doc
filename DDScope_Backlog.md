@@ -37,7 +37,7 @@ _Idées relatives au modèle de données, champs, entités._
 
 - [x] Ajouter les BOM ✓ _(implémenté)_
 
-- [ ] Ajouter customer tolerance (demande lead time)
+- [ ] Ajouter customer tolerance et demande
 
 ---
 
@@ -59,7 +59,7 @@ _Idées relatives aux exports PDF, Excel, handoff DDOpt._
 
 _Idées relatives à la liste de projets, duplication, templates._
 
-- [ ] Création de projet, sans ou avec template : autre projet ou JSON, copie types et swimlanes en option
+- [x] Création de projet, sans ou avec template : autre projet ou JSON, copie types et swimlanes en option
 
 ---
 
