@@ -1,5 +1,5 @@
 # DDScope — Architecture
-*v1.4 — Draft — May 2026*
+*v1.5 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour.*
 
@@ -20,6 +20,7 @@
 | 1.2 | May 2026 | Auto-layout upgraded to custom BFS ranking per swim-lane; waypoint handle on taxi edges; vertical snap on drag |
 | 1.3 | May 2026 | tag_colors table added; legend_visible on maps; DDS_MAP tag color + legend functions documented |
 | 1.4 | May 2026 | Note overlay on nodes: DDS_MAP.renderNoteGhosts, ghost node lifecycle, exclusions from fitMap and runLayout |
+| 1.5 | May 2026 | skip_in_layout on map_flows: excluded from BFS rank computation; loaded on Cytoscape edges in loadMap |
 
 ---
 
@@ -65,7 +66,7 @@ The project is held entirely in memory as a single JSON object (`DDS.state.proje
 |---|---|
 | `maps` | Map definitions — name, tab order, direction, legend_visible |
 | `map_nodes` | Node visibility, canvas position, and note overlay state per map |
-| `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) |
+| `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) + layout flag (`skip_in_layout`) |
 | `map_swim_lanes` | Swim-lane canvas geometry per map |
 
 Every record includes system fields: `id` (integer, auto-incremented in memory), `created_at`, `updated_at` (ISO timestamps).
@@ -132,7 +133,7 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
 }
 ```
 
-A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime.
+A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `skip_in_layout`) default to `0.5` and `false` respectively at runtime.
 
 ---
 
@@ -164,6 +165,8 @@ The algorithm applies in order:
 
 Ranks are computed **locally per swim-lane**, considering only flows where both endpoints belong to the lane. Flows entering from other swim-lanes are ignored — nodes with no internal predecessor are treated as sources (rank 0).
 
+**Flows with `skip_in_layout = true`** (loaded from `map_flows`) are excluded from the rank computation entirely. They are not added to the predecessor/successor graph. The nodes they connect remain free to receive any rank, including the same rank — enabling vertical alignment in a column. These flows are still rendered on the canvas.
+
 **rankMin** — longest-path from sources (Kahn topological sort, cycle-safe). Ensures a node is placed after all its internal predecessors.
 
 **rankMax** — second pass from rankMin:
@@ -187,6 +190,8 @@ Column X positions are evenly spaced (max 150px between columns), centred within
 Edges use `curve-style: taxi` with `taxi-direction: horizontal`. The bend position is controlled per-edge via `taxi-turn`, applied individually after `DDS_CY.add()` in `loadMap`.
 
 `waypoint_pct` (float, 0–1, nullable) is stored in `map_flows` and loaded with each edge. Default: `0.5` (midpoint). A draggable handle (`.dds-waypoint-handle`) appears on the bend of the selected edge. Drag updates `taxi-turn` in real time; release persists `waypoint_pct` to `map_flows`. Double-click resets to `0.5`.
+
+`skip_in_layout` (boolean) is also loaded from `map_flows` onto each Cytoscape edge as a data attribute (`edge.data('skipInLayout', true/false)`) during `loadMap`. `_computeRanksForLane` reads this attribute to exclude the edge from the predecessor/successor graph.
 
 ### Vertical snap on node drag
 
