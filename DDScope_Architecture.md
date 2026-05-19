@@ -1,5 +1,5 @@
 # DDScope — Architecture
-*v1.3 — Draft — May 2026*
+*v1.4 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour.*
 
@@ -19,6 +19,7 @@
 | 1.1 | May 2026 | Node placement (DDS_LAYOUT) and auto-layout (DDS_MAP.runLayout) documented |
 | 1.2 | May 2026 | Auto-layout upgraded to custom BFS ranking per swim-lane; waypoint handle on taxi edges; vertical snap on drag |
 | 1.3 | May 2026 | tag_colors table added; legend_visible on maps; DDS_MAP tag color + legend functions documented |
+| 1.4 | May 2026 | Note overlay on nodes: DDS_MAP.renderNoteGhosts, ghost node lifecycle, exclusions from fitMap and runLayout |
 
 ---
 
@@ -63,7 +64,7 @@ The project is held entirely in memory as a single JSON object (`DDS.state.proje
 | Key | Description |
 |---|---|
 | `maps` | Map definitions — name, tab order, direction, legend_visible |
-| `map_nodes` | Node visibility and canvas position per map |
+| `map_nodes` | Node visibility, canvas position, and note overlay state per map |
 | `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) |
 | `map_swim_lanes` | Swim-lane canvas geometry per map |
 
@@ -131,7 +132,7 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
 }
 ```
 
-A file containing only a subset of keys is valid — absent arrays are initialised as empty on load.
+A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime.
 
 ---
 
@@ -140,6 +141,8 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 ### Fit-to-canvas
 
 `DDS_MAP.fitMap` computes the union bounding box of Cytoscape node positions (from `map_nodes` for the active map) and swim-lane geometry (from `map_swim_lanes` for the active map), then applies pan and zoom via `DDS_CY.viewport()`. A 50 ms `setTimeout` defers execution until the browser has painted the container.
+
+**Ghost note nodes are excluded** from the bounding box calculation (`node.hasClass('dds-note-ghost')` filter applied before `boundingBox()`).
 
 ### Node placement
 
@@ -154,6 +157,8 @@ The algorithm applies in order:
 ### Auto-layout
 
 `DDS_MAP.runLayout()` uses a custom BFS-based ranking algorithm per swim-lane. Nodes without a swim-lane on the active map are not repositioned — their positions are preserved as-is.
+
+**Ghost note nodes are excluded** from the layout node grouping (`node.hasClass('dds-note-ghost')` filter applied before lane assignment).
 
 #### BFS ranking — `_computeRanksForLane(laneNodeIds)`
 
@@ -208,6 +213,28 @@ Node color is also refreshed immediately in the side panel when a tag is added o
 The legend is recalculated on: `loadMap`, map tab switch, tag modification on a node, and `tag_colors` add/delete.
 
 The SVG shapes used in the legend (`rectangle`, `diamond`, `ellipse`, `hexagon`, `triangle`, `barrel`, `rhomboid`, `star`) are rendered as inline SVG — compatible with html2canvas capture for PDF export.
+
+### Note overlay on nodes
+
+`DDS_MAP.renderNoteGhosts(mapId)` creates a Cytoscape ghost node for each `map_node` record where `note_visible = true` and `nodes.notes` is non-empty. It is called at the end of `loadMap`, after `renderLegend`.
+
+**Ghost node properties:**
+- Cytoscape id: `note-{node_id}`
+- Classes: `dds-note-ghost`
+- Data: `nodeId`, `mapNodeId`, `label` (= `nodes.notes`)
+- Position: `(map_node.x + note_dx, map_node.y + note_dy)`
+- Style: italic, 11px, colour `#64748b`, transparent background, no border, `text-wrap: wrap`, `text-max-width: 200px`
+- `selectable: false` via CSS selector; draggable
+
+**Drag behaviour:**
+- Ghost drag (`dragfree` on `node.dds-note-ghost`): recomputes `note_dx = ghost.x − parent.x`, `note_dy = ghost.y − parent.y` and persists to `map_nodes`.
+- Parent node drag (`dragfree` on regular nodes): repositions the ghost at `(new_x + note_dx, new_y + note_dy)` without modifying the offsets.
+
+**Exclusions:**
+- `fitMap`: ghost nodes filtered out of the bounding box calculation.
+- `runLayout`: ghost nodes filtered out of lane grouping — not repositioned by layout.
+
+**AI assistant integration:** when `DDS_AI_EXECUTOR` applies an `update_node` action containing a non-empty `notes` field, it sets `note_visible = true` on the corresponding `map_node` of the active map, so the note appears automatically after the plan is executed.
 
 ---
 

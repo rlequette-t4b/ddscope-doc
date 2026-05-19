@@ -22,7 +22,7 @@
 | 1.4 | May 2026 | waypoint_pct added to map_flows for taxi edge bend control |
 | 1.5 | May 2026 | tag_colors table added; legend_visible field added to maps |
 | 1.6 | May 2026 | Section 15 rewritten: distinction between remove from map and delete from model |
-| 1.7 | May 2026 | show_notes_label added to map_flows; edge label rendering from flow notes |
+| 1.7 | May 2026 | note_visible, note_dx, note_dy added to map_nodes for node note overlay |
 
 ---
 
@@ -220,7 +220,9 @@ A named view of a subset of the project's supply chain elements. Each project ha
 
 ## 11. Map Node
 
-Canvas position of a node on a specific map. A node is visible on a map if and only if a `map_node` record exists.
+Canvas position of a node on a specific map, and optional note overlay configuration.
+
+A node is visible on a map if and only if a `map_node` record exists.
 
 **JSON array:** `map_nodes`
 
@@ -229,12 +231,23 @@ Canvas position of a node on a specific map. A node is visible on a map if and o
 | map_id | integer | Reference to `maps[].id` |
 | node_id | integer | Reference to `nodes[].id` |
 | x, y | numeric | Canvas position |
+| note_visible | boolean | Whether `nodes.notes` is displayed as an overlay on this map. Defaults to `false`. Ignored if `nodes.notes` is empty. |
+| note_dx | numeric | Horizontal offset of the note overlay relative to the node centre, in canvas units. Defaults to `0`. |
+| note_dy | numeric | Vertical offset of the note overlay relative to the node centre, in canvas units. Defaults to `30`. |
+
+**Note overlay behaviour:**
+- The note is rendered as a Cytoscape ghost node (`id: note-{node_id}`) positioned at `(x + note_dx, y + note_dy)`.
+- Style: italic, 11px, colour `#64748b`, transparent background, no border, `text-wrap: wrap`, `text-max-width: 200px`.
+- The ghost node follows the parent node on drag (offsets preserved).
+- The ghost node is draggable independently; drag updates `note_dx` and `note_dy`.
+- Ghost nodes are excluded from fit-to-canvas and auto-layout calculations.
+- When the AI assistant sets a non-empty `notes` value via `update_node`, `note_visible` is automatically set to `true` on the active map.
 
 ---
 
 ## 12. Map Flow
 
-Records that a flow is visible on a specific map, and stores presentation-layer attributes for the edge.
+Records that a flow is visible on a specific map, and stores the taxi edge bend position.
 
 **JSON array:** `map_flows`
 
@@ -243,7 +256,6 @@ Records that a flow is visible on a specific map, and stores presentation-layer 
 | map_id | integer | Reference to `maps[].id` |
 | flow_id | integer | Reference to `flows[].id` |
 | waypoint_pct | float \| null | Taxi edge bend position — fraction of the horizontal distance between source and target (0–1). `null` or absent defaults to `0.5` (midpoint). Edited via the waypoint handle on the canvas. |
-| show_notes_label | boolean | When `true`, the flow's `notes` text is displayed as a label on the edge. Defaults to `false`. Toggled via the "Show notes on map" checkbox in the flow side panel. If `notes` is empty, no label is rendered regardless of this flag. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 
@@ -288,7 +300,7 @@ The element is removed from the **active map** only. The functional model is unc
 
 | Element | What is removed |
 |---|---|
-| Node | `map_nodes` record for this map. All `map_flows` for flows where this node is source or target, on this map only. |
+| Node | `map_nodes` record for this map (including note overlay state). All `map_flows` for flows where this node is source or target, on this map only. |
 | Flow | `map_flows` record for this map only. |
 | Swim-lane | `map_swim_lanes` record for this map. Nodes assigned to the lane remain on the map. |
 
@@ -305,6 +317,8 @@ The element is permanently deleted from the project across all maps, with full c
 ### UI
 
 The **Remove** button in the map toolbar is active when a node, flow, or swim-lane is selected. It opens a confirmation modal displaying the element name and a summary of the cascade consequences. A **Remove only from map** checkbox (unchecked by default) controls which operation is performed. Confirming with the checkbox unchecked performs the full delete; confirming with it checked performs the map-only removal.
+
+> For swim-lanes, an unchecked delete also deletes all nodes assigned to that swim-lane and their full cascade (flows, SKUs, BOMs).
 
 ---
 

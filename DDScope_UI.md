@@ -21,7 +21,7 @@
 | 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag |
 | 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle |
 | 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox |
-| 1.5     | May 2026 | Save button moved next to project name (after pencil button); "Show notes on map" checkbox added to flow panel |
+| 1.5     | May 2026 | Note overlay on nodes: Show note on map checkbox in node panel, ghost node drag on canvas |
 
 ---
 
@@ -39,7 +39,7 @@ DDScope maintains a single underlying data model and derives multiple views from
 
 ### 2.1 Map
 
-Displays nodes and flows only. Swim-lanes are rendered as HTML overlay columns. Lead times are shown on flow edges. Node background colors reflect tag-based coloring when `tag_colors` entries are defined. This is the only map rendering mode.
+Displays nodes and flows only. Swim-lanes are rendered as HTML overlay columns. Lead times are shown on flow edges. Node background colors reflect tag-based coloring when `tag_colors` entries are defined. Node notes may be displayed as italic text overlays when enabled per node per map. This is the only map rendering mode.
 
 ### 2.2 Table — Nodes
 
@@ -70,20 +70,17 @@ Flat list of all BOMs in the project. Each row shows: node, output product, and 
 
 ## 3. Navigation Bar
 
-The nav bar is always visible and contains three zones: tabs on the left, project name with actions in the centre, and file operations on the right.
+The nav bar is always visible and contains three zones: tabs on the left, project name centred, and actions on the right.
 
-### Project name and inline actions
+### Project name
 
 When a project is open, the project name is displayed in bold at the centre of the nav bar. An unsaved indicator (`•`) is appended when the project has unsaved changes.
 
-Three controls appear inline with the project name:
+A pencil button (✎) appears on hover to the right of the project name. Clicking it opens a modal to edit the project name and description. Saving the modal marks the project as dirty.
 
-- **Pencil button (✎)** — opens a modal to edit the project name and description. Saving the modal marks the project as dirty.
-- **Save button** — positioned immediately to the right of the pencil button. Active only when the project has unsaved changes (`dirty = true`). Disabled and visually greyed out after a Load, Save, or project open. Becomes active again on any modification to the model.
+### Save button
 
-### File operations
-
-The right side of the nav bar contains: **New**, **Load**, and **Save As**. These are always visible regardless of whether a project is open.
+The **Save** button is active only when the project has unsaved changes (`dirty = true`). It is disabled and visually greyed out after a Load, Save, or project open. It becomes active again on any modification to the model.
 
 ---
 
@@ -120,8 +117,15 @@ The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the 
 ### Node interactions
 
 - **Node creation** — via the Add node button; initial canvas position is computed automatically (swim-lane grid, below swim-lanes, or viewport centre).
-- **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`. Vertical snap is applied on release.
+- **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`. Vertical snap is applied on release. Any visible note ghost follows the node automatically, preserving its relative offset.
 - **Selection** — click a node to open the side panel; click canvas background to close.
+
+### Note ghost interactions
+
+- A note ghost (`note-{node_id}`) is a Cytoscape node rendered as italic text with no visible shape.
+- Note ghosts are **draggable independently**: drag repositions the ghost and persists the new `note_dx`/`note_dy` offsets to `map_nodes`.
+- Note ghosts are **not selectable** — clicking a ghost does not open the side panel.
+- Note ghosts are excluded from fit-to-canvas and auto-layout.
 
 ### Flow interactions
 
@@ -151,8 +155,8 @@ When dragging a node manually, a dashed green guide line appears when the node's
 
 | Control              | Behaviour                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Also triggered on project open and map tab switch. |
-| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Positions saved to `map_nodes`.                      |
+| **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Ghost note nodes are excluded from this calculation. Also triggered on project open and map tab switch. |
+| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Positions saved to `map_nodes`. |
 | **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
 | **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
 | **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal). |
@@ -176,7 +180,7 @@ Two buttons: **Remove** (destructive) and **Cancel**.
 
 ### Auto-layout behaviour
 
-The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Nodes without a swim-lane on the active map are left in place — their positions are not modified.
+The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Nodes without a swim-lane on the active map are left in place — their positions are not modified. Ghost note nodes are excluded entirely.
 
 ### Legend overlay
 
@@ -199,17 +203,15 @@ Name, type, swim-lane, tags, notes.
 
 **Tags** — adding or removing a tag immediately updates the node's background color on the canvas (tag-based coloring) and refreshes the legend.
 
+**Show note on map** — a checkbox below the Notes field. When checked, the content of the Notes field is displayed as an italic text overlay on the active map, positioned below the node by default. The checkbox is disabled when the Notes field is empty. If the Notes field is cleared while the checkbox is checked, the checkbox is automatically unchecked and the ghost removed.
+
 **SKUs section** — lists all SKUs associated with this node, derived automatically from the flows entering and leaving it. For each SKU: product name (read-only), tags (editable), notes (editable). SKUs cannot be added or removed manually.
 
 **BOMs section** — lists all BOMs defined for this node. For each BOM: output product, component list with quantities. Actions: add a BOM, add/remove a component, edit quantities, delete a BOM.
 
 ### Flow panel
 
-Lead time (value + unit), tags, notes, and then:
-
-- **Show notes on map** — checkbox immediately below the notes field. When checked, the flow's `notes` text is rendered as a label on the edge on the active map. The flag is stored in `map_flows.show_notes_label` and is therefore map-specific: the same flow can show its label on one map and not on another. If notes are subsequently cleared, no label is rendered (the flag is preserved). The label uses the default Cytoscape edge label style (small text, light background). Updating the notes field while the checkbox is checked refreshes the label immediately.
-- **Edge style** — taxi (default) or straight.
-- **Products** — list of products on the flow, with add/remove controls.
+Lead time (value + unit), tags, notes, and the list of products on the flow. Each product has a × button to remove it. A selector allows adding a product from the project's product list.
 
 > Adding a product to a flow automatically creates the corresponding SKU on the source and target nodes if it does not already exist. Removing the last occurrence of a product on all flows connected to a node automatically deletes the SKU.
 
