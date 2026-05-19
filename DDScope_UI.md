@@ -1,6 +1,6 @@
 # DDScope — User Interface
 
-*v1.6 — Draft — May 2026*
+*v1.7 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -23,6 +23,7 @@
 | 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox |
 | 1.5     | May 2026 | Note overlay on nodes: Show note on map checkbox in node panel, ghost node drag on canvas |
 | 1.6     | May 2026 | Add product on map: toolbar button + modal (product search/create + swim-lane); is_product_node_default column in Settings node types |
+| 1.7     | May 2026 | Flow rerouting: draggable endpoint handles (blue = source, purple = target) replace Shift/Ctrl+click; flow panel: endpoint summary at top |
 
 ---
 
@@ -151,7 +152,7 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 ### Flow interactions
 
 - **Flow creation** — drag from the green handle that appears on node hover to a target node.
-- **Flow rerouting** — selecting a flow shows source (blue) and target (purple) endpoint handles; dragging a handle to another node updates the endpoint.
+- **Flow rerouting** — selecting a flow shows two draggable handles: a **blue circle** on the source endpoint, a **purple circle** on the target endpoint. Both handles are positioned at the exact point where the edge meets the node (using Cytoscape's `sourceEndpoint()` / `targetEndpoint()`), including when the edge connects at the top or bottom of a node. Dragging a handle to another valid node reroutes that endpoint and refreshes the side panel. Releasing in empty space cancels with no change. A ghost line connects the fixed opposite endpoint to the cursor during drag. Valid target nodes are highlighted during drag; the opposite endpoint node is excluded.
 - **Selection** — click an edge to open the side panel.
 - **Waypoint handle** — selecting a flow reveals a circular handle on the taxi bend. Drag to reposition; double-click to reset to midpoint (50%).
 
@@ -231,6 +232,8 @@ Name, type, swim-lane, tags, notes.
 **BOMs section** — lists all BOMs defined for this node. For each BOM: output product, component list with quantities. Actions: add a BOM, add/remove a component, edit quantities, delete a BOM.
 
 ### Flow panel
+
+**Endpoints** — a summary line at the top of the panel displays source and target nodes in the format `Name(tag1, tag2) ← Name(tag1)`. Tags are omitted when the node has none. The arrow direction matches the active map direction (`←` for `right-left`, `→` for `left-right`). Refreshed on every panel open, including after rerouting.
 
 Lead time (value + unit), tags, notes, and the list of products on the flow. Each product has a × button to remove it. A selector allows adding a product from the project's product list.
 
