@@ -24,7 +24,7 @@
 | 1.5     | May 2026 | Note overlay on nodes: Show note on map checkbox in node panel, ghost node drag on canvas |
 | 1.6     | May 2026 | Add product on map: toolbar button + modal (product search/create + swim-lane); is_product_node_default column in Settings node types |
 | 1.7     | May 2026 | Flow rerouting: draggable endpoint handles (blue = source, purple = target) replace Shift/Ctrl+click; flow panel: endpoint summary at top |
-| 1.8     | May 2026 | Flow panel: Skip in layout checkbox; persisted in map_flows.skip_in_layout |
+| 1.8     | May 2026 | Flow panel: Layout offset field (replaces skip_in_layout); persisted in map_flows.layout_offset; 0 = ignored by BFS, 1 = default, N = N-column gap |
 
 ---
 
@@ -179,7 +179,7 @@ When dragging a node manually, a dashed green guide line appears when the node's
 | Control              | Behaviour                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Ghost note nodes are excluded from this calculation. Also triggered on project open and map tab switch. |
-| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Flows with `skip_in_layout = true` are excluded from rank computation. Positions saved to `map_nodes`. |
+| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Each flow's `layout_offset` controls its BFS rank weight (0 = ignored, 1 = default, N = N-column gap). Positions saved to `map_nodes`. |
 | **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
 | **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
 | **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal). |
@@ -203,7 +203,7 @@ Two buttons: **Remove** (destructive) and **Cancel**.
 
 ### Auto-layout behaviour
 
-The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Flows with `skip_in_layout = true` are excluded from this rank computation — the nodes they connect are free to receive any rank, including the same rank, enabling vertical alignment in a column. Nodes without a swim-lane on the active map are left in place — their positions are not modified. Ghost note nodes are excluded entirely.
+The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Each flow's `layout_offset` controls its weight in the BFS: `0` = flow ignored, source and target are free to land in the same column; `1` = default, adjacent columns; `N` = target placed at least N columns after source. Nodes without a swim-lane on the active map are left in place — their positions are not modified. Ghost note nodes are excluded entirely.
 
 ### Legend overlay
 
@@ -238,7 +238,7 @@ Name, type, swim-lane, tags, notes.
 
 Lead time (value + unit), tags, notes, and the list of products on the flow. Each product has a × button to remove it. A selector allows adding a product from the project's product list.
 
-**Skip in layout** — a checkbox in the map-specific section of the panel (below the functional fields). When checked, this flow is excluded from the BFS rank computation when **Layout** is run on the active map. The edge remains visible on the canvas. This setting is stored in `map_flows.skip_in_layout` and is therefore independent per map.
+**Layout offset** — a numeric field (integer, min 0) in the map-specific section of the panel (below the functional fields). Controls the BFS rank weight of this flow during auto-layout on the active map: `0` = flow ignored by BFS (source and target are free to land in the same column); `1` = default behaviour (adjacent columns); `N` = target placed at least N columns after source. The edge remains visible on the canvas regardless of value. This setting is stored in `map_flows.layout_offset` and is therefore independent per map.
 
 > Adding a product to a flow automatically creates the corresponding SKU on the source and target nodes if it does not already exist. Removing the last occurrence of a product on all flows connected to a node automatically deletes the SKU.
 

@@ -24,7 +24,7 @@
 | 1.6 | May 2026 | Section 15 rewritten: distinction between remove from map and delete from model |
 | 1.7 | May 2026 | note_visible, note_dx, note_dy added to map_nodes for node note overlay |
 | 1.8 | May 2026 | is_product_node_default added to node_types for "Add product on map" feature |
-| 1.9 | May 2026 | skip_in_layout added to map_flows; excluded from BFS rank computation in auto-layout |
+| 1.9 | May 2026 | layout_offset added to map_flows; replaces skip_in_layout concept; controls BFS rank weight in auto-layout |
 
 ---
 
@@ -253,7 +253,7 @@ Records that a flow is visible on a specific map, and stores per-map presentatio
 | map_id | integer | Reference to `maps[].id` |
 | flow_id | integer | Reference to `flows[].id` |
 | waypoint_pct | float \| null | Taxi edge bend position — fraction of the horizontal distance between source and target (0–1). `null` or absent defaults to `0.5` (midpoint). Edited via the waypoint handle on the canvas. |
-| skip_in_layout | boolean | When `true`, this flow is excluded from the BFS rank computation in `DDS_MAP.runLayout`. The edge is still rendered on the canvas. Defaults to `false`. Use to allow nodes connected by non-sequential flows (e.g. returns, co-products, parallel paths) to be placed in the same column without rank constraint. |
+| layout_offset | integer \| null | BFS rank weight for this flow in `DDS_MAP.runLayout`. Controls how many columns separate the source and target nodes during auto-layout. `0` = flow ignored by BFS (source and target are free to land in the same column). `1` = default behaviour (adjacent columns). `2+` = target placed N columns after source. `null` or absent defaults to `1`. Edited via the Layout offset field in the flow panel. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 
