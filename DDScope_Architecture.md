@@ -152,7 +152,7 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 
 The algorithm applies in order:
 
-1. **Swim-lane assigned and visible on the map** — candidates are generated on a grid inside the swim-lane rectangle, scanning rows from bottom to top, left to right within each row. The first position whose distance to all existing nodes exceeds `MIN_DIST` is returned.
+1. **Swim-lane assigned and visible on the map** — the node is placed at the vertical centre of the swim-lane (`ly + lh / 2`). Horizontally, `maxX` is the greater of the lane's left edge (`lx`) and the rightmost x-position among nodes already in the lane on this map. The target x is `maxX + GRID_X`, clamped to the lane's right boundary minus `MARGIN`. This logic is uniform whether the lane is empty or not — an empty lane simply starts from `lx`.
 2. **No swim-lane, or swim-lane absent from the map** — the node is placed below the bounding box of all swim-lanes visible on the map, horizontally centred. If the position is occupied, the node shifts left by `FALLBACK_STEP`, repeated up to 20 times.
 3. **No swim-lanes on the map** — the node is placed at the centre of the current viewport.
 
