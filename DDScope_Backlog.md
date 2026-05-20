@@ -29,7 +29,13 @@ _Idées relatives au canvas Cytoscape, swim-lanes, rendu visuel._
 
 - [x] Snap d'alignement vertical au drag ✓ _(implémenté mai 2026 — règle 1 : voisins directs ; règle 2 : médian de deux voisins alignés en colonne sans nœud intermédiaire)_
 
-- [x] Flag skip_in_layout sur map_flows ✓ _(spécifié mai 2026 — map_flows.skip_in_layout : exclut le flow du calcul de rang BFS dans runLayout ; checkbox dans le flow panel, indépendant par map ; permet d'aligner verticalement des nœuds reliés par des flows non-séquentiels)_
+- [x] Layout offser sur map_flows ✓ _(spécifié mai 2026 — map_flows.skip_in_layout : change le poid d'une arete dans le BFS du layout, permet de changer les noeuds de colonne
+
+- [x] Selection multiple
+
+- [ ] Tag-style special selection, en cas de confit avec les autres tag style
+
+- [ ] Ajouter un parametrage de l'offset du bord de slane dans le layout
 
 ---
 

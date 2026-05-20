@@ -18,13 +18,13 @@
 | 0.9     | May 2026 | DataStore references removed; link to ProjectManagement replaced by Overview                                                                                |
 | 1.0     | May 2026 | Direction toggle on map toolbar; project name centred in nav with edit button; node type default swim-lane; dirty flag on Save button; Settings tab updated |
 | 1.1     | May 2026 | Flow table view added: inline edit and delete, all project flows, tab placed between Nodes and Products                                                     |
-| 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag |
-| 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle |
-| 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox |
-| 1.5     | May 2026 | Note overlay on nodes: Show note on map checkbox in node panel, ghost node drag on canvas |
-| 1.6     | May 2026 | Add product on map: toolbar button + modal (product search/create + swim-lane); is_product_node_default column in Settings node types |
-| 1.7     | May 2026 | Flow rerouting: draggable endpoint handles (blue = source, purple = target) replace Shift/Ctrl+click; flow panel: endpoint summary at top |
-| 1.8     | May 2026 | Flow panel: Layout offset field (replaces skip_in_layout); persisted in map_flows.layout_offset; 0 = ignored by BFS, 1 = default, N = N-column gap |
+| 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag                                                 |
+| 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle                                                                            |
+| 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox                                                                |
+| 1.5     | May 2026 | Note overlay on nodes: Show note on map checkbox in node panel, ghost node drag on canvas                                                                   |
+| 1.6     | May 2026 | Add product on map: toolbar button + modal (product search/create + swim-lane); is_product_node_default column in Settings node types                       |
+| 1.7     | May 2026 | Flow rerouting: draggable endpoint handles (blue = source, purple = target) replace Shift/Ctrl+click; flow panel: endpoint summary at top                   |
+| 1.8     | May 2026 | Flow panel: Layout offset field (replaces skip_in_layout); persisted in map_flows.layout_offset; 0 = ignored by BFS, 1 = default, N = N-column gap          |
 
 ---
 
@@ -97,8 +97,8 @@ Each project contains one or more maps, displayed as a tab bar above the canvas.
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Map tab (click)                       | Switches the active map. Loads `map_nodes`, `map_flows`, and `map_swim_lanes` for the selected map and re-renders the canvas. |
 | Map name (double-click)               | Makes the name editable inline. Confirmed on Enter or blur.                                                                   |
-| **+ New map** button                  | Creates a new empty map (default name: "Map N", direction: `right-left`, `legend_visible: true`).                            |
-| **Duplicate map** button (active tab) | Creates a copy of the active map with all its `map_nodes`, `map_flows`, `map_swim_lanes`, `direction`, and `legend_visible`. |
+| **+ New map** button                  | Creates a new empty map (default name: "Map N", direction: `right-left`, `legend_visible: true`).                             |
+| **Duplicate map** button (active tab) | Creates a copy of the active map with all its `map_nodes`, `map_flows`, `map_swim_lanes`, `direction`, and `legend_visible`.  |
 | **Delete map** button (active tab)    | Deletes the active map and all its map-scoped data. Disabled when only one map remains.                                       |
 
 ### Elements panel
@@ -129,13 +129,14 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 
 **Modal fields:**
 
-| Field | Behaviour |
-|---|---|
-| Product | Search input with live dropdown. Existing products are listed as matches. If the typed name does not exactly match any existing product, a `+ Create "…"` option appears at the bottom of the dropdown. The Add button is enabled only after a selection is made from the dropdown. |
-| Product type | Appears only when creating a new product (hidden for existing products). Pre-selected on the `is_default` product type. |
-| Swim-lane | Optional. Pre-selected on the `default_swim_lane_id` of the node type marked `is_product_node_default` (falls back to `is_default` type, then first type). |
+| Field        | Behaviour                                                                                                                                                                                                                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product      | Search input with live dropdown. Existing products are listed as matches. If the typed name does not exactly match any existing product, a `+ Create "…"` option appears at the bottom of the dropdown. The Add button is enabled only after a selection is made from the dropdown. |
+| Product type | Appears only when creating a new product (hidden for existing products). Pre-selected on the `is_default` product type.                                                                                                                                                             |
+| Swim-lane    | Optional. Pre-selected on the `default_swim_lane_id` of the node type marked `is_product_node_default` (falls back to `is_default` type, then first type).                                                                                                                          |
 
 **On confirm:**
+
 1. Creates the product if new (name + selected type; tags and notes left empty).
 2. Resolves the node type: `is_product_node_default` → `is_default` → first type.
 3. Creates the node (name = product name, resolved type, selected swim-lane).
@@ -176,13 +177,13 @@ When dragging a node manually, a dashed green guide line appears when the node's
 
 ### Canvas controls
 
-| Control              | Behaviour                                                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Ghost note nodes are excluded from this calculation. Also triggered on project open and map tab switch. |
+| Control              | Behaviour                                                                                                                                                                                                                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Ghost note nodes are excluded from this calculation. Also triggered on project open and map tab switch.                                                            |
 | **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Each flow's `layout_offset` controls its BFS rank weight (0 = ignored, 1 = default, N = N-column gap). Positions saved to `map_nodes`. |
-| **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
-| **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
-| **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal). |
+| **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                                                                                                                                               |
+| **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                                                                                                                                    |
+| **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal).                                                                                                                                                        |
 
 ### Remove modal
 
@@ -192,10 +193,10 @@ The modal displays a summary of the consequences of a full delete (number of flo
 
 A **Remove only from map** checkbox is present, unchecked by default.
 
-| Checkbox state | Behaviour |
-| -------------- | --------- |
-| **Unchecked** (default) | The element is deleted from the functional model with full cascade: all dependent flows, SKUs, BOMs, and map references across all maps are removed. |
-| **Checked** | The element is removed from the active map only. The functional model is unchanged. The element remains available in the Elements panel for re-adding. |
+| Checkbox state          | Behaviour                                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Unchecked** (default) | The element is deleted from the functional model with full cascade: all dependent flows, SKUs, BOMs, and map references across all maps are removed.   |
+| **Checked**             | The element is removed from the active map only. The functional model is unchanged. The element remains available in the Elements panel for re-adding. |
 
 Two buttons: **Remove** (destructive) and **Cancel**.
 
