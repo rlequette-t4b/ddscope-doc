@@ -1,6 +1,6 @@
 # DDScope — User Interface
 
-*v1.8 — Draft — May 2026*
+*v1.9 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -18,13 +18,14 @@
 | 0.9     | May 2026 | DataStore references removed; link to ProjectManagement replaced by Overview                                                                                |
 | 1.0     | May 2026 | Direction toggle on map toolbar; project name centred in nav with edit button; node type default swim-lane; dirty flag on Save button; Settings tab updated |
 | 1.1     | May 2026 | Flow table view added: inline edit and delete, all project flows, tab placed between Nodes and Products                                                     |
-| 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag                                                 |
-| 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle                                                                            |
-| 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox                                                                |
-| 1.5     | May 2026 | Note overlay on nodes: Show note on map checkbox in node panel, ghost node drag on canvas                                                                   |
-| 1.6     | May 2026 | Add product on map: toolbar button + modal (product search/create + swim-lane); is_product_node_default column in Settings node types                       |
-| 1.7     | May 2026 | Flow rerouting: draggable endpoint handles (blue = source, purple = target) replace Shift/Ctrl+click; flow panel: endpoint summary at top                   |
-| 1.8     | May 2026 | Flow panel: Layout offset field (replaces skip_in_layout); persisted in map_flows.layout_offset; 0 = ignored by BFS, 1 = default, N = N-column gap          |
+| 1.2     | May 2026 | Auto-layout upgraded (BFS ranking per swim-lane); waypoint handle on taxi edges; vertical snap on node drag |
+| 1.3     | May 2026 | Tag colors + legend: Settings section, node coloring, legend overlay with toggle |
+| 1.4     | May 2026 | Remove button replaces "Remove from map": unified modal with "Remove only from map" checkbox |
+| 1.5     | May 2026 | Note overlay on nodes: Show note on map checkbox in node panel, ghost node drag on canvas |
+| 1.6     | May 2026 | Add product on map: toolbar button + modal (product search/create + swim-lane); is_product_node_default column in Settings node types |
+| 1.7     | May 2026 | Flow rerouting: draggable endpoint handles (blue = source, purple = target) replace Shift/Ctrl+click; flow panel: endpoint summary at top |
+| 1.8     | May 2026 | Flow panel: Skip in layout checkbox; persisted in map_flows.skip_in_layout |
+| 1.9     | May 2026 | Demand feature: SKU demand sub-section in node panel, Demand tab, CTT line overlay interactions |
 
 ---
 
@@ -42,7 +43,7 @@ DDScope maintains a single underlying data model and derives multiple views from
 
 ### 2.1 Map
 
-Displays nodes and flows only. Swim-lanes are rendered as HTML overlay columns. Lead times are shown on flow edges. Node background colors reflect tag-based coloring when `tag_colors` entries are defined. Node notes may be displayed as italic text overlays when enabled per node per map. This is the only map rendering mode.
+Displays nodes and flows only. Swim-lanes are rendered as HTML overlay columns. Lead times are shown on flow edges. Node background colors reflect tag-based coloring when `tag_colors` entries are defined. Node notes may be displayed as italic text overlays when enabled per node per map. CTT lines are displayed as red horizontal bars below nodes when enabled per map via `map_demands`. This is the only map rendering mode.
 
 ### 2.2 Table — Nodes
 
@@ -69,11 +70,24 @@ Flat list of all products with their fields and associated flows (from → to). 
 
 Flat list of all BOMs in the project. Each row shows: node, output product, and the list of components with their quantities. Supports adding, editing, and deleting BOMs directly from the table. Intended as the primary view for reviewing and preparing the DDOptim export.
 
+### 2.6 Table — Demand
+
+Flat list of all SKUs that have a demand record in the project. Automatically loaded when switching to the Demand tab if a project is open.
+
+Each row displays: node name, product name, CTT (value + unit), demand (value + period), notes.
+
+Supported actions directly from the table:
+
+- **Edit** — inline editing of all fields.
+- **Delete** — removes the demand record. Cascades to `map_demands` and resets `demand_x`, `demand_y`, `demand_length` on all `map_nodes` for that node.
+
 ---
 
 ## 3. Navigation Bar
 
 The nav bar is always visible and contains three zones: tabs on the left, project name centred, and actions on the right.
+
+The tab order is: **Map — Nodes — Flows — Products — BOMs — Demand — Settings**
 
 ### Project name
 
@@ -95,10 +109,10 @@ Each project contains one or more maps, displayed as a tab bar above the canvas.
 
 | Control                               | Behaviour                                                                                                                     |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Map tab (click)                       | Switches the active map. Loads `map_nodes`, `map_flows`, and `map_swim_lanes` for the selected map and re-renders the canvas. |
+| Map tab (click)                       | Switches the active map. Loads `map_nodes`, `map_flows`, `map_swim_lanes`, and `map_demands` for the selected map and re-renders the canvas. |
 | Map name (double-click)               | Makes the name editable inline. Confirmed on Enter or blur.                                                                   |
-| **+ New map** button                  | Creates a new empty map (default name: "Map N", direction: `right-left`, `legend_visible: true`).                             |
-| **Duplicate map** button (active tab) | Creates a copy of the active map with all its `map_nodes`, `map_flows`, `map_swim_lanes`, `direction`, and `legend_visible`.  |
+| **+ New map** button                  | Creates a new empty map (default name: "Map N", direction: `right-left`, `legend_visible: true`).                            |
+| **Duplicate map** button (active tab) | Creates a copy of the active map with all its `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`, `direction`, and `legend_visible`. |
 | **Delete map** button (active tab)    | Deletes the active map and all its map-scoped data. Disabled when only one map remains.                                       |
 
 ### Elements panel
@@ -115,12 +129,12 @@ To remove or delete an element from the active map, select it on the canvas and 
 
 ## 5. Map Interaction
 
-The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the Cytoscape canvas and kept in sync via pan/zoom events. All canvas state (node positions, swim-lane geometry, flow visibility) is scoped to the active map.
+The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the Cytoscape canvas and kept in sync via pan/zoom events. All canvas state (node positions, swim-lane geometry, flow visibility, CTT line geometry) is scoped to the active map.
 
 ### Node interactions
 
 - **Node creation** — via the Add node button; initial canvas position is computed automatically (swim-lane grid, below swim-lanes, or viewport centre).
-- **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`. Vertical snap is applied on release. Any visible note ghost follows the node automatically, preserving its relative offset.
+- **Node drag** — free positioning; position saved to `map_nodes` on `dragfree`. Vertical snap is applied on release. Any visible note ghost and CTT line follow the node automatically, preserving their relative offsets.
 - **Selection** — click a node to open the side panel; click canvas background to close.
 
 ### Add product on map
@@ -129,14 +143,13 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 
 **Modal fields:**
 
-| Field        | Behaviour                                                                                                                                                                                                                                                                           |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Product      | Search input with live dropdown. Existing products are listed as matches. If the typed name does not exactly match any existing product, a `+ Create "…"` option appears at the bottom of the dropdown. The Add button is enabled only after a selection is made from the dropdown. |
-| Product type | Appears only when creating a new product (hidden for existing products). Pre-selected on the `is_default` product type.                                                                                                                                                             |
-| Swim-lane    | Optional. Pre-selected on the `default_swim_lane_id` of the node type marked `is_product_node_default` (falls back to `is_default` type, then first type).                                                                                                                          |
+| Field | Behaviour |
+|---|---|
+| Product | Search input with live dropdown. Existing products are listed as matches. If the typed name does not exactly match any existing product, a `+ Create "…"` option appears at the bottom of the dropdown. The Add button is enabled only after a selection is made from the dropdown. |
+| Product type | Appears only when creating a new product (hidden for existing products). Pre-selected on the `is_default` product type. |
+| Swim-lane | Optional. Pre-selected on the `default_swim_lane_id` of the node type marked `is_product_node_default` (falls back to `is_default` type, then first type). |
 
 **On confirm:**
-
 1. Creates the product if new (name + selected type; tags and notes left empty).
 2. Resolves the node type: `is_product_node_default` → `is_default` → first type.
 3. Creates the node (name = product name, resolved type, selected swim-lane).
@@ -150,6 +163,14 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 - Note ghosts are **draggable independently**: drag repositions the ghost and persists the new `note_dx`/`note_dy` offsets to `map_nodes`.
 - Note ghosts are **not selectable** — clicking a ghost does not open the side panel.
 - Note ghosts are excluded from fit-to-canvas and auto-layout.
+
+### CTT line interactions
+
+- The CTT line is an HTML overlay (`.dds-ctt-line-wrap`) rendered below the node, synchronised with Cytoscape pan/zoom.
+- **Drag line** — repositions the overlay; persists `demand_x`, `demand_y` to `map_nodes`.
+- **Drag handle (left or right)** — resizes the line symmetrically; persists `demand_length` to `map_nodes`.
+- **Node drag** — the CTT overlay follows the node, preserving its relative offset.
+- The CTT line is excluded from fit-to-canvas and auto-layout.
 
 ### Flow interactions
 
@@ -177,34 +198,34 @@ When dragging a node manually, a dashed green guide line appears when the node's
 
 ### Canvas controls
 
-| Control              | Behaviour                                                                                                                                                                                                                                                  |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Ghost note nodes are excluded from this calculation. Also triggered on project open and map tab switch.                                                            |
-| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Each flow's `layout_offset` controls its BFS rank weight (0 = ignored, 1 = default, N = N-column gap). Positions saved to `map_nodes`. |
-| **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                                                                                                                                               |
-| **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                                                                                                                                    |
-| **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal).                                                                                                                                                        |
+| Control              | Behaviour                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Ghost note nodes and CTT lines are excluded from this calculation. Also triggered on project open and map tab switch. |
+| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Flows with `skip_in_layout = true` are excluded from rank computation. Positions saved to `map_nodes`. |
+| **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
+| **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
+| **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal). |
 
 ### Remove modal
 
 Clicking **Remove** with an element selected opens a confirmation modal titled *Remove Node*, *Remove Flow*, or *Remove Swim-lane* depending on the selection.
 
-The modal displays a summary of the consequences of a full delete (number of flows, SKUs, BOMs that will be removed by cascade).
+The modal displays a summary of the consequences of a full delete (number of flows, SKUs, BOMs, demands that will be removed by cascade).
 
 A **Remove only from map** checkbox is present, unchecked by default.
 
-| Checkbox state          | Behaviour                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Unchecked** (default) | The element is deleted from the functional model with full cascade: all dependent flows, SKUs, BOMs, and map references across all maps are removed.   |
-| **Checked**             | The element is removed from the active map only. The functional model is unchanged. The element remains available in the Elements panel for re-adding. |
+| Checkbox state | Behaviour |
+| -------------- | --------- |
+| **Unchecked** (default) | The element is deleted from the functional model with full cascade: all dependent flows, SKUs, BOMs, demands, and map references across all maps are removed. |
+| **Checked** | The element is removed from the active map only. The functional model is unchanged. The element remains available in the Elements panel for re-adding. |
 
 Two buttons: **Remove** (destructive) and **Cancel**.
 
-> For swim-lanes, an unchecked delete also deletes all nodes assigned to that swim-lane and their full cascade (flows, SKUs, BOMs).
+> For swim-lanes, an unchecked delete also deletes all nodes assigned to that swim-lane and their full cascade (flows, SKUs, BOMs, demands).
 
 ### Auto-layout behaviour
 
-The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Each flow's `layout_offset` controls its weight in the BFS: `0` = flow ignored, source and target are free to land in the same column; `1` = default, adjacent columns; `N` = target placed at least N columns after source. Nodes without a swim-lane on the active map are left in place — their positions are not modified. Ghost note nodes are excluded entirely.
+The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Flows with `skip_in_layout = true` are excluded from this rank computation — the nodes they connect are free to receive any rank, including the same rank, enabling vertical alignment in a column. Nodes without a swim-lane on the active map are left in place — their positions are not modified. Ghost note nodes are excluded entirely.
 
 ### Legend overlay
 
@@ -229,7 +250,19 @@ Name, type, swim-lane, tags, notes.
 
 **Show note on map** — a checkbox below the Notes field. When checked, the content of the Notes field is displayed as an italic text overlay on the active map, positioned below the node by default. The checkbox is disabled when the Notes field is empty. If the Notes field is cleared while the checkbox is checked, the checkbox is automatically unchecked and the ghost removed.
 
-**SKUs section** — lists all SKUs associated with this node, derived automatically from the flows entering and leaving it. For each SKU: product name (read-only), tags (editable), notes (editable). SKUs cannot be added or removed manually.
+**SKUs section** — lists all SKUs associated with this node, derived automatically from the flows entering and leaving it. For each SKU: product name (read-only), tags (editable), notes (editable).
+
+Each SKU row displays a small badge when a demand record exists for that SKU. Clicking the SKU row expands a sub-section below it showing:
+
+- CTT — value + unit selector (`hours`, `days`, `weeks`, `months`, `years`)
+- Demand — value + period selector (`hours`, `days`, `weeks`, `months`, `years`)
+- Notes
+- A **Show on map** button — creates a `map_demands` record for the active map if absent (opt-in). Label changes to **Hide from map** when a `map_demands` record exists for the active map.
+- A **Delete demand** button — removes the demand record with full cascade.
+
+When no demand exists for a SKU, a **+ Demand** button appears in the SKU row. Clicking it creates an empty demand record for that SKU and expands the sub-section immediately.
+
+SKUs cannot be added or removed manually from this section.
 
 **BOMs section** — lists all BOMs defined for this node. For each BOM: output product, component list with quantities. Actions: add a BOM, add/remove a component, edit quantities, delete a BOM.
 
@@ -239,7 +272,7 @@ Name, type, swim-lane, tags, notes.
 
 Lead time (value + unit), tags, notes, and the list of products on the flow. Each product has a × button to remove it. A selector allows adding a product from the project's product list.
 
-**Layout offset** — a numeric field (integer, min 0) in the map-specific section of the panel (below the functional fields). Controls the BFS rank weight of this flow during auto-layout on the active map: `0` = flow ignored by BFS (source and target are free to land in the same column); `1` = default behaviour (adjacent columns); `N` = target placed at least N columns after source. The edge remains visible on the canvas regardless of value. This setting is stored in `map_flows.layout_offset` and is therefore independent per map.
+**Skip in layout** — a checkbox in the map-specific section of the panel (below the functional fields). When checked, this flow is excluded from the BFS rank computation when **Layout** is run on the active map. The edge remains visible on the canvas. This setting is stored in `map_flows.skip_in_layout` and is therefore independent per map.
 
 > Adding a product to a flow automatically creates the corresponding SKU on the source and target nodes if it does not already exist. Removing the last occurrence of a product on all flows connected to a node automatically deletes the SKU.
 

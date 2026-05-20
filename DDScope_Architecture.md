@@ -1,6 +1,5 @@
 # DDScope — Architecture
-
-*v1.5 — Draft — May 2026*
+*v1.6 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour.*
 
@@ -8,20 +7,21 @@
 
 ## Version History
 
-| Version | Date     | Summary                                                                                                                                                         |
-| ------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.4     | May 2026 | Initial split from monolithic spec                                                                                                                              |
-| 0.5     | May 2026 | Data model updated for map model — 4 new entity groups; nodes and swim_lanes revised                                                                            |
-| 0.6     | May 2026 | stock_points renamed to skus; tags added on flows and skus; swim_lanes position field removed                                                                   |
-| 0.7     | May 2026 | Excel/SheetJS reference removed; app ID removed                                                                                                                 |
-| 0.8     | May 2026 | boms and bom_components added                                                                                                                                   |
-| 0.9     | May 2026 | Persistence migrated to local JSON file (DDS_STORE); DataStore/Supabase references removed; project_id removed                                                  |
-| 1.0     | May 2026 | Dirty state extended: Save button gated on dirty flag; DDS_STORE.markDirty() and DDS_STORE.resetDirty() exposed publicly                                        |
-| 1.1     | May 2026 | Node placement (DDS_LAYOUT) and auto-layout (DDS_MAP.runLayout) documented                                                                                      |
-| 1.2     | May 2026 | Auto-layout upgraded to custom BFS ranking per swim-lane; waypoint handle on taxi edges; vertical snap on drag                                                  |
-| 1.3     | May 2026 | tag_colors table added; legend_visible on maps; DDS_MAP tag color + legend functions documented                                                                 |
-| 1.4     | May 2026 | Note overlay on nodes: DDS_MAP.renderNoteGhosts, ghost node lifecycle, exclusions from fitMap and runLayout                                                     |
-| 1.5     | May 2026 | layout_offset on map_flows: BFS rank weight per flow; replaces skip_in_layout; 0 = ignored, 1 = default, N = N-column gap; loaded on Cytoscape edges in loadMap |
+| Version | Date | Summary |
+|---|---|---|
+| 0.4 | May 2026 | Initial split from monolithic spec |
+| 0.5 | May 2026 | Data model updated for map model — 4 new entity groups; nodes and swim_lanes revised |
+| 0.6 | May 2026 | stock_points renamed to skus; tags added on flows and skus; swim_lanes position field removed |
+| 0.7 | May 2026 | Excel/SheetJS reference removed; app ID removed |
+| 0.8 | May 2026 | boms and bom_components added |
+| 0.9 | May 2026 | Persistence migrated to local JSON file (DDS_STORE); DataStore/Supabase references removed; project_id removed |
+| 1.0 | May 2026 | Dirty state extended: Save button gated on dirty flag; DDS_STORE.markDirty() and DDS_STORE.resetDirty() exposed publicly |
+| 1.1 | May 2026 | Node placement (DDS_LAYOUT) and auto-layout (DDS_MAP.runLayout) documented |
+| 1.2 | May 2026 | Auto-layout upgraded to custom BFS ranking per swim-lane; waypoint handle on taxi edges; vertical snap on drag |
+| 1.3 | May 2026 | tag_colors table added; legend_visible on maps; DDS_MAP tag color + legend functions documented |
+| 1.4 | May 2026 | Note overlay on nodes: DDS_MAP.renderNoteGhosts, ghost node lifecycle, exclusions from fitMap and runLayout |
+| 1.5 | May 2026 | skip_in_layout on map_flows: excluded from BFS rank computation; loaded on Cytoscape edges in loadMap |
+| 1.6 | May 2026 | demands and map_demands added; DDS_DURATION utility module documented; CTT line HTML overlay documented |
 
 ---
 
@@ -33,42 +33,44 @@ DDScope runs entirely within the CommWise platform as a single-page CommWise Web
 
 ## 2. Stack
 
-| Concern             | Solution                                                                           |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Persistent storage  | Local JSON file — in-memory store + File System Access API                         |
-| Map rendering       | Cytoscape.js v3.33.1 (cdnjs)                                                       |
-| Swim-lane rendering | HTML overlay divs (not Cytoscape compounds)                                        |
-| Auto-layout         | Custom BFS ranking per swim-lane (DDS_MAP.runLayout) + Dagre v0.8.5 for free nodes |
+| Concern | Solution |
+|---|---|
+| Persistent storage | Local JSON file — in-memory store + File System Access API |
+| Map rendering | Cytoscape.js v3.33.1 (cdnjs) |
+| Swim-lane rendering | HTML overlay divs (not Cytoscape compounds) |
+| Auto-layout | Custom BFS ranking per swim-lane (DDS_MAP.runLayout) + Dagre v0.8.5 for free nodes |
 
 ---
 
 ## 3. Data Model Structure
 
-The project is held entirely in memory as a single JSON object (`DDS.state.project`). It contains 15 named arrays corresponding to the functional and presentation layers of the data model. Entity definitions and field descriptions are in [DDScope_DataModel.md](DDScope_DataModel.md).
+The project is held entirely in memory as a single JSON object (`DDS.state.project`). It contains 17 named arrays corresponding to the functional and presentation layers of the data model. Entity definitions and field descriptions are in [DDScope_DataModel.md](DDScope_DataModel.md).
 
 ### Functional layer
 
-| Key              | Description                                           |
-| ---------------- | ----------------------------------------------------- |
-| `swim_lanes`     | Swim-lane definitions — no canvas geometry            |
-| `node_types`     | Per-project node type definitions                     |
-| `product_types`  | Per-project product type definitions                  |
-| `nodes`          | Node definitions — no canvas position                 |
-| `products`       | Product definitions                                   |
-| `flows`          | Flow definitions                                      |
-| `skus`           | Node × product associations — derived from flows      |
-| `boms`           | BOM headers — one output product per node             |
-| `bom_components` | BOM lines — input components with quantities          |
-| `tag_colors`     | Tag → color associations for node background coloring |
+| Key | Description |
+|---|---|
+| `swim_lanes` | Swim-lane definitions — no canvas geometry |
+| `node_types` | Per-project node type definitions |
+| `product_types` | Per-project product type definitions |
+| `nodes` | Node definitions — no canvas position |
+| `products` | Product definitions |
+| `flows` | Flow definitions |
+| `skus` | Node × product associations — derived from flows |
+| `boms` | BOM headers — one output product per node |
+| `bom_components` | BOM lines — input components with quantities |
+| `tag_colors` | Tag → color associations for node background coloring |
+| `demands` | SKU-level demand records — CTT and demand per period |
 
 ### Presentation layer
 
-| Key              | Description                                                                                          |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `maps`           | Map definitions — name, tab order, direction, legend_visible                                         |
-| `map_nodes`      | Node visibility, canvas position, and note overlay state per map                                     |
-| `map_flows`      | Flow visibility per map + taxi bend position (`waypoint_pct`) + layout rank weight (`layout_offset`) |
-| `map_swim_lanes` | Swim-lane canvas geometry per map                                                                    |
+| Key | Description |
+|---|---|
+| `maps` | Map definitions — name, tab order, direction, legend_visible |
+| `map_nodes` | Node visibility, canvas position, note overlay state, and CTT line geometry per map |
+| `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) + layout flag (`skip_in_layout`) |
+| `map_swim_lanes` | Swim-lane canvas geometry per map |
+| `map_demands` | Demand visibility per map — presence = CTT line shown |
 
 Every record includes system fields: `id` (integer, auto-incremented in memory), `created_at`, `updated_at` (ISO timestamps).
 
@@ -95,11 +97,11 @@ IDs are integers auto-incremented per table, managed in `DDS_STORE._counters`. C
 
 The project is persisted as a single `.json` file on the consultant's machine. No server, no database, no network dependency.
 
-| Operation   | Chrome / Edge                                                    | Other browsers            |
-| ----------- | ---------------------------------------------------------------- | ------------------------- |
-| **Load**    | `showOpenFilePicker()` — File System Access API                  | `<input type="file">`     |
-| **Save**    | Write directly to the open file (`FileSystemWritableFileStream`) | Download (`<a download>`) |
-| **Save As** | `showSaveFilePicker()` — new file                                | Download                  |
+| Operation | Chrome / Edge | Other browsers |
+|---|---|---|
+| **Load** | `showOpenFilePicker()` — File System Access API | `<input type="file">` |
+| **Save** | Write directly to the open file (`FileSystemWritableFileStream`) | Download (`<a download>`) |
+| **Save As** | `showSaveFilePicker()` — new file | Download |
 
 ### 4.3 Auto-reopen (Chrome / Edge only)
 
@@ -127,14 +129,16 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
   "boms":           [...],
   "bom_components": [...],
   "tag_colors":     [...],
+  "demands":        [...],
   "maps":           [...],
   "map_nodes":      [...],
   "map_flows":      [...],
-  "map_swim_lanes": [...]
+  "map_swim_lanes": [...],
+  "map_demands":    [...]
 }
 ```
 
-A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `layout_offset`) default to `0.5` and `1` respectively at runtime.
+A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `skip_in_layout`) default to `0.5` and `false` respectively at runtime.
 
 ---
 
@@ -152,7 +156,7 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 
 The algorithm applies in order:
 
-1. **Swim-lane assigned and visible on the map** — the node is placed at the vertical centre of the swim-lane (`ly + lh / 2`). Horizontally, `maxX` is the greater of the lane's left edge (`lx`) and the rightmost x-position among nodes already in the lane on this map. The target x is `maxX + GRID_X`, clamped to the lane's right boundary minus `MARGIN`. This logic is uniform whether the lane is empty or not — an empty lane simply starts from `lx`.
+1. **Swim-lane assigned and visible on the map** — candidates are generated on a grid inside the swim-lane rectangle, scanning rows from bottom to top, left to right within each row. The first position whose distance to all existing nodes exceeds `MIN_DIST` is returned.
 2. **No swim-lane, or swim-lane absent from the map** — the node is placed below the bounding box of all swim-lanes visible on the map, horizontally centred. If the position is occupied, the node shifts left by `FALLBACK_STEP`, repeated up to 20 times.
 3. **No swim-lanes on the map** — the node is placed at the centre of the current viewport.
 
@@ -166,12 +170,11 @@ The algorithm applies in order:
 
 Ranks are computed **locally per swim-lane**, considering only flows where both endpoints belong to the lane. Flows entering from other swim-lanes are ignored — nodes with no internal predecessor are treated as sources (rank 0).
 
-**`layout_offset`** (integer, loaded from `map_flows`) controls the BFS rank weight for each flow. `_computeRanksForLane` uses this value as follows: `0` = flow excluded from the predecessor/successor graph entirely (source and target are free to land in the same column); `N ≥ 1` = `rankMin[target] = max(rankMin[target], rankMin[source] + N)`, so the target is placed at least N columns after the source. Default when absent or null: `1` (standard adjacent-column behaviour). These flows are still rendered on the canvas regardless of their offset value.
+**Flows with `skip_in_layout = true`** (loaded from `map_flows`) are excluded from the rank computation entirely. They are not added to the predecessor/successor graph. The nodes they connect remain free to receive any rank, including the same rank — enabling vertical alignment in a column. These flows are still rendered on the canvas.
 
 **rankMin** — longest-path from sources (Kahn topological sort, cycle-safe). Ensures a node is placed after all its internal predecessors.
 
 **rankMax** — second pass from rankMin:
-
 - `rankMax(n) = min(rankMin(successors)) − 1` — a node cannot be placed after any of its successors.
 - If no internal successors: `rankMax(n) = max(rankMin)` across the lane — the node may float to the last column.
 - `rankMax ≥ rankMin` is enforced.
@@ -193,14 +196,13 @@ Edges use `curve-style: taxi` with `taxi-direction: horizontal`. The bend positi
 
 `waypoint_pct` (float, 0–1, nullable) is stored in `map_flows` and loaded with each edge. Default: `0.5` (midpoint). A draggable handle (`.dds-waypoint-handle`) appears on the bend of the selected edge. Drag updates `taxi-turn` in real time; release persists `waypoint_pct` to `map_flows`. Double-click resets to `0.5`.
 
-`layout_offset` (integer, nullable) is also loaded from `map_flows` onto each Cytoscape edge as a data attribute (`edge.data('layoutOffset', N)`) during `loadMap`. `_computeRanksForLane` reads this attribute to compute the rank weight. Default when absent or null: `1`.
+`skip_in_layout` (boolean) is also loaded from `map_flows` onto each Cytoscape edge as a data attribute (`edge.data('skipInLayout', true/false)`) during `loadMap`. `_computeRanksForLane` reads this attribute to exclude the edge from the predecessor/successor graph.
 
 ### Vertical snap on node drag
 
 During manual drag, a guide line (`.dds-snap-guide`) appears when the dragged node's Y is within 6px canvas of a snap target. Snap is applied on `dragfree`, not during drag, to avoid cursor detachment.
 
 **Snap targets:**
-
 1. **Rule 1** — Y of any directly connected neighbour (amont or aval) visible on the active map.
 2. **Rule 2** — Y median of two same-side neighbours (both amont or both aval) sharing the same X column (within 20px tolerance), with no other map node between them on that column.
 
@@ -227,7 +229,6 @@ The SVG shapes used in the legend (`rectangle`, `diamond`, `ellipse`, `hexagon`,
 `DDS_MAP.renderNoteGhosts(mapId)` creates a Cytoscape ghost node for each `map_node` record where `note_visible = true` and `nodes.notes` is non-empty. It is called at the end of `loadMap`, after `renderLegend`.
 
 **Ghost node properties:**
-
 - Cytoscape id: `note-{node_id}`
 - Classes: `dds-note-ghost`
 - Data: `nodeId`, `mapNodeId`, `label` (= `nodes.notes`)
@@ -236,16 +237,69 @@ The SVG shapes used in the legend (`rectangle`, `diamond`, `ellipse`, `hexagon`,
 - `selectable: false` via CSS selector; draggable
 
 **Drag behaviour:**
-
 - Ghost drag (`dragfree` on `node.dds-note-ghost`): recomputes `note_dx = ghost.x − parent.x`, `note_dy = ghost.y − parent.y` and persists to `map_nodes`.
 - Parent node drag (`dragfree` on regular nodes): repositions the ghost at `(new_x + note_dx, new_y + note_dy)` without modifying the offsets.
 
 **Exclusions:**
-
 - `fitMap`: ghost nodes filtered out of the bounding box calculation.
 - `runLayout`: ghost nodes filtered out of lane grouping — not repositioned by layout.
 
 **AI assistant integration:** when `DDS_AI_EXECUTOR` applies an `update_node` action containing a non-empty `notes` field, it sets `note_visible = true` on the corresponding `map_node` of the active map, so the note appears automatically after the plan is executed.
+
+### DDS_DURATION
+
+A utility module providing duration comparison and formatting functions. Used by the CTT line renderer and by future lead time aggregation features.
+
+```javascript
+DDS_DURATION.toHours(value, unit)         // → number — converts any duration to hours (internal comparison base)
+DDS_DURATION.compare(v1, u1, v2, u2)     // → { value, unit } — returns the longer of two durations
+DDS_DURATION.toDisplay(value, unit)       // → string — formats as "5 days", "3 weeks", etc.
+// DDS_DURATION.add(v1, u1, v2, u2)      // reserved — v2, not implemented
+```
+
+Unit values: `hours`, `days`, `weeks`, `months`, `years`.
+
+Conversion factors used by `toHours`:
+
+| Unit | Hours |
+|---|---|
+| hours | 1 |
+| days | 24 |
+| weeks | 168 |
+| months | 720 |
+| years | 8760 |
+
+### CTT line overlay
+
+The CTT line is a per-node HTML overlay rendered inside `.dds-canvas-wrap`, following the same synchronisation pattern as swim-lanes (pan/zoom events update `transform`).
+
+**Structure per node (when at least one `map_demands` record exists for the node on the active map):**
+
+```
+div.dds-ctt-line-wrap   — positioned absolutely, transform-synced with Cytoscape viewport
+  div.dds-ctt-label     — "CTT: 5 days", positioned above the line centre
+  div.dds-ctt-line      — the red horizontal bar
+  div.dds-ctt-handle-l  — left resize handle (red circle)
+  div.dds-ctt-handle-r  — right resize handle (red circle)
+```
+
+**Displayed value:** `DDS_DURATION.toDisplay` applied to the max CTT among all `map_demands` for this node on the active map, prefixed with `CTT:`.
+
+**Position:** centre of the line at `(map_node.x + demand_x, map_node.y + demand_y)`. Default offsets: `demand_x = 0`, `demand_y = 60`.
+
+**Length:** `demand_length` canvas units. Default on first placement: width of the node as rendered by Cytoscape (`node.renderedBoundingBox().w`), converted to model units via zoom factor.
+
+**Drag behaviour:** dragging `dds-ctt-line-wrap` repositions the overlay and persists `demand_x`, `demand_y` to `map_nodes`.
+
+**Resize behaviour:** dragging `dds-ctt-handle-l` or `dds-ctt-handle-r` extends or shrinks the line symmetrically and persists `demand_length` to `map_nodes`.
+
+**Node drag:** when a node is dragged (`dragfree`), the CTT overlay is repositioned at `(new_x + demand_x, new_y + demand_y)` without modifying the offsets — same pattern as note ghosts.
+
+**Lifecycle:**
+- Created by `DDS_MAP.renderCTTOverlays(mapId)`, called at the end of `loadMap` and after any `map_demands` insert or delete.
+- Destroyed and recreated on map switch.
+- Not included in `fitMap` bounding box calculation.
+- Not affected by `runLayout`.
 
 ---
 

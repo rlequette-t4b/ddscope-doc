@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v1.9 — Draft — May 2026*
+*v2.0 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence.*
 
@@ -24,7 +24,8 @@
 | 1.6 | May 2026 | Section 15 rewritten: distinction between remove from map and delete from model |
 | 1.7 | May 2026 | note_visible, note_dx, note_dy added to map_nodes for node note overlay |
 | 1.8 | May 2026 | is_product_node_default added to node_types for "Add product on map" feature |
-| 1.9 | May 2026 | layout_offset added to map_flows; replaces skip_in_layout concept; controls BFS rank weight in auto-layout |
+| 1.9 | May 2026 | skip_in_layout added to map_flows; excluded from BFS rank computation in auto-layout |
+| 2.0 | May 2026 | demands and map_demands added; demand_x, demand_y, demand_length added to map_nodes |
 
 ---
 
@@ -35,7 +36,7 @@ The model prioritises flexibility over formalism. Entities have a small set of s
 Every entity includes the following system fields, not repeated in the field definitions below: `id` (integer, auto-incremented in memory), `created_at`, `updated_at` (ISO timestamps).
 
 **Functional vs presentation separation.** The model distinguishes two layers:
-- The **functional layer** (nodes, products, flows, SKUs, swim-lanes, BOMs, tag colors) describes the supply chain as it exists — independent of any visual representation.
+- The **functional layer** (nodes, products, flows, SKUs, swim-lanes, BOMs, tag colors, demands) describes the supply chain as it exists — independent of any visual representation.
 - The **presentation layer** (maps and map-scoped entities) describes how elements are arranged and which elements are visible on a given map.
 
 ---
@@ -84,7 +85,7 @@ A flow is a directed link between two nodes, representing the movement of one or
 | product_ids | array | Array of `products[].id` integers (zero or more) |
 | tags | array | Free labels (e.g. `["road", "air", "pilot"]`) |
 | lead_time_value | numeric \| null | Transit or transformation time value |
-| lead_time_unit | text \| null | Unit of the lead time (e.g. `days`, `weeks`) |
+| lead_time_unit | text \| null | Unit of the lead time — one of `hours`, `days`, `weeks`, `months`, `years` |
 | notes | text | Free-form observations |
 
 ---
@@ -112,12 +113,37 @@ SKUs can also be created independently via the "Add product on map" shortcut (se
 - `add_product_to_flow(flow, product)` → create SKU for source and target nodes if absent.
 - `remove_product_from_flow(flow, product)` → delete SKU for source/target if no other connected flow carries this product. Apply BOM cascade for each deleted SKU.
 - `delete_flow(flow)` → apply remove logic for all products. Apply BOM cascade.
-- `delete_node(node)` → delete all SKUs, BOMs, and `bom_components` for that node.
+- `delete_node(node)` → delete all SKUs, BOMs, `bom_components`, and demands for that node.
 - `delete_product(product)` → delete all SKUs, then apply BOM cascade for each affected node.
+- `remove_sku(node, product)` → delete the demand for that node × product pair if it exists.
 
 ---
 
-## 5. BOM (Bill of Material)
+## 5. Demand
+
+A demand record captures the customer-facing requirements associated with a SKU: the Customer Tolerance Time (CTT) and the average demand per period. A SKU has at most one demand record.
+
+**JSON array:** `demands`
+
+| Field | Type | Description |
+|---|---|---|
+| node_id | integer | Reference to `nodes[].id` |
+| product_id | integer | Reference to `products[].id` |
+| ctt_value | numeric \| null | Customer Tolerance Time — value |
+| ctt_unit | text \| null | CTT unit — one of `hours`, `days`, `weeks`, `months`, `years` |
+| demand_value | numeric \| null | Average demand — value |
+| demand_period | text \| null | Demand period — one of `hours`, `days`, `weeks`, `months`, `years` |
+| notes | text | Free-form observations |
+
+**Cascade triggers:**
+- `delete_node(node)` → delete all demands where `node_id` matches.
+- `delete_product(product)` → delete all demands where `product_id` matches.
+- `remove_sku(node, product)` → delete the demand for that node × product pair if it exists.
+- In all cases, deletion of a demand cascades to its `map_demands` records and resets `demand_x`, `demand_y`, `demand_length` to `null` on all `map_nodes` records for that node.
+
+---
+
+## 6. BOM (Bill of Material)
 
 A BOM describes the transformation performed by a node: one output product manufactured from one or more input components with quantities. A node can have multiple BOMs (one per output product). BOMs are used to constitute the DDOptim export package.
 
@@ -144,9 +170,9 @@ A BOM describes the transformation performed by a node: one output product manuf
 
 ---
 
-## 6. Swim-lane
+## 7. Swim-lane
 
-A swim-lane is a named, coloured supply chain stage. Canvas geometry is map-specific (see §12).
+A swim-lane is a named, coloured supply chain stage. Canvas geometry is map-specific (see §13).
 
 **JSON array:** `swim_lanes`
 
@@ -157,7 +183,7 @@ A swim-lane is a named, coloured supply chain stage. Canvas geometry is map-spec
 
 ---
 
-## 7. Node Types and Product Types
+## 8. Node Types and Product Types
 
 Each project maintains its own list of node types and product types, seeded at project creation and editable in the Settings tab.
 
@@ -184,13 +210,13 @@ Each project maintains its own list of node types and product types, seeded at p
 
 ---
 
-## 8. Tags
+## 9. Tags
 
 Free-text labels stored as arrays. Not hierarchical. Applied to nodes, products, flows, and SKUs. Tags defined in `tag_colors` are offered as autocomplete suggestions wherever a tag input is available.
 
 ---
 
-## 9. Tag Colors
+## 10. Tag Colors
 
 Associates a tag label with a display color. Used to color node backgrounds on the map canvas: for each node, the first tag in the `tag_colors` table (by insertion order) that matches one of the node's tags determines the node's background color. Nodes with no matching tag use the default canvas color.
 
@@ -208,7 +234,7 @@ Associates a tag label with a display color. Used to color node backgrounds on t
 
 ---
 
-## 10. Map
+## 11. Map
 
 A named view of a subset of the project's supply chain elements. Each project has at least one map. The last remaining map cannot be deleted.
 
@@ -223,9 +249,9 @@ A named view of a subset of the project's supply chain elements. Each project ha
 
 ---
 
-## 11. Map Node
+## 12. Map Node
 
-Canvas position of a node on a specific map, and optional note overlay configuration.
+Canvas position of a node on a specific map, optional note overlay configuration, and CTT line geometry.
 
 A node is visible on a map if and only if a `map_node` record exists.
 
@@ -239,10 +265,13 @@ A node is visible on a map if and only if a `map_node` record exists.
 | note_visible | boolean | Whether `nodes.notes` is displayed as an overlay on this map. Defaults to `false`. Ignored if `nodes.notes` is empty. |
 | note_dx | numeric | Horizontal offset of the note overlay relative to the node centre, in canvas units. Defaults to `0`. |
 | note_dy | numeric | Vertical offset of the note overlay relative to the node centre, in canvas units. Defaults to `30`. |
+| demand_x | numeric \| null | Horizontal offset of the CTT line centre relative to the node centre, in canvas units. Defaults to `0`. |
+| demand_y | numeric \| null | Vertical offset of the CTT line centre relative to the node centre, in canvas units. Defaults to `60`. |
+| demand_length | numeric \| null | Length of the CTT line in canvas units. Defaults to node width when first placed. |
 
 ---
 
-## 12. Map Flow
+## 13. Map Flow
 
 Records that a flow is visible on a specific map, and stores per-map presentation attributes.
 
@@ -253,13 +282,13 @@ Records that a flow is visible on a specific map, and stores per-map presentatio
 | map_id | integer | Reference to `maps[].id` |
 | flow_id | integer | Reference to `flows[].id` |
 | waypoint_pct | float \| null | Taxi edge bend position — fraction of the horizontal distance between source and target (0–1). `null` or absent defaults to `0.5` (midpoint). Edited via the waypoint handle on the canvas. |
-| layout_offset | integer \| null | BFS rank weight for this flow in `DDS_MAP.runLayout`. Controls how many columns separate the source and target nodes during auto-layout. `0` = flow ignored by BFS (source and target are free to land in the same column). `1` = default behaviour (adjacent columns). `2+` = target placed N columns after source. `null` or absent defaults to `1`. Edited via the Layout offset field in the flow panel. |
+| skip_in_layout | boolean | When `true`, this flow is excluded from the BFS rank computation in `DDS_MAP.runLayout`. The edge is still rendered on the canvas. Defaults to `false`. Use to allow nodes connected by non-sequential flows (e.g. returns, co-products, parallel paths) to be placed in the same column without rank constraint. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 
 ---
 
-## 13. Map Swim-lane
+## 14. Map Swim-lane
 
 Canvas geometry of a swim-lane on a specific map.
 
@@ -275,7 +304,24 @@ Canvas geometry of a swim-lane on a specific map.
 
 ---
 
-## 14. Project
+## 15. Map Demand
+
+Records that the CTT line for a given node is visible on a specific map, and which demand (SKU) drives the displayed value. Presence of a record means the line is shown; absence means it is hidden.
+
+The rendered line represents the **maximum CTT** among all `map_demands` records for a given node on a given map, computed via `DDS_DURATION.compare`.
+
+**JSON array:** `map_demands`
+
+| Field | Type | Description |
+|---|---|---|
+| map_id | integer | Reference to `maps[].id` |
+| demand_id | integer | Reference to `demands[].id` |
+
+**Cascade:** deleted when the referenced `demand` is deleted.
+
+---
+
+## 16. Project
 
 Project metadata, stored under the `project` key (object, not array) in the JSON file.
 
@@ -288,7 +334,7 @@ Project metadata, stored under the `project` key (object, not array) in the JSON
 
 ---
 
-## 15. Removing and Deleting Elements
+## 17. Removing and Deleting Elements
 
 DDScope distinguishes two operations when the user clicks **Remove** on a selected element:
 
@@ -298,7 +344,7 @@ The element is removed from the **active map** only. The functional model is unc
 
 | Element | What is removed |
 |---|---|
-| Node | `map_nodes` record for this map (including note overlay state). All `map_flows` for flows where this node is source or target, on this map only. |
+| Node | `map_nodes` record for this map (including note overlay state and CTT line geometry). All `map_flows` for flows where this node is source or target, on this map only. All `map_demands` for demands associated with this node, on this map only. |
 | Flow | `map_flows` record for this map only. |
 | Swim-lane | `map_swim_lanes` record for this map. Nodes assigned to the lane remain on the map. |
 
@@ -308,15 +354,15 @@ The element is permanently deleted from the project across all maps, with full c
 
 | Element | What is deleted |
 |---|---|
-| Node | The `nodes` record. All flows where this node is source or target (all maps). All SKUs for this node. All BOMs and `bom_components` for this node. All `map_nodes` and `map_flows` records across all maps. |
-| Flow | The `flows` record. Orphan SKUs on source and target nodes (SKUs whose product no longer appears on any other connected flow). BOM cascade for each orphan SKU. All `map_flows` records across all maps. |
-| Swim-lane | The `swim_lanes` record. All nodes assigned to this swim-lane — with their full node cascade (flows, SKUs, BOMs). All `map_swim_lanes` records across all maps. Clears `default_swim_lane_id` on any node type that referenced this lane. |
+| Node | The `nodes` record. All flows where this node is source or target (all maps). All SKUs for this node. All BOMs and `bom_components` for this node. All demands for this node and their `map_demands`. All `map_nodes` and `map_flows` records across all maps. |
+| Flow | The `flows` record. Orphan SKUs on source and target nodes (SKUs whose product no longer appears on any other connected flow). BOM cascade for each orphan SKU. Demand cascade for each deleted SKU. All `map_flows` records across all maps. |
+| Swim-lane | The `swim_lanes` record. All nodes assigned to this swim-lane — with their full node cascade (flows, SKUs, BOMs, demands). All `map_swim_lanes` records across all maps. Clears `default_swim_lane_id` on any node type that referenced this lane. |
 
 ### UI
 
 The **Remove** button in the map toolbar is active when a node, flow, or swim-lane is selected. It opens a confirmation modal displaying the element name and a summary of the cascade consequences. A **Remove only from map** checkbox (unchecked by default) controls which operation is performed. Confirming with the checkbox unchecked performs the full delete; confirming with it checked performs the map-only removal.
 
-> For swim-lanes, an unchecked delete also deletes all nodes assigned to that swim-lane and their full cascade (flows, SKUs, BOMs).
+> For swim-lanes, an unchecked delete also deletes all nodes assigned to that swim-lane and their full cascade (flows, SKUs, BOMs, demands).
 
 ---
 

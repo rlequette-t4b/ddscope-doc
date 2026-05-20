@@ -1,5 +1,5 @@
 # DDScope — Overview
-*v1.4 — Draft — May 2026*
+*v1.5 — Draft — May 2026*
 
 ---
 
@@ -18,6 +18,7 @@
 | 1.2 | May 2026 | Tag colors + legend added to v1 feature list |
 | 1.3 | May 2026 | Node note overlay added to v1 feature list |
 | 1.4 | May 2026 | Add product on map shortcut added to v1 feature list |
+| 1.5 | May 2026 | Demand feature added to v1 feature list |
 
 ---
 
@@ -54,6 +55,7 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 - Legend — SVG inline overlay on the map canvas (bottom-left), showing (node type × tag) combinations present on the active map, grouped by type. Toggle persisted per map. Compatible with html2canvas for future PDF export.
 - Node note overlay — display of node notes as italic text directly on the map canvas. Toggled per node per map via a "Show note on map" checkbox in the node side panel. The overlay is draggable independently of the node, with relative offset persisted per map. Excluded from fit-to-canvas and auto-layout. When the AI assistant sets a note via `update_node`, the overlay is enabled automatically on the active map.
 - **Add product on map** — toolbar shortcut that creates a node-product pair in a single action. The user selects or creates a product, optionally picks a swim-lane, and DDScope creates the node (name = product name, type resolved via `is_product_node_default`), the `map_node`, and the SKU automatically. Intended for the common pattern where a node represents a product stock point. The `is_product_node_default` flag on `node_types` (single-default, same rule as `is_default`) identifies the type to use; `default_swim_lane_id` on that type pre-selects the swim-lane in the modal.
+- **Demand management** — association of a demand record with a SKU (node × product pair), capturing Customer Tolerance Time (CTT) and average demand per period. At most one demand per SKU. Demand records are managed from the node side panel (SKU section) and reviewed in the Demand tab. CTT is displayed on the map as a red horizontal line below the node, visible opt-in per map via `map_demands`. The line is draggable and resizable per map. When multiple SKUs on the same node have a CTT visible on the active map, the longest CTT is displayed. Duration comparison and formatting handled by the `DDS_DURATION` utility module.
 - Swim-lane definition — name, colour, canvas geometry, optional grouping.
 - Configurable node types and product types per project — editable in the Settings tab. Single-default enforcement: setting a new default clears the previous one.
 - Multi-map support — each project supports multiple named maps. The functional model is shared across maps; each map defines independently which elements are visible and their canvas geometry.
@@ -61,14 +63,14 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 - Interactive Cytoscape.js map — node drag, flow creation, flow rerouting, pan, zoom.
 - Map view: nodes and flows only. Products are visible in the detail panels of flows and nodes.
 - Fit-to-canvas and auto-layout (BFS ranking per swim-lane; nodes without a swim-lane are not repositioned).
-- Table views: node list, flow list, and product list.
+- Table views: node list, flow list, product list, and demand list.
 - Side panel for editing node, flow, swim-lane, and SKU properties. Tag changes on nodes immediately refresh node color and legend.
 - JSON file operations — New, Load, Save, Save As. Each project is a standalone `.json` file on the consultant's machine.
 - Project copy modes — three levels of copy when creating a project from an existing source:
 
   | Mode | Functional entities copied | Maps copied |
   |---|---|---|
-  | **Full project** | All — swim-lanes, node types, product types, nodes, products, flows, SKUs, BOMs, tag colors | All maps, with full `map_nodes`, `map_flows`, `map_swim_lanes` |
+  | **Full project** | All — swim-lanes, node types, product types, nodes, products, flows, SKUs, BOMs, demands, tag colors | All maps, with full `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands` |
   | **Swim-lanes & types** | Swim-lane definitions + node types + product types + tag colors | First map only — swim-lane geometry copied; no nodes or flows |
   | **Types only** | Node types and product types + tag colors | First map only — empty |
 
@@ -87,7 +89,7 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 - PDF export of the map and tables.
 - Table view filtering by tag.
 - Tag autocompletion in all tag input fields (node panel, flow panel, table views).
-- Cumulative lead time display on the map.
+- Cumulative lead time display on the map using `DDS_DURATION.add`.
 - SKU visibility per map.
 - Product visibility model (currently derived from flow visibility).
 
@@ -111,7 +113,7 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 - Visual output follows b2wise Supply Chain Mapping conventions.
 - No buffer sizing logic is included.
 - A project always has at least one map. The last map of a project cannot be deleted.
-- A node's swim-lane assignment is shared across all maps. Canvas position and note overlay state are map-specific.
+- A node's swim-lane assignment is shared across all maps. Canvas position, note overlay state, and CTT line geometry are map-specific.
 
 ---
 
@@ -126,6 +128,7 @@ DDScope digitizes this practice within the CommWise platform, providing a guided
 | 5 | Node badges: use cases and trigger conditions to be defined before implementation. |
 | 6 | SKU visibility per map: to be addressed in a dedicated session. |
 | 7 | Product visibility model: derived from flow visibility. To be revisited in a dedicated session. |
+| 8 | CTT line rendering: html2canvas compatibility of the HTML overlay approach for future PDF export — to be validated. |
 
 ---
 

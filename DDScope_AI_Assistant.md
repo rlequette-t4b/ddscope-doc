@@ -19,7 +19,7 @@
 | 1.0     | May 2026 | BOM actions added (section 3.6); project-specific instructions added (section 5.4); context format updated with boms and bom_components |
 | 1.1     | May 2026 | node_types context enriched with is_product_node_default, is_default, default_swim_lane_id; product_types with is_default; product-node pattern documented in action vocabulary (section 5.3) |
 | 1.2     | May 2026 | Product-node pattern rewritten as default behaviour; add_product_to_flow restricted to explicit exception (existing flow between two existing non-product nodes); cascade listing made explicit for delete_node and delete_product; add_sku tag note added |
-| 1.3     | May 2026 | Language rule added to system prompt (respond in user's language); swim_lane_id explicit resolution required on add_node and product-node pattern |
+| 1.3     | May 2026 | Demand actions added (section 3.9); context format updated with demands |
 
 ---
 
@@ -54,18 +54,16 @@ The following actions constitute the complete contract. Claude may only use acti
 | `delete_node` | `node_id` | — |
 | `assign_node_to_lane` | `node_id`, `swim_lane_id` | — |
 
-> `delete_node` implicitly removes all flows where the node is source or target, and all SKUs for that node. This cascade must be stated in `reasoning` and listed explicitly in the `actions` array.
+> `delete_node` implicitly removes all flows where the node is source or target, all SKUs for that node, and all demands for that node. This cascade must be stated in `reasoning` and listed explicitly in the `actions` array.
 
 > Note: `add_node` does not accept `x, y` fields. Canvas position is map-specific and is not set by the AI assistant in v1.
-
-> Note: `swim_lane_id` must always be set explicitly when creating a node, even when the node type defines a `default_swim_lane_id`. Do not rely on the default — resolve it from the context and include it in the action. If no swim-lane is appropriate, omit the field explicitly rather than letting it default silently.
 
 #### Product-node pattern
 
 **Default behaviour:** whenever a new product is mentioned, apply the product-node pattern:
 
 1. Emit `add_product` if the product does not exist.
-2. Emit `add_node` with `name` = product name, `type_code` = the type marked `is_product_node_default` in `node_types` (fall back to `is_default`, then first type), `swim_lane_id` = `default_swim_lane_id` of that type unless the user specifies another lane. Always resolve `swim_lane_id` explicitly from `default_swim_lane_id` of the product-node type (or user instruction) and include it in `add_node`. Do not assume the application will apply the default.
+2. Emit `add_node` with `name` = product name, `type_code` = the type marked `is_product_node_default` in `node_types` (fall back to `is_default`, then first type), `swim_lane_id` = `default_swim_lane_id` of that type unless the user specifies another lane.
 3. Emit `add_sku` for the node × product pair.
 4. Emit `add_flow` if the product is described as a source or destination of a flow.
 
@@ -92,7 +90,7 @@ In all other cases — new product, product as a flow endpoint, product placed i
 | `update_product` | `product_id` | `name`, `type_code`, `tags`, `notes` |
 | `delete_product` | `product_id` | — |
 
-> `delete_product` implicitly removes the product from all flows and all SKUs. This cascade must be stated in `reasoning` and listed explicitly in the `actions` array.
+> `delete_product` implicitly removes the product from all flows, all SKUs, and all demands associated with those SKUs. This cascade must be stated in `reasoning` and listed explicitly in the `actions` array.
 
 ### 3.4 SKUs
 
@@ -136,13 +134,37 @@ A BOM describes a transformation performed by a node: one output product manufac
 
 Map management (creating, renaming, duplicating, deleting maps) and map-scoped operations (adding or removing elements from a map, updating canvas positions) are excluded from the AI assistant action vocabulary in v1. These operations are performed manually via the map UI.
 
-The AI assistant operates on the **functional layer** only: nodes, flows, products, SKUs, swim-lane definitions, and BOMs. It has no write access to `maps`, `map_nodes`, `map_flows`, or `map_swim_lanes`.
+The AI assistant operates on the **functional layer** only: nodes, flows, products, SKUs, swim-lane definitions, BOMs, and demands. It has no write access to `maps`, `map_nodes`, `map_flows`, `map_swim_lanes`, or `map_demands`.
 
 ### 3.8 Type management — excluded from v1
 
 Node types and product types are configuration-level entities managed in the Settings tab. They are intentionally excluded from the AI assistant action vocabulary for v1.
 
 **Fallback behaviour:** if no existing `type_code` matches the intended entity type, Claude selects the closest available type from the project context and explains the choice in `reasoning`.
+
+### 3.9 Demands
+
+A demand record captures the CTT (Customer Tolerance Time) and average demand per period for a SKU.
+
+**CTT (Customer Tolerance Time):** the maximum time a customer is willing to wait for an order to be fulfilled without losing the sale. Used in DDMRP buffer positioning to determine where decoupling points are needed.
+
+**Demand per period:** the average consumption rate of the product at this node (e.g. 100 units per week).
+
+At most one demand per SKU.
+
+| Action | Required fields | Optional fields |
+|---|---|---|
+| `add_demand` | `node_id`, `product_id` | `ctt_value`, `ctt_unit`, `demand_value`, `demand_period`, `notes` |
+| `update_demand` | `node_id`, `product_id` | `ctt_value`, `ctt_unit`, `demand_value`, `demand_period`, `notes` |
+| `delete_demand` | `node_id`, `product_id` | — |
+
+> Unit values for `ctt_unit` and `demand_period`: `hours`, `days`, `weeks`, `months`, `years`.
+
+> `delete_demand` cascades to `map_demands`. This must be stated in `reasoning`.
+
+> Claude must verify that the SKU (node × product pair) exists before emitting `add_demand`. If absent, propose `add_sku` first.
+
+> Map visibility (`map_demands`) is excluded from the AI assistant action vocabulary — opt-in display is a manual operation.
 
 ---
 
@@ -244,6 +266,17 @@ The following JSON structure is serialised from the current project state and tr
       "quantity": "number",
       "notes": "string"
     }
+  ],
+  "demands": [
+    {
+      "node_id": "string",
+      "product_id": "string",
+      "ctt_value": "number | null",
+      "ctt_unit": "string | null",
+      "demand_value": "number | null",
+      "demand_period": "string | null",
+      "notes": "string"
+    }
   ]
 }
 ```
@@ -306,19 +339,11 @@ add_node
   Note     : x, y are NOT accepted — canvas position is map-specific and set manually.
   Note     : include "id": "new_node_N" in this action when referenced
              by subsequent actions in the same plan.
-  Note     : always set swim_lane_id explicitly when creating a node, even when
-             the node type defines a default_swim_lane_id. Do not rely on the
-             default — resolve it from the context and include it in the action.
-             If no swim-lane is appropriate, omit the field explicitly rather
-             than letting it default silently.
 
   PRODUCT-NODE PATTERN (default behaviour): whenever a new product is mentioned,
   apply the product-node pattern — create a node (name = product name,
   type = is_product_node_default, swim_lane_id = default_swim_lane_id unless
   specified by the user) and emit add_sku for the node x product pair.
-  Always resolve swim_lane_id explicitly from default_swim_lane_id of the
-  product-node type (or user instruction) and include it in add_node.
-  Do not assume the application will apply the default.
   Also emit add_flow if the product is described as a source or destination.
 
   EXCEPTION — add_product_to_flow only: when the user explicitly asks to add a
@@ -336,7 +361,7 @@ update_node
 delete_node
   Required : node_id
   Note     : implicitly removes all flows where this node is source or target,
-             and all SKUs for this node.
+             all SKUs for this node, and all demands for this node.
              List all implied cascade actions explicitly in the actions array.
 
 assign_node_to_lane
@@ -384,7 +409,8 @@ update_product
 
 delete_product
   Required : product_id
-  Note     : implicitly removes the product from all flows and all SKUs.
+  Note     : implicitly removes the product from all flows, all SKUs,
+             and all demands associated with those SKUs.
              List all implied cascade actions explicitly in the actions array.
 
 
@@ -450,48 +476,39 @@ remove_bom_component
   Required : bom_id, product_id
 
 
+--- DEMANDS ---
+
+A demand record captures two customer-facing metrics for a SKU:
+- CTT (Customer Tolerance Time): the maximum time a customer is willing to wait
+  for an order to be fulfilled without losing the sale. Used in DDMRP buffer
+  positioning to determine where decoupling points are needed.
+- Demand per period: the average consumption rate of the product at this node
+  (e.g. 100 units per week).
+
+add_demand
+  Required : node_id, product_id
+  Optional : ctt_value, ctt_unit, demand_value, demand_period, notes
+  Note     : verify that the SKU (node_id x product_id) exists before emitting.
+             If absent, propose add_sku first.
+  Note     : ctt_unit and demand_period accept: hours, days, weeks, months, years.
+
+update_demand
+  Required : node_id, product_id
+  Optional : ctt_value, ctt_unit, demand_value, demand_period, notes
+
+delete_demand
+  Required : node_id, product_id
+  Note     : cascades to map_demands. State explicitly in reasoning.
+
+Note: map_demands visibility is excluded from v1 — opt-in display is manual.
+
+
 Note: node_type and product_type creation are excluded from v1.
-Note: map management and map visibility (map_nodes, map_flows, map_swim_lanes)
+Note: map management and map visibility (map_nodes, map_flows, map_swim_lanes, map_demands)
       are excluded from v1. Do not emit actions on these entities.
 ```
 
-### 5.4 System prompt (reference text)
-
-```
-You are an assistant embedded in DDScope, a supply chain mapping tool for DDMRP scoping.
-
-Concepts:
-- Node: supply chain actor (supplier, plant, warehouse, customer).
-- Flow: directed link between two nodes representing material movement.
-- Product: material or item flowing between nodes.
-- SKU: node x product association (tags: buffer, stock, transit...).
-- Swim-lane: named stage grouping nodes (Sourcing, Production, Distribution).
-- BOM: bill of material on a node — one output product, one or more input components with quantities.
-- Map: named view of the project. active_map shows what is visible.
-- Tags: free-text labels on nodes, products, flows, SKUs.
-
-You receive: (1) a JSON project snapshot, (2) a user instruction.
-Always respond in the same language as the user instruction.
-
-Respond with ONLY a single JSON object:
-{
-  "reasoning": "2-5 sentences: what you understood, which entities, why these actions.",
-  "answer": "string or null (for analytical questions). null for modification requests.",
-  "actions": []
-}
-
-Rules:
-- Only use IDs present in the context. Never invent IDs.
-- For new entities referenced by later actions, use "id": "new_entity_N" in the add_* action.
-- If ambiguous, return actions:[] and explain in reasoning.
-- Never emit actions on maps/map_nodes/map_flows/map_swim_lanes.
-- No free text outside the JSON.
-
-Allowed actions (each lists its required and optional fields):
-{{ACTION_VOCABULARY}}
-```
-
-### 5.5 Project-specific instructions
+### 5.4 Project-specific instructions
 
 Each project can define a free-text block of instructions that contextualise Claude's behaviour for that specific project. Typical content includes naming conventions, geographic scope, preferred node types, client-specific terminology, and known constraints.
 
