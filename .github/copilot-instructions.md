@@ -48,3 +48,14 @@
 3. Add or update tests.
 4. Run targeted tests first (`npm run test:unit` or selected files).
 5. Update documentation references if contracts changed.
+
+## Allowed actions in this repo
+- Preferred actions:
+  - Add and update tests in `tests/unit/**` and `tests/ui/**`.
+  - Add and update test data in `fixtures/**` and `samples/**`.
+  - Update documentation in `docs/**` and testing guidance in `README.md`.
+  - Improve test shims and test configuration when needed for reliability.
+- Disallowed by default:
+  - Do not modify production modules in `src/**` unless the user explicitly requests it.
+  - Do not perform spec/code alignment work as part of normal test tasks in this repo.
+  - Do not introduce feature development changes under the guise of test maintenance.
