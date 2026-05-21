@@ -112,12 +112,12 @@ block:        SCRIPT 150
 file:         src/DDS_STORE.js
 testability:  store-dependent
 contract:     partial
-dom_mixed:    yes   ← _markDirty / _markClean touch document directly
+dom_mixed:    no
 api_documented: yes
 deps_declared:  no
 ```
 
-**Responsibility:** in-memory CRUD on `DDS.state.project` + file persistence (File System Access API with download/upload fallback). Single data access layer for all DDScope modules.
+**Responsibility:** in-memory CRUD on `DDS.state.project` + serialization helpers (`toJson` / `loadFromText`). Single data access layer for all DDScope modules.
 
 **API:**
 ```
@@ -127,26 +127,17 @@ DDS_STORE.update(table, filters, updates)    // record[]
 DDS_STORE.remove(table, filters)             // record[]
 DDS_STORE.markDirty()                        // void
 DDS_STORE.resetDirty()                       // void
-DDS_STORE.confirmIfDirty()                   // boolean
-DDS_STORE.newProject(name, description)      // Promise<project>
-DDS_STORE.load()                             // Promise<project>
-DDS_STORE.save()                             // Promise<void>
-DDS_STORE.saveAs()                           // Promise<void>
-DDS_STORE.tryReopenLast()                    // Promise<'opened'|'prompt'|false>
-DDS_STORE.reopenWithPermission()             // Promise<boolean>
+DDS_STORE.newProject(name, description, createdBy?)  // project
+DDS_STORE.toJson()                           // string
+DDS_STORE.loadFromText(text)                 // void (throws on invalid DDScope JSON)
 ```
 
 **Dependencies:**
 ```
 DDS             SCRIPT 400   — global state (DDS.state.project, DDS.state.dirty)
-APP_CONTEXT     SCRIPT 200   — user email (used in newProject only)
-document        browser      — Save button + project label (in _markDirty/_markClean)
-window.showOpenFilePicker    — File System Access API (feature-detected)
-window.showSaveFilePicker    — File System Access API (feature-detected)
-indexedDB       browser      — FileSystemFileHandle persistence across sessions
 ```
 
-**Pending refactor:** isolate DOM side-effects in `_markDirty` / `_markClean` behind an `onDirtyChange(dirty, name)` callback. Prerequisite for all store-dependent unit tests. See Refactor Notes below.
+**Pending refactor:** none currently tracked for this extracted version.
 
 **High-level test strategy (DDS_STORE):**
 - **Test ownership matrix:**
@@ -156,20 +147,17 @@ indexedDB       browser      — FileSystemFileHandle persistence across session
 | Memory CRUD (`query/insert/update/remove`) | TEST | Unit (Vitest/Node) | Store-dependent tests with DDS state shim |
 | Counters and seed (`_nextId`, `_seedCounters`) | TEST | Unit (Vitest/Node) | Per-table counters, seeded from existing max IDs |
 | Dirty state and callback (`markDirty`, `resetDirty`, implicit dirty on writes) | TEST | Unit (Vitest/Node) | Validate callback contract and name resolution |
-| Project structure bootstrap (`_blankProject`, `newProject`, `_loadFromJson`) | TEST | Unit (Vitest/Node) | Validate required arrays and invalid JSON rejection |
-| File persistence (`load/save/saveAs`) | DEV + TEST | Manual | Browser API behavior, permission flows, fallback paths |
-| Handle reopen (`tryReopenLast`, `reopenWithPermission`) | DEV + TEST | Manual | IndexedDB handle persistence + permission prompts |
-| Browser internals (File System Access API, IndexedDB engine behavior) | Browser platform | Out-of-scope | Covered by platform; validate only integration paths |
+| Project structure bootstrap (`_blankProject`, `newProject`, `loadFromText`) | TEST | Unit (Vitest/Node) | Validate required arrays and invalid JSON rejection |
+| Serialization (`toJson`, `loadFromText`) | TEST | Unit (Vitest/Node) | JSON round-trip, parse failures, and clean state reset after load |
 
 - **Scope split:** `DDS_STORE` has two distinct concerns.
   - **In-memory CRUD and state transitions:** automated unit tests in Node/Vitest.
-  - **File persistence and browser capabilities:** manual tests only (File System Access API, IndexedDB handle persistence, `<input type="file">` fallback).
+  - **Serialization contract:** automated unit tests in Node/Vitest (`toJson`/`loadFromText`).
 - **Core unit-test axes:**
   - **CRUD behavior:** query/insert/update/remove correctness, filtering semantics (including array filters and loose equality), ordering, and table auto-initialization.
   - **ID counters and seed:** deterministic auto-increment per table, seeded from max existing IDs, no cross-table leakage.
   - **Dirty lifecycle contract:** `markDirty`, `resetDirty`, and callback signaling (`onDirtyChange`) only when state changes require it.
-  - **Project structure loading:** blank project shape, `newProject` bootstrap behavior, and JSON load validation/failure paths.
-- **Manual verification focus:** `load/save/saveAs/tryReopenLast/reopenWithPermission` success and permission-denied paths across supported browsers.
+  - **Project structure loading:** blank project shape, `newProject` bootstrap behavior, and `loadFromText` validation/failure paths.
 - **Known alignment points to keep explicit in tests:**
   - First generated ID after empty table seed is currently `1`.
   - Legacy `tag_colors` to `tag_styles` migration is expected by spec but must be confirmed/implemented in code before asserting it as passing.
