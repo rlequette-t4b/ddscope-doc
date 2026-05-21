@@ -28,13 +28,20 @@ Files in this folder are extracted by the AI assistant in VS Code directly from 
 > *"Extract DDS_DURATION from CommWise into src/"*
 > *"Extract all testable modules from CommWise"*
 
+### To refresh an existing extraction, just ask:
+
+> *"Refresh DDS_DURATION from CommWise"*
+> *"Re-extract DDS_COLORS from CommWise and overwrite src"*
+
 The AI assistant will:
 1. Look up the module in `docs/DDScope_Modules.md` (block position, global name, file path, testability).
 2. Skip modules with `testability: render-dependent` or `out-of-scope`.
 3. Fetch the block from CommWise (`commwise_get_block`, appID `22645`, code_type `script`).
 4. Verify the block title starts with `JS: DDS_` — abort if not.
-5. Append `export default <GLOBAL>;` for ESM compatibility with Vitest.
-6. Write (or overwrite) the file in `src/`.
+5. Read current app metadata/version from CommWise for traceability.
+6. Append `export default <GLOBAL>;` for ESM compatibility with Vitest.
+7. Write (or overwrite) the file in `src/`.
+8. Update the **Currently extracted** table in this file, including extraction date/time and CommWise app version.
 
 ### Prerequisite
 
@@ -67,8 +74,17 @@ Do not edit the body of these files for production fixes. If a fix is needed:
 
 ## Currently extracted
 
-| File | CommWise block | Testability |
-|---|---|---|
-| `DDS_DURATION.js` | SCRIPT 1650 | pure |
+After **every extraction or refresh**, this table must be updated immediately with:
+- extraction timestamp
+- CommWise app version used for extraction
+
+How to check if a local module is up to date:
+1. Compare module row value in **Extracted from app version** with current app version in CommWise.
+2. If versions differ, refresh extraction for the module.
+
+| File | CommWise block | Testability | Last extracted (local) | Extracted from app version |
+|---|---|---|---|---|
+| `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-21 11:37:34 | v100 |
+| `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-21 11:27:42 | v100 |
 
 *b2wise — Confidential*
