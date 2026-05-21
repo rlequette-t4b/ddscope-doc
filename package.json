@@ -8,9 +8,7 @@
     "test:unit": "vitest run tests/unit",
     "test:ui": "playwright test",
     "test:ui:setup": "playwright test --project=setup",
-    "test:ui:headed": "playwright test --headed",
-    "extract": "node scripts/extract.js",
-    "inject": "node scripts/inject.js"
+    "test:ui:headed": "playwright test --headed"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.0",

@@ -56,8 +56,8 @@ The `docs/` folder in TEST is kept in sync with the DEV project context manually
 
 When a CommWise SCRIPT block needs to be tested:
 
-1. Run `scripts/extract.js` to pull the block from CommWise into `src/`.
-2. Alternatively, copy the block content manually into the corresponding `src/` file.
+1. Ask Claude in VS Code to extract it: *"Extract DDS_DURATION from CommWise into src/"*. Claude uses `commwise_get_block` via the CommWise MCP and writes the result to `src/` with an ESM export appended.
+2. Alternatively, copy the block content manually into the corresponding `src/` file and add `export default <GLOBAL>;` at the end.
 3. Do not edit `src/` files directly for production fixes — see step 4.
 
 #### 3. Fixes found in TEST → DEV
@@ -85,7 +85,7 @@ Spec updated in DEV
   → download → copy to docs/ → commit                         (DEV → TEST)
 
 CommWise block updated in DEV
-  → extract.js or manual copy → src/                          (CommWise → TEST)
+  → ask Claude in VS Code to extract → src/                   (CommWise → TEST)
 
 Fix identified in TEST
   → paste corrected src/ into DEV → apply via MCP → re-extract  (TEST → DEV)

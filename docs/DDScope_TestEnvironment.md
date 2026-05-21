@@ -9,6 +9,7 @@
 |---|---|---|
 | 0.1 | May 2026 | Initial bootstrap reference |
 | 0.2 | May 2026 | DDScope_Modules.md introduced as module registry; module table and testability classification moved there; this doc references it |
+| 0.3 | May 2026 | Module extraction moved to AI-assisted workflow (Claude + CommWise MCP); scripts/ folder removed |
 
 ---
 
@@ -82,11 +83,7 @@ ddscope-tests/
 │   ├── demo-distribution.json
 │   └── ...
 │
-├── scripts/
-│   ├── extract.js              ← Pull SCRIPT blocks from CommWise → src/
-│   └── inject.js               ← Push src/ file → CommWise block (update)
-│
-├── .env.example                ← COMMWISE_APP_ID, DDSCOPE_URL, etc.
+├── .env.example                ← DDSCOPE_URL, etc.
 ├── playwright.config.js
 ├── vitest.config.js
 └── package.json
@@ -163,7 +160,9 @@ CommWise SCRIPT blocks expose modules as browser globals:
 window.DDS_STORE = (function () { ... })();
 ```
 
-The `scripts/extract.js` script pulls target blocks from CommWise via the MCP API and writes them to `src/`. No manual copy-paste. The selector used to identify DDScope module blocks is the `JS:` prefix in the block title (see `DDScope_Modules.md` — Naming Conventions).
+Module extraction is AI-assisted: Claude (in VS Code, connected to CommWise MCP) fetches each target block directly using `commwise_get_block` and writes it to `src/`. No manual copy-paste, no separate script to run. The selector used to identify DDScope module blocks is the `JS:` prefix in the block title (see `DDScope_Modules.md` — Naming Conventions).
+
+To request an extraction, ask Claude: *"Extract DDS_DURATION from CommWise into src/"*. Claude uses the module registry to look up the block position, fetches it, appends `export default <GLOBAL>;` for ESM compatibility, and writes the file.
 
 To make these modules runnable in Node.js, a minimal `shims/window.js` stub is imported at the top of each test file:
 
@@ -282,23 +281,34 @@ test('[DDS-42] cascade: delete_node removes all dependent flows', () => { ... })
 
 ---
 
-## Scripts
+## Module Extraction Workflow
 
-### `scripts/extract.js`
+Module extraction is fully AI-assisted. The developer does not run any script manually.
 
-Calls the CommWise MCP API to fetch target SCRIPT blocks by position or title and writes them to `src/`. Driven by the module registry in `DDScope_Modules.md` — the `block` field (e.g. `SCRIPT 150`) provides the exact `code_type` + `position` for each module. Only blocks whose title starts with `JS:` are considered DDScope modules.
+### Extracting a module
 
-Parameters: `COMMWISE_APP_ID` from `.env`.
+Ask Claude in VS Code:
 
-Intended use: run before a test session to ensure `src/` is in sync with the live app.
+> *"Extract DDS_DURATION from CommWise into src/"*
+> *"Extract all testable modules from CommWise"*
 
-### `scripts/inject.js`
+Claude will:
+1. Look up the module entry in `DDScope_Modules.md` (block position, global name, file path, testability).
+2. Skip modules with `testability: render-dependent` or `out-of-scope`.
+3. Call `commwise_get_block` with `appID: 22645`, `code_type: 'script'`, and the block position.
+4. Verify the block title starts with `JS: DDS_` — skip if not.
+5. Append `export default <GLOBAL>;` for ESM compatibility.
+6. Write the result to `src/<MODULE>.js`.
 
-Takes a modified file in `src/` and calls `commwise_update_block` to replace the corresponding CommWise block. Requires an active CommWise session ID.
+### Pushing a fix back to CommWise
 
-Intended use: local debug loop — edit in VS Code, run unit tests, inject fix back to CommWise.
+Fixes identified in TEST should flow back via the DEV workflow:
+1. Correct the `src/` file locally.
+2. Paste the corrected content into the DEV Claude project.
+3. DEV applies the fix to the CommWise block via MCP session.
+4. Re-extract to confirm.
 
-> Both scripts are designed to be driven by Claude in VS Code via the CommWise MCP. The developer does not need to call the CommWise API manually.
+Claude in VS Code must not write directly to CommWise production blocks.
 
 ---
 
@@ -341,7 +351,6 @@ Defined in `DDScope_Modules.md` and reproduced above for convenience.
 
 ```bash
 # .env (gitignored)
-COMMWISE_APP_ID=22645
 DDSCOPE_URL=https://...   # full CommWise app URL
 ```
 
