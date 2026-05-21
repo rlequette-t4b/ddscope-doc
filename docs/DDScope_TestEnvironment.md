@@ -1,5 +1,5 @@
 # DDScope — Test Environment
-*v0.2 — Draft — May 2026*
+*v0.4 — Draft — May 2026*
 
 ---
 
@@ -10,6 +10,7 @@
 | 0.1 | May 2026 | Initial bootstrap reference |
 | 0.2 | May 2026 | DDScope_Modules.md introduced as module registry; module table and testability classification moved there; this doc references it |
 | 0.3 | May 2026 | Module extraction moved to AI-assisted workflow (Claude + CommWise MCP); scripts/ folder removed |
+| 0.4 | May 2026 | Test mode and Playwright loading backdoor documented (Axe 2) |
 
 ---
 
@@ -233,6 +234,32 @@ export default {
   ],
 };
 ```
+
+### Test mode and loading backdoor
+
+Playwright tests cannot use the Open button (File System Access API — native browser dialog, blocked by the browser driver). DDScope exposes a backdoor activated by a query parameter instead.
+
+**Activation:** launch the app with `?dds_test=1` in the URL.
+
+**Exposed function:** `window.__playwright_load_project__(jsonString)` — receives a JSON string, loads the project into memory, resets the AI assistant, and opens the project exactly as the Open button would.
+
+**Usage pattern in Playwright specs:**
+
+```javascript
+const url = process.env.DDSCOPE_URL + '?dds_test=1';
+await page.goto(url);
+
+// Wait for the backdoor to be available
+await page.waitForFunction(() => typeof window.__playwright_load_project__ === 'function');
+
+// Load a fixture
+const json = fs.readFileSync('fixtures/project-minimal.json', 'utf-8');
+await page.evaluate((j) => window.__playwright_load_project__(j), json);
+
+// The app is now in the same state as after a manual Open
+```
+
+**Security:** the backdoor is only instantiated when `?dds_test=1` is present in the URL at load time. In normal production use, `window.__playwright_load_project__` does not exist.
 
 ### What to test
 

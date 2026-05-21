@@ -58,6 +58,30 @@ the default UI run.
 
 ---
 
+## Fixture and sample loading policy
+
+When a UI test must load data from `fixtures/` or `samples/`, always use the
+shared helper in `tests/ui/helpers/open-project.js`.
+
+Do not automate the toolbar Open button or native file chooser for those tests.
+Use the helper so tests load JSON via the dedicated test-mode backdoor
+(`?dds_test=1` + `window.__playwright_load_project__`).
+
+Required pattern in tests:
+
+```javascript
+import path from 'path';
+import { openProject } from '../helpers/open-project.js';
+
+const filePath = path.resolve('fixtures/project-empty.json');
+await openProject(page, filePath);
+```
+
+This rule is mandatory for new fixture/sample loading tests and for updates to
+existing ones.
+
+---
+
 ## Test structure
 
 ```
