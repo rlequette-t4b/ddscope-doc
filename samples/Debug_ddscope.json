@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "project": {
+    "name": "Debug",
+    "description": "",
+    "created_by": "r.lequette@tech4best.com"
+  },
+  "swim_lanes": [
+    {
+      "name": "lane",
+      "color": "#6b7280",
+      "id": 1,
+      "created_at": "2026-05-19T19:27:55.386Z",
+      "updated_at": "2026-05-19T19:27:55.386Z"
+    }
+  ],
+  "node_types": [],
+  "product_types": [],
+  "nodes": [
+    {
+      "name": "N1",
+      "type_code": null,
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T19:27:44.812Z",
+      "updated_at": "2026-05-19T19:28:09.674Z"
+    },
+    {
+      "name": "N2",
+      "type_code": null,
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T19:27:44.813Z",
+      "updated_at": "2026-05-19T19:28:09.674Z"
+    },
+    {
+      "name": "N3",
+      "type_code": null,
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T19:27:44.813Z",
+      "updated_at": "2026-05-19T19:28:09.674Z"
+    }
+  ],
+  "products": [],
+  "flows": [
+    {
+      "source_node_id": 1,
+      "target_node_id": 3,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T19:28:27.233Z",
+      "updated_at": "2026-05-19T19:28:27.233Z"
+    },
+    {
+      "source_node_id": 2,
+      "target_node_id": 3,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T19:28:30.529Z",
+      "updated_at": "2026-05-19T19:28:30.529Z"
+    }
+  ],
+  "skus": [],
+  "boms": [],
+  "bom_components": [],
+  "tag_styles": [],
+  "maps": [
+    {
+      "name": "Map 1",
+      "position": 1,
+      "legend_visible": true,
+      "id": 1,
+      "created_at": "2026-05-19T19:26:54.050Z",
+      "updated_at": "2026-05-19T19:26:54.050Z"
+    }
+  ],
+  "map_nodes": [
+    {
+      "map_id": 1,
+      "node_id": 1,
+      "x": 442,
+      "y": 134,
+      "id": 1,
+      "created_at": "2026-05-19T19:27:44.814Z",
+      "updated_at": "2026-05-19T19:29:58.343Z"
+    },
+    {
+      "map_id": 1,
+      "node_id": 2,
+      "x": 442,
+      "y": 295,
+      "id": 2,
+      "created_at": "2026-05-19T19:27:44.814Z",
+      "updated_at": "2026-05-19T19:29:58.343Z"
+    },
+    {
+      "map_id": 1,
+      "node_id": 3,
+      "x": 142,
+      "y": 200,
+      "id": 3,
+      "created_at": "2026-05-19T19:27:44.814Z",
+      "updated_at": "2026-05-19T19:29:58.343Z"
+    }
+  ],
+  "map_flows": [
+    {
+      "map_id": 1,
+      "flow_id": 1,
+      "id": 1,
+      "created_at": "2026-05-19T19:28:27.234Z",
+      "updated_at": "2026-05-19T19:29:04.777Z",
+      "layout_offset": 2
+    },
+    {
+      "map_id": 1,
+      "flow_id": 2,
+      "id": 2,
+      "created_at": "2026-05-19T19:28:30.529Z",
+      "updated_at": "2026-05-19T19:29:35.248Z",
+      "layout_offset": 0
+    }
+  ],
+  "map_swim_lanes": [
+    {
+      "map_id": 1,
+      "swim_lane_id": 1,
+      "x": 50,
+      "y": 50,
+      "width": 483.5,
+      "height": 308,
+      "id": 1,
+      "created_at": "2026-05-19T19:27:55.386Z",
+      "updated_at": "2026-05-19T19:28:15.904Z"
+    }
+  ]
+}

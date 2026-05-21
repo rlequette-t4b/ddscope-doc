@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "project": {
+    "name": "DELIVER-MAKE-SOURCE",
+    "description": "Template",
+    "created_by": "r.lequette@tech4best.com"
+  },
+  "swim_lanes": [
+    {
+      "name": "DELIVER",
+      "color": "#1e88e5",
+      "id": 1,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "name": "SOURCE",
+      "color": "#00897b",
+      "id": 2,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "name": "MAKE",
+      "color": "#43a047",
+      "id": 3,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    }
+  ],
+  "node_types": [
+    {
+      "code": "SUPPLIER",
+      "label": "Supplier",
+      "shape": "diamond",
+      "is_default": false,
+      "default_swim_lane_id": 2,
+      "is_product_node_default": false,
+      "id": 1,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "code": "SHOP",
+      "label": "Shop",
+      "shape": "ellipse",
+      "is_default": true,
+      "default_swim_lane_id": 3,
+      "is_product_node_default": false,
+      "color": "#1e88e5",
+      "id": 2,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "code": "WH",
+      "label": "Warehouse",
+      "shape": "rectangle",
+      "is_default": false,
+      "default_swim_lane_id": 3,
+      "is_product_node_default": false,
+      "id": 3,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "code": "CUSTOMER",
+      "label": "Customer",
+      "shape": "ellipse",
+      "is_default": false,
+      "default_swim_lane_id": 1,
+      "is_product_node_default": false,
+      "id": 4,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "code": "PRODUCT",
+      "label": "Product",
+      "shape": "rectangle",
+      "is_default": false,
+      "color": "#6d4c41",
+      "default_swim_lane_id": 3,
+      "is_product_node_default": true,
+      "id": 5,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "code": "PLANT",
+      "label": "Plant",
+      "shape": "ellipse",
+      "is_default": false,
+      "color": "#fbc02d",
+      "default_swim_lane_id": null,
+      "is_product_node_default": false,
+      "id": 6,
+      "created_at": "2026-05-20T11:06:19.051Z",
+      "updated_at": "2026-05-20T11:06:19.051Z"
+    },
+    {
+      "code": "DC",
+      "label": "DC",
+      "shape": "rectangle",
+      "is_default": false,
+      "color": "#1e88e5",
+      "default_swim_lane_id": 1,
+      "is_product_node_default": false,
+      "id": 7,
+      "created_at": "2026-05-20T11:06:34.355Z",
+      "updated_at": "2026-05-20T11:06:34.355Z"
+    }
+  ],
+  "product_types": [
+    {
+      "code": "RM",
+      "label": "Raw Material",
+      "shape": "ellipse",
+      "color": "#4A90D9",
+      "is_default": false,
+      "id": 1,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "code": "WIP",
+      "label": "WIP",
+      "shape": "ellipse",
+      "color": "#E8A838",
+      "is_default": false,
+      "id": 2,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "code": "FG",
+      "label": "Finished Good",
+      "shape": "ellipse",
+      "color": "#5BA85A",
+      "is_default": true,
+      "id": 3,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    }
+  ],
+  "nodes": [],
+  "products": [],
+  "flows": [],
+  "skus": [],
+  "boms": [],
+  "bom_components": [],
+  "tag_styles": [],
+  "maps": [
+    {
+      "name": "Map 1",
+      "position": 1,
+      "legend_visible": true,
+      "id": 2,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    }
+  ],
+  "map_nodes": [],
+  "map_flows": [],
+  "map_swim_lanes": [
+    {
+      "map_id": 2,
+      "swim_lane_id": 1,
+      "x": 229.49799670359164,
+      "y": -247.3820704304486,
+      "width": 168,
+      "height": 445,
+      "group_order": "1.1",
+      "id": 1,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 2,
+      "x": 1032.4979967035915,
+      "y": -247.3820704304486,
+      "width": 152.5,
+      "height": 445,
+      "group_order": "1.3",
+      "id": 2,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 3,
+      "x": 397.49799670359164,
+      "y": -247.3820704304486,
+      "width": 635,
+      "height": 445,
+      "group_order": "1.2",
+      "id": 3,
+      "created_at": "2026-05-19T11:00:51.603Z",
+      "updated_at": "2026-05-19T11:00:51.603Z"
+    }
+  ]
+}

@@ -1,0 +1,1204 @@
+{
+  "version": 1,
+  "project": {
+    "name": "Model one",
+    "description": "Exemple fourni par Leila",
+    "created_by": "r.lequette@tech4best.com"
+  },
+  "swim_lanes": [
+    {
+      "name": "Distribution",
+      "color": "#43a047",
+      "id": 1,
+      "created_at": "2026-05-18T17:07:18.811Z",
+      "updated_at": "2026-05-18T17:07:18.811Z"
+    },
+    {
+      "name": "Manufacturing",
+      "color": "#43a047",
+      "id": 2,
+      "created_at": "2026-05-18T17:07:42.223Z",
+      "updated_at": "2026-05-18T17:07:42.223Z"
+    }
+  ],
+  "node_types": [
+    {
+      "code": "DC",
+      "label": "DC",
+      "shape": "ellipse",
+      "is_default": false,
+      "default_swim_lane_id": 1,
+      "id": 1,
+      "created_at": "2026-05-18T17:05:03.220Z",
+      "updated_at": "2026-05-19T18:49:46.233Z",
+      "is_product_node_default": false,
+      "color": "#1e88e5"
+    },
+    {
+      "code": "RES",
+      "label": "Resource",
+      "shape": "ellipse",
+      "is_default": false,
+      "default_swim_lane_id": 2,
+      "id": 2,
+      "created_at": "2026-05-18T17:05:03.220Z",
+      "updated_at": "2026-05-19T18:49:33.737Z",
+      "is_product_node_default": false,
+      "color": "#1e88e5"
+    },
+    {
+      "code": "HUB",
+      "label": "HUB",
+      "shape": "ellipse",
+      "is_default": false,
+      "default_swim_lane_id": 1,
+      "id": 6,
+      "created_at": "2026-05-18T17:11:09.165Z",
+      "updated_at": "2026-05-19T18:49:40.706Z",
+      "is_product_node_default": false,
+      "color": "#1e88e5"
+    },
+    {
+      "code": "PRODUCT",
+      "label": "Product",
+      "shape": "rectangle",
+      "is_default": false,
+      "color": "#6d4c41",
+      "default_swim_lane_id": 2,
+      "is_product_node_default": true,
+      "id": 8,
+      "created_at": "2026-05-19T15:39:12.308Z",
+      "updated_at": "2026-05-19T15:39:12.308Z"
+    },
+    {
+      "code": "3PARTY",
+      "label": "3rd Party",
+      "shape": "ellipse",
+      "is_default": false,
+      "color": "#43a047",
+      "default_swim_lane_id": null,
+      "is_product_node_default": false,
+      "id": 9,
+      "created_at": "2026-05-19T19:14:19.997Z",
+      "updated_at": "2026-05-19T19:14:19.997Z"
+    }
+  ],
+  "product_types": [
+    {
+      "code": "RM",
+      "label": "Raw Material",
+      "shape": "ellipse",
+      "color": "#4A90D9",
+      "is_default": false,
+      "id": 1,
+      "created_at": "2026-05-18T17:05:03.220Z",
+      "updated_at": "2026-05-18T17:05:03.220Z"
+    },
+    {
+      "code": "WIP",
+      "label": "WIP",
+      "shape": "ellipse",
+      "color": "#E8A838",
+      "is_default": false,
+      "id": 2,
+      "created_at": "2026-05-18T17:05:03.220Z",
+      "updated_at": "2026-05-18T17:05:03.220Z"
+    },
+    {
+      "code": "FG",
+      "label": "Finished Good",
+      "shape": "ellipse",
+      "color": "#5BA85A",
+      "is_default": true,
+      "id": 3,
+      "created_at": "2026-05-18T17:05:03.220Z",
+      "updated_at": "2026-05-18T17:05:03.220Z"
+    }
+  ],
+  "nodes": [
+    {
+      "name": "DC",
+      "type_code": "DC",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T18:18:01.146Z",
+      "updated_at": "2026-05-19T18:18:59.555Z"
+    },
+    {
+      "name": "DC",
+      "type_code": "DC",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T18:18:01.146Z",
+      "updated_at": "2026-05-19T18:18:59.555Z"
+    },
+    {
+      "name": "DC",
+      "type_code": "DC",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-19T18:18:01.146Z",
+      "updated_at": "2026-05-19T18:18:59.555Z"
+    },
+    {
+      "name": "DC",
+      "type_code": "DC",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-19T18:18:01.146Z",
+      "updated_at": "2026-05-19T18:18:59.555Z"
+    },
+    {
+      "name": "FG 1",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-19T18:20:06.864Z",
+      "updated_at": "2026-05-19T18:20:32.033Z"
+    },
+    {
+      "name": "FG 2",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 7,
+      "created_at": "2026-05-19T18:20:06.864Z",
+      "updated_at": "2026-05-19T18:20:32.034Z"
+    },
+    {
+      "name": "FG 1 & FG 2",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 8,
+      "created_at": "2026-05-19T18:29:47.750Z",
+      "updated_at": "2026-05-19T18:32:45.821Z"
+    },
+    {
+      "name": "FG 1 & FG 2",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 9,
+      "created_at": "2026-05-19T18:33:39.998Z",
+      "updated_at": "2026-05-19T18:33:39.998Z"
+    },
+    {
+      "name": "HUB",
+      "type_code": "HUB",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 10,
+      "created_at": "2026-05-19T18:35:27.541Z",
+      "updated_at": "2026-05-19T18:35:27.541Z"
+    },
+    {
+      "name": "FG 1",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 11,
+      "created_at": "2026-05-19T18:43:13.469Z",
+      "updated_at": "2026-05-19T18:43:13.469Z"
+    },
+    {
+      "name": "FG 2",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 12,
+      "created_at": "2026-05-19T18:43:13.469Z",
+      "updated_at": "2026-05-19T18:43:13.469Z"
+    },
+    {
+      "name": "Pack Line 1",
+      "type_code": "RES",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 13,
+      "created_at": "2026-05-19T18:44:51.115Z",
+      "updated_at": "2026-05-19T18:44:51.115Z"
+    },
+    {
+      "name": "Pack Line 2",
+      "type_code": "RES",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 14,
+      "created_at": "2026-05-19T18:45:17.882Z",
+      "updated_at": "2026-05-19T18:45:17.882Z"
+    },
+    {
+      "name": "SA",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 15,
+      "created_at": "2026-05-19T18:46:24.603Z",
+      "updated_at": "2026-05-19T18:46:24.603Z"
+    },
+    {
+      "name": "MIX/ BLEND",
+      "type_code": "RES",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 16,
+      "created_at": "2026-05-19T18:47:27.169Z",
+      "updated_at": "2026-05-19T19:57:31.594Z"
+    },
+    {
+      "name": "RM 1",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 17,
+      "created_at": "2026-05-19T18:48:16.314Z",
+      "updated_at": "2026-05-19T18:48:16.314Z"
+    },
+    {
+      "name": "RM 2",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 18,
+      "created_at": "2026-05-19T18:48:16.314Z",
+      "updated_at": "2026-05-19T18:48:16.314Z"
+    },
+    {
+      "name": "Packaging SA",
+      "type_code": "PRODUCT",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 19,
+      "created_at": "2026-05-19T18:50:40.938Z",
+      "updated_at": "2026-05-19T18:50:40.938Z"
+    },
+    {
+      "name": "3rd Part Pack",
+      "type_code": "3PARTY",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 20,
+      "created_at": "2026-05-19T19:14:59.675Z",
+      "updated_at": "2026-05-19T19:14:59.675Z"
+    }
+  ],
+  "products": [
+    {
+      "name": "FG 1",
+      "type_code": "FG",
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T18:20:06.864Z",
+      "updated_at": "2026-05-19T18:20:06.864Z"
+    },
+    {
+      "name": "FG 2",
+      "type_code": "FG",
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T18:20:06.864Z",
+      "updated_at": "2026-05-19T18:20:06.864Z"
+    },
+    {
+      "name": "SA",
+      "type_code": "WIP",
+      "tags": [],
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T18:46:24.603Z",
+      "updated_at": "2026-05-19T18:46:24.603Z"
+    },
+    {
+      "name": "RM 1",
+      "type_code": "RM",
+      "tags": [],
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-19T18:48:16.314Z",
+      "updated_at": "2026-05-19T18:48:16.314Z"
+    },
+    {
+      "name": "RM 2",
+      "type_code": "RM",
+      "tags": [],
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-19T18:48:16.314Z",
+      "updated_at": "2026-05-19T18:48:16.314Z"
+    },
+    {
+      "name": "Packaging SA",
+      "type_code": "WIP",
+      "tags": [],
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-19T18:50:40.938Z",
+      "updated_at": "2026-05-19T18:50:40.938Z"
+    }
+  ],
+  "flows": [
+    {
+      "source_node_id": 6,
+      "target_node_id": 4,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T18:20:43.902Z",
+      "updated_at": "2026-05-19T18:20:43.902Z"
+    },
+    {
+      "source_node_id": 7,
+      "target_node_id": 2,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T18:20:54.496Z",
+      "updated_at": "2026-05-19T18:20:54.496Z"
+    },
+    {
+      "source_node_id": 4,
+      "target_node_id": 5,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T18:22:38.815Z",
+      "updated_at": "2026-05-19T18:22:38.815Z"
+    },
+    {
+      "source_node_id": 8,
+      "target_node_id": 5,
+      "product_ids": [
+        1,
+        2
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-19T18:31:28.661Z",
+      "updated_at": "2026-05-19T18:33:00.045Z"
+    },
+    {
+      "source_node_id": 9,
+      "target_node_id": 1,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-19T18:33:48.644Z",
+      "updated_at": "2026-05-19T18:33:48.644Z"
+    },
+    {
+      "source_node_id": 10,
+      "target_node_id": 6,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-19T18:35:27.541Z",
+      "updated_at": "2026-05-19T18:35:27.541Z"
+    },
+    {
+      "source_node_id": 10,
+      "target_node_id": 7,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 7,
+      "created_at": "2026-05-19T18:35:27.541Z",
+      "updated_at": "2026-05-19T18:35:27.541Z"
+    },
+    {
+      "source_node_id": 10,
+      "target_node_id": 8,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 8,
+      "created_at": "2026-05-19T18:35:27.541Z",
+      "updated_at": "2026-05-19T18:35:27.541Z"
+    },
+    {
+      "source_node_id": 10,
+      "target_node_id": 9,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 9,
+      "created_at": "2026-05-19T18:35:27.541Z",
+      "updated_at": "2026-05-19T18:35:27.541Z"
+    },
+    {
+      "source_node_id": 11,
+      "target_node_id": 10,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 10,
+      "created_at": "2026-05-19T18:43:28.819Z",
+      "updated_at": "2026-05-19T18:43:52.899Z"
+    },
+    {
+      "source_node_id": 12,
+      "target_node_id": 10,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 11,
+      "created_at": "2026-05-19T18:43:28.819Z",
+      "updated_at": "2026-05-19T18:43:52.899Z"
+    },
+    {
+      "source_node_id": 13,
+      "target_node_id": 11,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 12,
+      "created_at": "2026-05-19T18:44:51.115Z",
+      "updated_at": "2026-05-19T18:44:51.115Z"
+    },
+    {
+      "source_node_id": 14,
+      "target_node_id": 12,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 13,
+      "created_at": "2026-05-19T18:45:17.883Z",
+      "updated_at": "2026-05-19T18:45:17.883Z"
+    },
+    {
+      "source_node_id": 15,
+      "target_node_id": 13,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 14,
+      "created_at": "2026-05-19T18:46:24.604Z",
+      "updated_at": "2026-05-19T18:46:24.604Z"
+    },
+    {
+      "source_node_id": 15,
+      "target_node_id": 14,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 15,
+      "created_at": "2026-05-19T18:46:24.604Z",
+      "updated_at": "2026-05-19T18:46:24.604Z"
+    },
+    {
+      "source_node_id": 16,
+      "target_node_id": 15,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 16,
+      "created_at": "2026-05-19T18:47:27.169Z",
+      "updated_at": "2026-05-19T18:47:27.169Z"
+    },
+    {
+      "source_node_id": 17,
+      "target_node_id": 16,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 17,
+      "created_at": "2026-05-19T18:48:16.315Z",
+      "updated_at": "2026-05-19T18:48:16.315Z"
+    },
+    {
+      "source_node_id": 18,
+      "target_node_id": 16,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 18,
+      "created_at": "2026-05-19T18:48:16.315Z",
+      "updated_at": "2026-05-19T18:48:16.315Z"
+    },
+    {
+      "source_node_id": 19,
+      "target_node_id": 13,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 19,
+      "created_at": "2026-05-19T18:50:55.617Z",
+      "updated_at": "2026-05-19T18:50:55.617Z"
+    },
+    {
+      "source_node_id": 19,
+      "target_node_id": 14,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 20,
+      "created_at": "2026-05-19T18:51:02.584Z",
+      "updated_at": "2026-05-19T18:51:02.584Z"
+    },
+    {
+      "source_node_id": 19,
+      "target_node_id": 20,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 21,
+      "created_at": "2026-05-19T19:15:11.324Z",
+      "updated_at": "2026-05-19T19:15:11.324Z"
+    },
+    {
+      "source_node_id": 20,
+      "target_node_id": 10,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 22,
+      "created_at": "2026-05-19T19:15:14.556Z",
+      "updated_at": "2026-05-19T19:15:46.805Z"
+    },
+    {
+      "source_node_id": 15,
+      "target_node_id": 20,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 23,
+      "created_at": "2026-05-19T19:15:25.172Z",
+      "updated_at": "2026-05-19T19:15:25.172Z"
+    }
+  ],
+  "skus": [
+    {
+      "node_id": 6,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T18:20:06.865Z",
+      "updated_at": "2026-05-19T18:20:06.865Z"
+    },
+    {
+      "node_id": 7,
+      "product_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T18:20:06.865Z",
+      "updated_at": "2026-05-19T18:20:06.865Z"
+    },
+    {
+      "node_id": 8,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T18:29:47.751Z",
+      "updated_at": "2026-05-19T18:29:47.751Z"
+    },
+    {
+      "node_id": 5,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-19T18:32:57.712Z",
+      "updated_at": "2026-05-19T18:32:57.712Z"
+    },
+    {
+      "node_id": 8,
+      "product_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-19T18:33:00.045Z",
+      "updated_at": "2026-05-19T18:33:00.045Z"
+    },
+    {
+      "node_id": 5,
+      "product_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-19T18:33:00.045Z",
+      "updated_at": "2026-05-19T18:33:00.045Z"
+    },
+    {
+      "node_id": 9,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 7,
+      "created_at": "2026-05-19T18:33:39.998Z",
+      "updated_at": "2026-05-19T18:33:39.998Z"
+    },
+    {
+      "node_id": 9,
+      "product_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 8,
+      "created_at": "2026-05-19T18:33:39.998Z",
+      "updated_at": "2026-05-19T18:33:39.998Z"
+    },
+    {
+      "node_id": 10,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 9,
+      "created_at": "2026-05-19T18:35:27.541Z",
+      "updated_at": "2026-05-19T18:35:27.541Z"
+    },
+    {
+      "node_id": 10,
+      "product_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 10,
+      "created_at": "2026-05-19T18:35:27.541Z",
+      "updated_at": "2026-05-19T18:35:27.541Z"
+    },
+    {
+      "node_id": 11,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 11,
+      "created_at": "2026-05-19T18:43:13.469Z",
+      "updated_at": "2026-05-19T18:43:13.469Z"
+    },
+    {
+      "node_id": 12,
+      "product_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 12,
+      "created_at": "2026-05-19T18:43:13.469Z",
+      "updated_at": "2026-05-19T18:43:13.469Z"
+    },
+    {
+      "node_id": 15,
+      "product_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 13,
+      "created_at": "2026-05-19T18:46:24.603Z",
+      "updated_at": "2026-05-19T18:46:24.603Z"
+    },
+    {
+      "node_id": 16,
+      "product_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 14,
+      "created_at": "2026-05-19T18:47:27.169Z",
+      "updated_at": "2026-05-19T18:47:27.169Z"
+    },
+    {
+      "node_id": 17,
+      "product_id": 4,
+      "tags": [],
+      "notes": "",
+      "id": 15,
+      "created_at": "2026-05-19T18:48:16.315Z",
+      "updated_at": "2026-05-19T18:48:16.315Z"
+    },
+    {
+      "node_id": 18,
+      "product_id": 5,
+      "tags": [],
+      "notes": "",
+      "id": 16,
+      "created_at": "2026-05-19T18:48:16.315Z",
+      "updated_at": "2026-05-19T18:48:16.315Z"
+    },
+    {
+      "node_id": 19,
+      "product_id": 6,
+      "tags": [],
+      "notes": "",
+      "id": 17,
+      "created_at": "2026-05-19T18:50:40.938Z",
+      "updated_at": "2026-05-19T18:50:40.938Z"
+    }
+  ],
+  "boms": [],
+  "bom_components": [],
+  "maps": [
+    {
+      "name": "Map 1",
+      "position": 1,
+      "legend_visible": true,
+      "id": 2,
+      "created_at": "2026-05-18T17:05:03.220Z",
+      "updated_at": "2026-05-18T18:51:21.466Z",
+      "direction": "right-left"
+    }
+  ],
+  "map_nodes": [
+    {
+      "map_id": 2,
+      "node_id": 1,
+      "x": 313,
+      "y": 68,
+      "id": 1,
+      "created_at": "2026-05-19T18:18:01.148Z",
+      "updated_at": "2026-05-19T19:57:44.479Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 2,
+      "x": 313,
+      "y": 155,
+      "id": 2,
+      "created_at": "2026-05-19T18:18:01.148Z",
+      "updated_at": "2026-05-19T19:57:44.479Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 4,
+      "x": 313,
+      "y": 242,
+      "id": 4,
+      "created_at": "2026-05-19T18:18:01.148Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 5,
+      "x": 313,
+      "y": 329,
+      "id": 5,
+      "created_at": "2026-05-19T18:18:01.148Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 6,
+      "x": 463,
+      "y": 242,
+      "id": 6,
+      "created_at": "2026-05-19T18:20:06.865Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 7,
+      "x": 463,
+      "y": 155,
+      "id": 7,
+      "created_at": "2026-05-19T18:20:06.866Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 8,
+      "x": 463,
+      "y": 329,
+      "id": 8,
+      "created_at": "2026-05-19T18:29:47.751Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 9,
+      "x": 463,
+      "y": 68,
+      "id": 9,
+      "created_at": "2026-05-19T18:33:40.000Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 10,
+      "x": 613,
+      "y": 195,
+      "id": 10,
+      "created_at": "2026-05-19T18:35:27.542Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 11,
+      "x": 836,
+      "y": 135,
+      "id": 11,
+      "created_at": "2026-05-19T18:43:13.471Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 12,
+      "x": 836,
+      "y": 245,
+      "id": 12,
+      "created_at": "2026-05-19T18:43:13.471Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 13,
+      "x": 986,
+      "y": 135,
+      "id": 13,
+      "created_at": "2026-05-19T18:44:51.116Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 14,
+      "x": 986,
+      "y": 245,
+      "id": 14,
+      "created_at": "2026-05-19T18:45:17.883Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 15,
+      "x": 1286,
+      "y": 189,
+      "id": 15,
+      "created_at": "2026-05-19T18:46:24.604Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 16,
+      "x": 1436,
+      "y": 189,
+      "id": 16,
+      "created_at": "2026-05-19T18:47:27.170Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 17,
+      "x": 1586,
+      "y": 92,
+      "id": 17,
+      "created_at": "2026-05-19T18:48:16.316Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 18,
+      "x": 1586,
+      "y": 273,
+      "id": 18,
+      "created_at": "2026-05-19T18:48:16.316Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 19,
+      "x": 1136,
+      "y": 300,
+      "id": 19,
+      "created_at": "2026-05-19T18:50:40.938Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 20,
+      "x": 986,
+      "y": 355,
+      "id": 20,
+      "created_at": "2026-05-19T19:14:59.675Z",
+      "updated_at": "2026-05-19T19:57:44.480Z"
+    }
+  ],
+  "map_flows": [
+    {
+      "map_id": 2,
+      "flow_id": 1,
+      "id": 1,
+      "created_at": "2026-05-19T18:20:43.902Z",
+      "updated_at": "2026-05-19T18:20:43.902Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 2,
+      "id": 2,
+      "created_at": "2026-05-19T18:20:54.496Z",
+      "updated_at": "2026-05-19T18:20:54.496Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 3,
+      "id": 3,
+      "created_at": "2026-05-19T18:22:38.815Z",
+      "updated_at": "2026-05-19T19:18:29.459Z",
+      "layout_offset": 0
+    },
+    {
+      "map_id": 2,
+      "flow_id": 4,
+      "id": 4,
+      "created_at": "2026-05-19T18:31:28.661Z",
+      "updated_at": "2026-05-19T18:31:28.661Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 5,
+      "id": 5,
+      "created_at": "2026-05-19T18:33:48.645Z",
+      "updated_at": "2026-05-19T18:33:48.645Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 6,
+      "id": 6,
+      "created_at": "2026-05-19T18:35:27.543Z",
+      "updated_at": "2026-05-19T18:35:27.543Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 7,
+      "id": 7,
+      "created_at": "2026-05-19T18:35:27.543Z",
+      "updated_at": "2026-05-19T18:35:27.543Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 8,
+      "id": 8,
+      "created_at": "2026-05-19T18:35:27.543Z",
+      "updated_at": "2026-05-19T18:35:27.543Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 9,
+      "id": 9,
+      "created_at": "2026-05-19T18:35:27.543Z",
+      "updated_at": "2026-05-19T18:35:27.543Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 10,
+      "id": 10,
+      "created_at": "2026-05-19T18:43:28.819Z",
+      "updated_at": "2026-05-19T18:43:28.819Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 11,
+      "id": 11,
+      "created_at": "2026-05-19T18:43:28.819Z",
+      "updated_at": "2026-05-19T18:43:28.819Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 12,
+      "id": 12,
+      "created_at": "2026-05-19T18:44:51.116Z",
+      "updated_at": "2026-05-19T18:44:51.116Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 13,
+      "id": 13,
+      "created_at": "2026-05-19T18:45:17.883Z",
+      "updated_at": "2026-05-19T18:45:17.883Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 14,
+      "id": 14,
+      "created_at": "2026-05-19T18:46:24.604Z",
+      "updated_at": "2026-05-19T19:19:48.522Z",
+      "layout_offset": 2,
+      "waypoint_pct": 0.36
+    },
+    {
+      "map_id": 2,
+      "flow_id": 15,
+      "id": 15,
+      "created_at": "2026-05-19T18:46:24.604Z",
+      "updated_at": "2026-05-19T19:18:42.667Z",
+      "layout_offset": 2
+    },
+    {
+      "map_id": 2,
+      "flow_id": 16,
+      "id": 16,
+      "created_at": "2026-05-19T18:47:27.170Z",
+      "updated_at": "2026-05-19T18:47:27.170Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 17,
+      "id": 17,
+      "created_at": "2026-05-19T18:48:16.316Z",
+      "updated_at": "2026-05-19T18:49:58.449Z",
+      "waypoint_pct": 0.95
+    },
+    {
+      "map_id": 2,
+      "flow_id": 18,
+      "id": 18,
+      "created_at": "2026-05-19T18:48:16.316Z",
+      "updated_at": "2026-05-19T18:50:02.633Z",
+      "waypoint_pct": 0.95
+    },
+    {
+      "map_id": 2,
+      "flow_id": 19,
+      "id": 19,
+      "created_at": "2026-05-19T18:50:55.618Z",
+      "updated_at": "2026-05-19T18:51:33.658Z",
+      "curve_style": "straight"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 20,
+      "id": 20,
+      "created_at": "2026-05-19T18:51:02.584Z",
+      "updated_at": "2026-05-19T18:51:28.563Z",
+      "curve_style": "straight"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 21,
+      "id": 21,
+      "created_at": "2026-05-19T19:15:11.324Z",
+      "updated_at": "2026-05-19T19:15:11.324Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 22,
+      "id": 22,
+      "created_at": "2026-05-19T19:15:14.556Z",
+      "updated_at": "2026-05-19T19:20:04.794Z",
+      "waypoint_pct": 0.95
+    },
+    {
+      "map_id": 2,
+      "flow_id": 23,
+      "id": 23,
+      "created_at": "2026-05-19T19:15:25.172Z",
+      "updated_at": "2026-05-19T19:56:58.050Z",
+      "layout_offset": 2,
+      "waypoint_pct": 0.18
+    }
+  ],
+  "map_swim_lanes": [
+    {
+      "map_id": 2,
+      "swim_lane_id": 1,
+      "x": 159.10475183811099,
+      "y": -39.107673464799596,
+      "width": 607.215814818712,
+      "height": 481.6958901589019,
+      "id": 1,
+      "created_at": "2026-05-18T17:07:18.811Z",
+      "updated_at": "2026-05-19T19:19:44.475Z",
+      "group_order": "1.1"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 2,
+      "x": 766.3205666568231,
+      "y": -39.107673464799596,
+      "width": 888.5,
+      "height": 481.6958901589019,
+      "id": 2,
+      "created_at": "2026-05-18T17:07:42.223Z",
+      "updated_at": "2026-05-19T19:19:44.475Z",
+      "group_order": "1.2"
+    }
+  ],
+  "tag_styles": [
+    {
+      "tag": "3rd party",
+      "color": "#43a047",
+      "id": 1,
+      "created_at": "2026-05-18T18:44:53.143Z",
+      "updated_at": "2026-05-18T18:44:53.143Z"
+    },
+    {
+      "tag": "in house",
+      "color": "#1e88e5",
+      "id": 2,
+      "created_at": "2026-05-18T18:47:03.952Z",
+      "updated_at": "2026-05-18T18:47:03.952Z"
+    }
+  ]
+}

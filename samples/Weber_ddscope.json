@@ -1,0 +1,1344 @@
+{
+  "version": 1,
+  "project": {
+    "name": "Weber",
+    "description": "Exemple fourni par Leila",
+    "created_by": "r.lequette@tech4best.com",
+    "ai_instructions": "Context\nA company assembling bike from purschased components, some are inhouse built in a mechanical workshop\n\nRules\n- all nodes and products name start with capital letters\n- when creating a shop drop the 'shop' at the end of the name",
+    "auto_layout": true
+  },
+  "swim_lanes": [
+    {
+      "name": "DELIVER",
+      "color": "#1e88e5",
+      "id": 1,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T07:48:22.875Z"
+    },
+    {
+      "name": "SOURCE",
+      "color": "#00897b",
+      "id": 2,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T07:48:22.875Z"
+    },
+    {
+      "name": "MAKE Assembly",
+      "color": "#43a047",
+      "id": 3,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T07:48:37.260Z"
+    },
+    {
+      "name": "MAKE Mechanic",
+      "color": "#6b7280",
+      "id": 4,
+      "created_at": "2026-05-19T07:49:02.949Z",
+      "updated_at": "2026-05-19T07:49:02.949Z"
+    }
+  ],
+  "node_types": [
+    {
+      "code": "SUPPLIER",
+      "label": "Supplier",
+      "shape": "diamond",
+      "is_default": false,
+      "default_swim_lane_id": 2,
+      "id": 1,
+      "created_at": "2026-05-19T07:48:22.874Z",
+      "updated_at": "2026-05-19T09:15:44.482Z",
+      "is_product_node_default": false
+    },
+    {
+      "code": "SHOP",
+      "label": "Shop",
+      "shape": "ellipse",
+      "is_default": true,
+      "default_swim_lane_id": 3,
+      "id": 2,
+      "created_at": "2026-05-19T07:48:22.874Z",
+      "updated_at": "2026-05-19T09:15:44.482Z",
+      "color": null,
+      "is_product_node_default": false
+    },
+    {
+      "code": "WH",
+      "label": "Warehouse",
+      "shape": "hexagon",
+      "is_default": false,
+      "default_swim_lane_id": 3,
+      "id": 3,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T15:20:54.642Z",
+      "is_product_node_default": false,
+      "color": null
+    },
+    {
+      "code": "CUSTOMER",
+      "label": "Customer",
+      "shape": "ellipse",
+      "is_default": false,
+      "default_swim_lane_id": 1,
+      "id": 4,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T09:15:44.482Z",
+      "is_product_node_default": false
+    },
+    {
+      "code": "PRODUCR",
+      "label": "Product",
+      "shape": "rectangle",
+      "is_default": false,
+      "color": "#6d4c41",
+      "default_swim_lane_id": null,
+      "is_product_node_default": true,
+      "id": 6,
+      "created_at": "2026-05-19T09:15:44.482Z",
+      "updated_at": "2026-05-19T09:15:44.482Z"
+    }
+  ],
+  "product_types": [
+    {
+      "code": "RM",
+      "label": "Raw Material",
+      "shape": "ellipse",
+      "color": "#4A90D9",
+      "is_default": false,
+      "id": 1,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T07:48:22.875Z"
+    },
+    {
+      "code": "WIP",
+      "label": "WIP",
+      "shape": "ellipse",
+      "color": "#E8A838",
+      "is_default": false,
+      "id": 2,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T07:48:22.875Z"
+    },
+    {
+      "code": "FG",
+      "label": "Finished Good",
+      "shape": "ellipse",
+      "color": "#5BA85A",
+      "is_default": true,
+      "id": 3,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T07:48:22.875Z"
+    }
+  ],
+  "nodes": [
+    {
+      "name": "SUPER VELO",
+      "type_code": "CUSTOMER",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T08:54:06.380Z",
+      "updated_at": "2026-05-19T08:54:06.380Z"
+    },
+    {
+      "name": "Bike",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T09:17:34.045Z",
+      "updated_at": "2026-05-19T09:17:34.045Z"
+    },
+    {
+      "name": "Bike Assembly",
+      "type_code": "SHOP",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T09:17:56.240Z",
+      "updated_at": "2026-05-19T09:39:28.939Z"
+    },
+    {
+      "name": "Semi Finished",
+      "type_code": "WH",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-19T09:19:25.073Z",
+      "updated_at": "2026-05-19T15:22:18.549Z"
+    },
+    {
+      "name": "Frame",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "name": "Saddle",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "name": "Propulsion",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 7,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "name": "Wheel",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 8,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "name": "Wheel assembly",
+      "type_code": "SHOP",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 9,
+      "created_at": "2026-05-19T09:24:59.768Z",
+      "updated_at": "2026-05-19T09:39:28.939Z"
+    },
+    {
+      "name": "Rim",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 10,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T09:29:42.093Z"
+    },
+    {
+      "name": "Spoke",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 11,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T09:29:42.093Z"
+    },
+    {
+      "name": "Tyre",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 12,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T09:29:42.093Z"
+    },
+    {
+      "name": "Local",
+      "type_code": "SUPPLIER",
+      "swim_lane_id": 2,
+      "tags": [
+        "local",
+        "domestic"
+      ],
+      "notes": "",
+      "id": 13,
+      "created_at": "2026-05-19T09:31:04.461Z",
+      "updated_at": "2026-05-19T15:32:34.360Z"
+    },
+    {
+      "name": "International",
+      "type_code": "SUPPLIER",
+      "swim_lane_id": 2,
+      "tags": [
+        "international",
+        "global",
+        "import"
+      ],
+      "notes": "",
+      "id": 14,
+      "created_at": "2026-05-19T09:31:04.461Z",
+      "updated_at": "2026-05-19T15:32:20.008Z"
+    },
+    {
+      "name": "Propulsion assembly",
+      "type_code": "SHOP",
+      "swim_lane_id": 4,
+      "tags": [],
+      "notes": "",
+      "id": 15,
+      "created_at": "2026-05-19T09:37:25.652Z",
+      "updated_at": "2026-05-19T09:39:28.939Z"
+    },
+    {
+      "name": "Machining",
+      "type_code": "SHOP",
+      "swim_lane_id": 4,
+      "tags": [],
+      "notes": "",
+      "id": 16,
+      "created_at": "2026-05-19T10:35:11.884Z",
+      "updated_at": "2026-05-19T10:35:11.884Z"
+    },
+    {
+      "name": "Steel",
+      "type_code": "PRODUCR",
+      "swim_lane_id": 4,
+      "tags": [],
+      "notes": "",
+      "id": 17,
+      "created_at": "2026-05-19T10:36:56.529Z",
+      "updated_at": "2026-05-19T10:37:24.696Z"
+    },
+    {
+      "name": "Steel Supplier",
+      "type_code": "SUPPLIER",
+      "swim_lane_id": null,
+      "tags": [],
+      "notes": "",
+      "id": 18,
+      "created_at": "2026-05-19T10:38:23.735Z",
+      "updated_at": "2026-05-19T10:38:23.735Z"
+    }
+  ],
+  "products": [
+    {
+      "name": "Bike",
+      "type_code": null,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T09:17:34.045Z",
+      "updated_at": "2026-05-19T09:17:34.045Z"
+    },
+    {
+      "name": "Frame",
+      "type_code": "WIP",
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "name": "Saddle",
+      "type_code": "WIP",
+      "tags": [],
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "name": "Propulsion",
+      "type_code": "WIP",
+      "tags": [],
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "name": "Wheel",
+      "type_code": "WIP",
+      "tags": [],
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "name": "Rim",
+      "type_code": "RM",
+      "tags": [],
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-19T09:28:46.750Z",
+      "updated_at": "2026-05-19T09:28:46.750Z"
+    },
+    {
+      "name": "Spoke",
+      "type_code": "RM",
+      "tags": [],
+      "notes": "",
+      "id": 7,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    },
+    {
+      "name": "Tyre",
+      "type_code": "RM",
+      "tags": [],
+      "notes": "",
+      "id": 8,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    },
+    {
+      "name": "Steel",
+      "type_code": "RM",
+      "tags": [],
+      "notes": "",
+      "id": 9,
+      "created_at": "2026-05-19T10:36:56.528Z",
+      "updated_at": "2026-05-19T10:36:56.528Z"
+    }
+  ],
+  "flows": [
+    {
+      "source_node_id": 2,
+      "target_node_id": 1,
+      "product_ids": [
+        1
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T09:17:34.045Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 3,
+      "target_node_id": 2,
+      "product_ids": [
+        1
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T09:17:56.240Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 4,
+      "target_node_id": 3,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T09:19:25.073Z",
+      "updated_at": "2026-05-19T09:19:25.073Z"
+    },
+    {
+      "source_node_id": 5,
+      "target_node_id": 4,
+      "product_ids": [
+        2
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 6,
+      "target_node_id": 4,
+      "product_ids": [
+        3
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 15,
+      "target_node_id": 7,
+      "product_ids": [
+        4
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 9,
+      "target_node_id": 8,
+      "product_ids": [
+        5
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 7,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T10:50:21.254Z"
+    },
+    {
+      "source_node_id": 8,
+      "target_node_id": 4,
+      "product_ids": [
+        5
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 8,
+      "created_at": "2026-05-19T09:24:59.768Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 10,
+      "target_node_id": 9,
+      "product_ids": [
+        6
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 9,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 11,
+      "target_node_id": 9,
+      "product_ids": [
+        7
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 10,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 12,
+      "target_node_id": 9,
+      "product_ids": [
+        8
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 11,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 14,
+      "target_node_id": 10,
+      "product_ids": [
+        6
+      ],
+      "tags": [
+        "international"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 12,
+      "created_at": "2026-05-19T09:33:20.422Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 14,
+      "target_node_id": 11,
+      "product_ids": [
+        7
+      ],
+      "tags": [
+        "international"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 13,
+      "created_at": "2026-05-19T09:33:22.917Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 13,
+      "target_node_id": 12,
+      "product_ids": [
+        8
+      ],
+      "tags": [
+        "local"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 14,
+      "created_at": "2026-05-19T09:33:27.749Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 14,
+      "target_node_id": 6,
+      "product_ids": [],
+      "tags": [
+        "international"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 15,
+      "created_at": "2026-05-19T09:33:34.973Z",
+      "updated_at": "2026-05-19T09:35:09.408Z"
+    },
+    {
+      "source_node_id": 13,
+      "target_node_id": 5,
+      "product_ids": [],
+      "tags": [
+        "local"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 16,
+      "created_at": "2026-05-19T09:33:38.621Z",
+      "updated_at": "2026-05-19T09:35:09.408Z"
+    },
+    {
+      "source_node_id": 7,
+      "target_node_id": 4,
+      "product_ids": [
+        4
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 17,
+      "created_at": "2026-05-19T09:38:27.215Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 16,
+      "target_node_id": 15,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 18,
+      "created_at": "2026-05-19T10:35:11.884Z",
+      "updated_at": "2026-05-19T10:35:11.884Z"
+    },
+    {
+      "source_node_id": 17,
+      "target_node_id": 16,
+      "product_ids": [
+        9
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 19,
+      "created_at": "2026-05-19T10:36:56.529Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "source_node_id": 18,
+      "target_node_id": 17,
+      "product_ids": [
+        9
+      ],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 20,
+      "created_at": "2026-05-19T10:38:23.736Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    }
+  ],
+  "skus": [
+    {
+      "node_id": 2,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T09:17:34.045Z",
+      "updated_at": "2026-05-19T09:17:34.045Z"
+    },
+    {
+      "node_id": 1,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T09:17:34.045Z",
+      "updated_at": "2026-05-19T09:17:34.045Z"
+    },
+    {
+      "node_id": 3,
+      "product_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T09:17:56.240Z",
+      "updated_at": "2026-05-19T09:17:56.240Z"
+    },
+    {
+      "node_id": 5,
+      "product_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "node_id": 6,
+      "product_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "node_id": 7,
+      "product_id": 4,
+      "tags": [],
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "node_id": 8,
+      "product_id": 5,
+      "tags": [],
+      "notes": "",
+      "id": 7,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "node_id": 4,
+      "product_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 8,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "node_id": 4,
+      "product_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 9,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "node_id": 4,
+      "product_id": 4,
+      "tags": [],
+      "notes": "",
+      "id": 10,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "node_id": 4,
+      "product_id": 5,
+      "tags": [],
+      "notes": "",
+      "id": 11,
+      "created_at": "2026-05-19T09:23:56.735Z",
+      "updated_at": "2026-05-19T09:23:56.735Z"
+    },
+    {
+      "node_id": 9,
+      "product_id": 5,
+      "tags": [],
+      "notes": "",
+      "id": 12,
+      "created_at": "2026-05-19T09:24:59.768Z",
+      "updated_at": "2026-05-19T09:24:59.768Z"
+    },
+    {
+      "node_id": 9,
+      "product_id": 6,
+      "tags": [],
+      "notes": "",
+      "id": 13,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    },
+    {
+      "node_id": 9,
+      "product_id": 7,
+      "tags": [],
+      "notes": "",
+      "id": 14,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    },
+    {
+      "node_id": 9,
+      "product_id": 8,
+      "tags": [],
+      "notes": "",
+      "id": 15,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    },
+    {
+      "node_id": 10,
+      "product_id": 6,
+      "tags": [],
+      "notes": "",
+      "id": 16,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T09:29:42.093Z"
+    },
+    {
+      "node_id": 11,
+      "product_id": 7,
+      "tags": [],
+      "notes": "",
+      "id": 17,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T09:29:42.093Z"
+    },
+    {
+      "node_id": 12,
+      "product_id": 8,
+      "tags": [],
+      "notes": "",
+      "id": 18,
+      "created_at": "2026-05-19T09:29:42.093Z",
+      "updated_at": "2026-05-19T09:29:42.093Z"
+    },
+    {
+      "node_id": 15,
+      "product_id": 4,
+      "tags": [],
+      "notes": "",
+      "id": 19,
+      "created_at": "2026-05-19T09:37:25.652Z",
+      "updated_at": "2026-05-19T09:37:25.652Z"
+    },
+    {
+      "node_id": 17,
+      "product_id": 9,
+      "tags": [],
+      "notes": "",
+      "id": 20,
+      "created_at": "2026-05-19T10:36:56.529Z",
+      "updated_at": "2026-05-19T10:36:56.529Z"
+    },
+    {
+      "node_id": 16,
+      "product_id": 9,
+      "tags": [],
+      "notes": "",
+      "id": 21,
+      "created_at": "2026-05-19T10:36:56.529Z",
+      "updated_at": "2026-05-19T10:36:56.529Z"
+    },
+    {
+      "node_id": 14,
+      "product_id": 6,
+      "tags": [],
+      "notes": "",
+      "id": 22,
+      "created_at": "2026-05-19T10:43:00.463Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "node_id": 14,
+      "product_id": 7,
+      "tags": [],
+      "notes": "",
+      "id": 23,
+      "created_at": "2026-05-19T10:43:00.463Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "node_id": 13,
+      "product_id": 8,
+      "tags": [],
+      "notes": "",
+      "id": 24,
+      "created_at": "2026-05-19T10:43:00.463Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    },
+    {
+      "node_id": 18,
+      "product_id": 9,
+      "tags": [],
+      "notes": "",
+      "id": 25,
+      "created_at": "2026-05-19T10:43:00.463Z",
+      "updated_at": "2026-05-19T10:43:00.463Z"
+    }
+  ],
+  "boms": [
+    {
+      "node_id": 9,
+      "output_product_id": 5,
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    }
+  ],
+  "bom_components": [
+    {
+      "bom_id": 1,
+      "product_id": 6,
+      "quantity": 1,
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    },
+    {
+      "bom_id": 1,
+      "product_id": 7,
+      "quantity": 1,
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    },
+    {
+      "bom_id": 1,
+      "product_id": 8,
+      "quantity": 1,
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-19T09:28:46.751Z",
+      "updated_at": "2026-05-19T09:28:46.751Z"
+    }
+  ],
+  "tag_styles": [
+    {
+      "tag": "local",
+      "color": "#00897b",
+      "line_color": "#43a047",
+      "line_style": null,
+      "line_width": null,
+      "id": 1,
+      "created_at": "2026-05-19T09:35:55.868Z",
+      "updated_at": "2026-05-19T09:35:55.868Z"
+    },
+    {
+      "tag": "international",
+      "color": "#e53935",
+      "line_color": "#e53935",
+      "line_style": null,
+      "line_width": null,
+      "id": 2,
+      "created_at": "2026-05-19T09:36:03.940Z",
+      "updated_at": "2026-05-19T09:36:03.940Z"
+    }
+  ],
+  "maps": [
+    {
+      "name": "Map 1",
+      "position": 1,
+      "legend_visible": true,
+      "id": 2,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T15:16:28.548Z",
+      "direction": "left-right"
+    }
+  ],
+  "map_nodes": [
+    {
+      "map_id": 2,
+      "node_id": 1,
+      "x": 1478,
+      "y": -31,
+      "id": 1,
+      "created_at": "2026-05-19T08:54:06.380Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 2,
+      "x": 1287,
+      "y": -31,
+      "id": 2,
+      "created_at": "2026-05-19T09:17:34.047Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 3,
+      "x": 1137,
+      "y": -31,
+      "id": 3,
+      "created_at": "2026-05-19T09:17:56.241Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 4,
+      "x": 987,
+      "y": -31,
+      "id": 4,
+      "created_at": "2026-05-19T09:19:25.074Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 5,
+      "x": 837,
+      "y": 40,
+      "id": 5,
+      "created_at": "2026-05-19T09:23:56.737Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 6,
+      "x": 837,
+      "y": -60,
+      "id": 6,
+      "created_at": "2026-05-19T09:23:56.737Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 7,
+      "x": 837,
+      "y": 140,
+      "id": 7,
+      "created_at": "2026-05-19T09:23:56.737Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 8,
+      "x": 837,
+      "y": -160,
+      "id": 8,
+      "created_at": "2026-05-19T09:23:56.737Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 9,
+      "x": 687,
+      "y": -123,
+      "id": 9,
+      "created_at": "2026-05-19T09:24:59.768Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 10,
+      "x": 537,
+      "y": -161,
+      "id": 10,
+      "created_at": "2026-05-19T09:29:42.094Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 11,
+      "x": 537,
+      "y": -101,
+      "id": 11,
+      "created_at": "2026-05-19T09:29:42.094Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 12,
+      "x": 537,
+      "y": -41,
+      "id": 12,
+      "created_at": "2026-05-19T09:29:42.094Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 13,
+      "x": 352,
+      "y": 128,
+      "id": 13,
+      "created_at": "2026-05-19T09:31:04.461Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 14,
+      "x": 352,
+      "y": 34,
+      "id": 14,
+      "created_at": "2026-05-19T09:31:04.461Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 15,
+      "x": 558,
+      "y": 407,
+      "id": 15,
+      "created_at": "2026-05-19T09:37:25.652Z",
+      "updated_at": "2026-05-19T15:32:48.547Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 16,
+      "x": 408,
+      "y": 407,
+      "id": 16,
+      "created_at": "2026-05-19T10:35:11.885Z",
+      "updated_at": "2026-05-19T15:32:48.548Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 17,
+      "x": 258,
+      "y": 407,
+      "id": 17,
+      "created_at": "2026-05-19T10:36:56.529Z",
+      "updated_at": "2026-05-19T15:32:48.548Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 18,
+      "x": 38.270232063375076,
+      "y": 407,
+      "id": 18,
+      "created_at": "2026-05-19T10:38:23.736Z",
+      "updated_at": "2026-05-19T15:26:11.298Z"
+    }
+  ],
+  "map_flows": [
+    {
+      "map_id": 2,
+      "flow_id": 1,
+      "id": 1,
+      "created_at": "2026-05-19T09:17:34.047Z",
+      "updated_at": "2026-05-19T09:17:34.047Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 2,
+      "id": 2,
+      "created_at": "2026-05-19T09:17:56.241Z",
+      "updated_at": "2026-05-19T09:17:56.241Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 3,
+      "id": 3,
+      "created_at": "2026-05-19T09:19:25.074Z",
+      "updated_at": "2026-05-19T09:19:25.074Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 4,
+      "id": 4,
+      "created_at": "2026-05-19T09:23:56.737Z",
+      "updated_at": "2026-05-19T09:23:56.737Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 5,
+      "id": 5,
+      "created_at": "2026-05-19T09:23:56.737Z",
+      "updated_at": "2026-05-19T09:23:56.737Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 6,
+      "id": 6,
+      "created_at": "2026-05-19T09:23:56.737Z",
+      "updated_at": "2026-05-19T09:23:56.737Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 7,
+      "id": 7,
+      "created_at": "2026-05-19T09:23:56.737Z",
+      "updated_at": "2026-05-19T09:23:56.737Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 8,
+      "id": 8,
+      "created_at": "2026-05-19T09:24:59.768Z",
+      "updated_at": "2026-05-19T09:24:59.768Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 9,
+      "id": 9,
+      "created_at": "2026-05-19T09:29:42.094Z",
+      "updated_at": "2026-05-19T09:29:42.094Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 10,
+      "id": 10,
+      "created_at": "2026-05-19T09:29:42.094Z",
+      "updated_at": "2026-05-19T09:29:42.094Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 11,
+      "id": 11,
+      "created_at": "2026-05-19T09:29:42.094Z",
+      "updated_at": "2026-05-19T09:29:42.094Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 12,
+      "id": 12,
+      "created_at": "2026-05-19T09:33:20.422Z",
+      "updated_at": "2026-05-19T09:33:20.422Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 13,
+      "id": 13,
+      "created_at": "2026-05-19T09:33:22.917Z",
+      "updated_at": "2026-05-19T09:33:22.917Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 14,
+      "id": 14,
+      "created_at": "2026-05-19T09:33:27.749Z",
+      "updated_at": "2026-05-19T15:25:59.163Z",
+      "waypoint_pct": 0.95
+    },
+    {
+      "map_id": 2,
+      "flow_id": 15,
+      "id": 15,
+      "created_at": "2026-05-19T09:33:34.974Z",
+      "updated_at": "2026-05-19T15:25:48.898Z",
+      "waypoint_pct": 0.63
+    },
+    {
+      "map_id": 2,
+      "flow_id": 16,
+      "id": 16,
+      "created_at": "2026-05-19T09:33:38.622Z",
+      "updated_at": "2026-05-19T09:33:38.622Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 17,
+      "id": 17,
+      "created_at": "2026-05-19T09:38:27.216Z",
+      "updated_at": "2026-05-19T09:38:27.216Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 18,
+      "id": 18,
+      "created_at": "2026-05-19T10:35:11.885Z",
+      "updated_at": "2026-05-19T10:35:11.885Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 19,
+      "id": 19,
+      "created_at": "2026-05-19T10:36:56.529Z",
+      "updated_at": "2026-05-19T10:36:56.529Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 20,
+      "id": 20,
+      "created_at": "2026-05-19T10:38:23.736Z",
+      "updated_at": "2026-05-19T10:38:23.736Z"
+    }
+  ],
+  "map_swim_lanes": [
+    {
+      "map_id": 2,
+      "swim_lane_id": 1,
+      "x": 1394.410202651169,
+      "y": -221.14377337025002,
+      "width": 168,
+      "height": 454.5409194699137,
+      "group_order": "1.3",
+      "id": 1,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T15:21:03.611Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 2,
+      "x": 276.15832769415994,
+      "y": -221.14377337025002,
+      "width": 152.5,
+      "height": 454.5409194699137,
+      "group_order": "1.1",
+      "id": 2,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T15:21:03.611Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 3,
+      "x": 428.65832769415994,
+      "y": -221.14377337025002,
+      "width": 965.751874957009,
+      "height": 454.5409194699137,
+      "group_order": "1.2",
+      "id": 3,
+      "created_at": "2026-05-19T07:48:22.875Z",
+      "updated_at": "2026-05-19T15:21:03.611Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 4,
+      "x": 108.88378460363197,
+      "y": 303.48585714296865,
+      "width": 597.6551921352429,
+      "height": 163.91479793078608,
+      "id": 4,
+      "created_at": "2026-05-19T07:49:02.949Z",
+      "updated_at": "2026-05-19T15:17:03.566Z"
+    }
+  ]
+}
