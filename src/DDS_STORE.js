@@ -10,8 +10,6 @@
 
 var DDS_STORE = (function () {
 
-  var FS_HANDLE_KEY = 'dds_fs_handle'; // localStorage key for FileSystemFileHandle
-  var _fileHandle = null;              // current FileSystemFileHandle (Chrome/Edge)
   var _counters = {};                  // auto-increment counters per table
 
   // ------------------------------------------------------------------
@@ -173,51 +171,17 @@ var DDS_STORE = (function () {
   }
 
   // ------------------------------------------------------------------
-  // File persistence
+  // Serialisation (no file I/O — caller handles acquisition)
   // ------------------------------------------------------------------
 
-  var _hasFileAPI = typeof window.showOpenFilePicker === 'function';
-
-  // Save FileSystemFileHandle to localStorage
-  async function _persistHandle(handle) {
-    try {
-      _fileHandle = handle;
-      // IndexedDB would be ideal but localStorage + serialisation is simpler
-      // FileSystemFileHandle cannot be JSON-serialised directly — store via IndexedDB
-      var db = await _openHandleDB();
-      var tx = db.transaction('handles', 'readwrite');
-      tx.objectStore('handles').put(handle, 'last');
-    } catch(e) { /* silently ignore */ }
-  }
-
-  function _openHandleDB() {
-    return new Promise(function(resolve, reject) {
-      var req = indexedDB.open('dds_store', 1);
-      req.onupgradeneeded = function(e) {
-        e.target.result.createObjectStore('handles');
-      };
-      req.onsuccess = function(e) { resolve(e.target.result); };
-      req.onerror   = function(e) { reject(e.target.error); };
-    });
-  }
-
-  async function _loadHandle() {
-    try {
-      var db = await _openHandleDB();
-      return await new Promise(function(resolve, reject) {
-        var tx = db.transaction('handles', 'readonly');
-        var req = tx.objectStore('handles').get('last');
-        req.onsuccess = function(e) { resolve(e.target.result || null); };
-        req.onerror   = function(e) { reject(e.target.error); };
-      });
-    } catch(e) { return null; }
-  }
-
-  function _projectToJson() {
+  // Serialise current project to JSON string.
+  api.toJson = function() {
     return JSON.stringify(DDS.state.project, null, 2);
-  }
+  };
 
-  function _loadFromJson(text) {
+  // Parse a JSON string and load it into memory.
+  // Throws if the file is not a valid DDScope project.
+  api.loadFromText = function(text) {
     var json = JSON.parse(text);
     if (!json.project || !json.version) throw new Error('Invalid DDScope file');
     // Ensure all table arrays exist
@@ -227,145 +191,22 @@ var DDS_STORE = (function () {
     tables.forEach(function(t) { if (!json[t]) json[t] = []; });
     DDS.state.project = json;
     _seedCounters(json);
-  }
+    _markClean();
+  };
 
   // ------------------------------------------------------------------
-  // Public file API
+  // Public project API
   // ------------------------------------------------------------------
 
-  // Create a new empty project in memory
-  api.newProject = async function(name, description) {
-    var ctx = await APP_CONTEXT.ready();
-    var blank = _blankProject(name, description, ctx.user.email);
+  // Create a new empty project in memory.
+  // createdBy: email or identifier of the creator (supplied by caller).
+  api.newProject = function(name, description, createdBy) {
+    var blank = _blankProject(name, description, createdBy || '');
     DDS.state.project = blank;
     _counters = {};
-    // Seed default type counters
-    _counters['node_types']    = blank.node_types.length;
-    _counters['product_types'] = blank.product_types.length;
-    // Create first map
     api.insert('maps', { name: 'Map 1', position: 1, legend_visible: true });
-    _fileHandle = null;
     _markClean(name);
     return blank;
-  };
-
-  // Open a project file
-  api.load = async function() {
-    var text;
-    if (_hasFileAPI) {
-      var handles = await window.showOpenFilePicker({
-        types: [{ description: 'DDScope project', accept: { 'application/json': ['.json'] } }]
-      });
-      var handle = handles[0];
-      var file = await handle.getFile();
-      text = await file.text();
-      await _persistHandle(handle);
-    } else {
-      text = await new Promise(function(resolve, reject) {
-        var input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = function() {
-          var file = input.files[0];
-          if (!file) return reject(new Error('No file selected'));
-          var reader = new FileReader();
-          reader.onload = function(e) { resolve(e.target.result); };
-          reader.onerror = function() { reject(new Error('File read error')); };
-          reader.readAsText(file);
-        };
-        input.click();
-      });
-    }
-    _loadFromJson(text);
-    _markClean();
-    return DDS.state.project;
-  };
-
-  // Save to current file (or trigger saveAs if no handle)
-  api.save = async function() {
-    var json = _projectToJson();
-    var name = DDS.state.project.project.name || 'project';
-    if (_hasFileAPI && _fileHandle) {
-      var perm = await _fileHandle.queryPermission({ mode: 'readwrite' });
-      if (perm !== 'granted') perm = await _fileHandle.requestPermission({ mode: 'readwrite' });
-      if (perm !== 'granted') throw new Error('Write permission denied');
-      var writable = await _fileHandle.createWritable();
-      await writable.write(json);
-      await writable.close();
-      _markClean();
-    } else {
-      return api.saveAs();
-    }
-  };
-
-  // Save As — pick new file location
-  api.saveAs = async function() {
-    var json = _projectToJson();
-    var name = (DDS.state.project.project.name || 'project').replace(/\s+/g, '_');
-    if (_hasFileAPI) {
-      var handle = await window.showSaveFilePicker({
-        suggestedName: name + '_ddscope.json',
-        types: [{ description: 'DDScope project', accept: { 'application/json': ['.json'] } }]
-      });
-      var writable = await handle.createWritable();
-      await writable.write(json);
-      await writable.close();
-      await _persistHandle(handle);
-      _markClean();
-    } else {
-      // Fallback: download
-      var blob = new Blob([json], { type: 'application/json' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = name + '_ddscope.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      _markClean();
-    }
-  };
-
-  // Try to reopen the last file automatically (Chrome/Edge only)
-  // Try to reopen last file at boot — only if permission already granted (no user gesture needed).
-  // Returns 'opened' | 'prompt' (handle exists but needs user gesture) | false (no handle)
-  api.tryReopenLast = async function() {
-    if (!_hasFileAPI) return false;
-    try {
-      var handle = await _loadHandle();
-      if (!handle) return false;
-      var perm = await handle.queryPermission({ mode: 'readwrite' });
-      if (perm === 'granted') {
-        var file = await handle.getFile();
-        var text = await file.text();
-        _loadFromJson(text);
-        _fileHandle = handle;
-        _markClean();
-        return 'opened';
-      }
-      // Permission not yet granted — caller must trigger via user gesture
-      _fileHandle = handle;
-      return 'prompt';
-    } catch(e) {
-      console.error('[DDS_STORE] tryReopenLast error:', e);
-      return false;
-    }
-  };
-
-  // Request permission and open — must be called from a user gesture (click handler)
-  api.reopenWithPermission = async function() {
-    if (!_fileHandle) return false;
-    try {
-      var perm = await _fileHandle.requestPermission({ mode: 'readwrite' });
-      if (perm !== 'granted') return false;
-      var file = await _fileHandle.getFile();
-      var text = await file.text();
-      _loadFromJson(text);
-      _markClean();
-      return true;
-    } catch(e) {
-      console.error('[DDS_STORE] reopenWithPermission error:', e);
-      return false;
-    }
   };
 
   // Expose clean reset for callers that trigger inserts during project open

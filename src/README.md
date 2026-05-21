@@ -86,8 +86,8 @@ How to check if a local module is up to date:
 
 | File | CommWise block | Testability | Last extracted (local) | Extracted from app version | Extracted from revision |
 |---|---|---|---|---|---|
-| `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-21 11:37:34 | v100 | #23655 |
-| `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-21 11:27:42 | v100 | #23655 |
-| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-21 13:35:26 | v100 | #23656 |
+| `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-21 14:17:14 | v100 | #23665 |
+| `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-21 14:17:14 | v100 | #23665 |
+| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-21 14:17:14 | v100 | #23665 |
 
 *b2wise — Confidential*

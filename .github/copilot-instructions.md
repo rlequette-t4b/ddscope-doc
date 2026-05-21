@@ -59,3 +59,20 @@
   - Do not modify production modules in `src/**` unless the user explicitly requests it.
   - Do not perform spec/code alignment work as part of normal test tasks in this repo.
   - Do not introduce feature development changes under the guise of test maintenance.
+
+## Upstream refresh intent
+- Interpret refresh requests with flexible natural language.
+- When the user asks to refresh, reconcile, sync, pull latest, or update a module from upstream, treat it as the same workflow.
+- Require an explicit module name for refresh requests.
+
+Reference process:
+- Always follow the refresh process described in `src/README`.
+- Treat `src/README` as the source of truth for extraction/injection and revision-check steps.
+
+Expected behavior for module refresh intent:
+1. Determine target module from user message.
+2. Compare upstream module revision (CommWise) against the local extracted revision marker.
+3. If revision is unchanged, report that no refresh is needed.
+4. If revision changed, refresh local extracted code from upstream by following `src/README` process.
+5. Report revision before/after and files touched.
+6. Keep scope strict: sync/refresh only, no extra refactor unless explicitly requested.
