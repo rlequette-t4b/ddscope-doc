@@ -29,13 +29,31 @@ _Idées relatives au canvas Cytoscape, swim-lanes, rendu visuel._
 
 - [x] Snap d'alignement vertical au drag ✓ _(implémenté mai 2026 — règle 1 : voisins directs ; règle 2 : médian de deux voisins alignés en colonne sans nœud intermédiaire)_
 
-- [x] Layout offser sur map_flows ✓ _(spécifié mai 2026 — map_flows.skip_in_layout : change le poid d'une arete dans le BFS du layout, permet de changer les noeuds de colonne
+- [x] Layout offset sur map_flows ✓ _(spécifié mai 2026 — map_flows.skip_in_layout : change le poids d'une arête dans le BFS du layout, permet de changer les nœuds de colonne)_
 
 - [x] Selection multiple
 
-- [ ] Tag-style special selection, en cas de confit avec les autres tag style
+- [x] CTT visuel sur la map ✓ _(implémenté mai 2026 — overlay HTML rouge par nœud, label "CTT: X days", drag repositionnement, drag handles resize symétrique, sync pan/zoom et node drag, renderCTTOverlays appelé sur show/hide/update/delete)_
 
-- [ ] Ajouter un parametrage de l'offset du bord de slane dans le layout
+- [ ] **Badges sur les nœuds Cytoscape**
+
+  Afficher des indicateurs visuels directement sur les nœuds de la map.
+
+  Deux catégories :
+
+  - **Icônes liées aux tags** — un badge apparaît quand un tag spécifique est présent sur le nœud. Tags cibles : `warning` (⚠️), `info` (ℹ️), `buffer` (icône dédiée). Liste configurable (lien potentiel avec tag_colors ou table dédiée).
+
+  - **État "demande définie"** — badge affiché quand au moins un SKU du nœud possède un enregistrement `demands`.
+
+  Comportement attendu :
+  - Plusieurs badges peuvent coexister sur un même nœud (ex. warning + demande définie).
+  - Disposition en rangée, coin supérieur droit du nœud.
+  - Approche technique retenue : nœuds Cytoscape fantômes (même pattern que les note ghosts) — synchronisation pan/zoom automatique, compatible html2canvas.
+  - Visibilité à définir : toutes maps ou toggle par map.
+
+- [ ] Tag-style special selection, en cas de conflit avec les autres tag styles
+
+- [ ] Ajouter un paramétrage de l'offset du bord de swim-lane dans le layout
 
 ---
 
@@ -45,7 +63,7 @@ _Idées relatives au modèle de données, champs, entités._
 
 - [x] Ajouter les BOM ✓ _(implémenté)_
 
-- [ ] Ajouter customer tolerance et demande
+- [x] Ajouter customer tolerance et demande ✓ _(implémenté mai 2026 — demands, map_demands, DDS_DURATION, CTT visuel)_
 
 ---
 
