@@ -1,0 +1,16 @@
+{
+  "name": "Minimal project",
+  "nodes": [
+    { "id": 1, "name": "Supplier A" },
+    { "id": 2, "name": "Plant B" }
+  ],
+  "products": [
+    { "id": 1, "name": "Widget" }
+  ],
+  "flows": [
+    { "id": 1, "source_id": 1, "target_id": 2 }
+  ],
+  "maps": [
+    { "id": 1, "name": "Map 1" }
+  ]
+}

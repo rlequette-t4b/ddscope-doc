@@ -1,0 +1,4 @@
+{
+  "name": "Partial fields project",
+  "notes": "TODO: Include records with missing optional fields for default handling tests."
+}

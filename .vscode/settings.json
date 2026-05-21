@@ -1,0 +1,4 @@
+{
+  "vitest.enable": true,
+  "playwright.reuseBrowser": true
+}
