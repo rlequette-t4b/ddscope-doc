@@ -110,14 +110,14 @@ DDS_COLORS                          // string[] — 8 hex color strings (index =
 global:       DDS_STORE
 block:        SCRIPT 150
 file:         src/DDS_STORE.js
-testability:  store-dependent
-contract:     partial
+testability:  pure
+contract:     met
 dom_mixed:    no
-api_documented: yes
+api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** in-memory CRUD on `DDS.state.project` + serialization helpers (`toJson` / `loadFromText`). Single data access layer for all DDScope modules.
+**Responsibility:** in-memory CRUD on private in-module state (`_state.project`, `_state.dirty`) + serialization helpers (`toJson` / `loadFromText`). Single data access layer for all DDScope modules.
 
 **API:**
 ```
@@ -130,12 +130,12 @@ DDS_STORE.resetDirty()                       // void
 DDS_STORE.newProject(name, description, createdBy?)  // project
 DDS_STORE.toJson()                           // string
 DDS_STORE.loadFromText(text)                 // void (throws on invalid DDScope JSON)
+DDS_STORE.getProject()                       // project|null
+DDS_STORE.setProject(json)                   // void
+DDS_STORE.isDirty()                          // boolean
 ```
 
-**Dependencies:**
-```
-DDS             SCRIPT 400   — global state (DDS.state.project, DDS.state.dirty)
-```
+**Dependencies:** none.
 
 **Pending refactor:** none currently tracked for this extracted version.
 
@@ -144,11 +144,11 @@ DDS             SCRIPT 400   — global state (DDS.state.project, DDS.state.dirt
 
 | Area | Owner | Automation | Notes |
 |---|---|---|---|
-| Memory CRUD (`query/insert/update/remove`) | TEST | Unit (Vitest/Node) | Store-dependent tests with DDS state shim |
+| Memory CRUD (`query/insert/update/remove`) | TEST | Unit (Vitest/Node) | No DDS shim required |
 | Counters and seed (`_nextId`, `_seedCounters`) | TEST | Unit (Vitest/Node) | Per-table counters, seeded from existing max IDs |
 | Dirty state and callback (`markDirty`, `resetDirty`, implicit dirty on writes) | TEST | Unit (Vitest/Node) | Validate callback contract and name resolution |
 | Project structure bootstrap (`_blankProject`, `newProject`, `loadFromText`) | TEST | Unit (Vitest/Node) | Validate required arrays and invalid JSON rejection |
-| Serialization (`toJson`, `loadFromText`) | TEST | Unit (Vitest/Node) | JSON round-trip, parse failures, and clean state reset after load |
+| Serialization and state access (`toJson`, `loadFromText`, `getProject`, `setProject`, `isDirty`) | TEST | Unit (Vitest/Node) | JSON round-trip, state replacement, and dirty-state reads |
 
 - **Scope split:** `DDS_STORE` has two distinct concerns.
   - **In-memory CRUD and state transitions:** automated unit tests in Node/Vitest.

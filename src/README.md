@@ -88,6 +88,6 @@ How to check if a local module is up to date:
 |---|---|---|---|---|---|
 | `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-21 14:17:14 | v100 | #23665 |
 | `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-21 14:17:14 | v100 | #23665 |
-| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-21 14:17:14 | v100 | #23665 |
+| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-21 15:06:35 | v100 | #23676 |
 
 *b2wise — Confidential*
