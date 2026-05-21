@@ -158,24 +158,6 @@ var DDS_STORE = (function () {
     };
   }
 
-  function _defaultNodeTypes() {
-    return [
-      { id:1, code:'SUPPLIER',  label:'Supplier',    shape:'diamond',   is_default:false, created_at:'', updated_at:'' },
-      { id:2, code:'PLANT',     label:'Plant',       shape:'rectangle', is_default:true,  created_at:'', updated_at:'' },
-      { id:3, code:'WH',        label:'Warehouse',   shape:'rectangle', is_default:false, created_at:'', updated_at:'' },
-      { id:4, code:'CUSTOMER',  label:'Customer',    shape:'ellipse',   is_default:false, created_at:'', updated_at:'' },
-      { id:5, code:'3PL',       label:'3PL',         shape:'hexagon',   is_default:false, created_at:'', updated_at:'' }
-    ];
-  }
-
-  function _defaultProductTypes() {
-    return [
-      { id:1, code:'RM',  label:'Raw Material',    shape:'ellipse',   color:'#4A90D9', is_default:false, created_at:'', updated_at:'' },
-      { id:2, code:'WIP', label:'WIP',             shape:'ellipse',   color:'#E8A838', is_default:false, created_at:'', updated_at:'' },
-      { id:3, code:'FG',  label:'Finished Good',   shape:'ellipse',   color:'#5BA85A', is_default:true,  created_at:'', updated_at:'' }
-    ];
-  }
-
   // Seed counters from loaded project
   function _seedCounters(project) {
     _counters = {};
@@ -238,9 +220,6 @@ var DDS_STORE = (function () {
   function _loadFromJson(text) {
     var json = JSON.parse(text);
     if (!json.project || !json.version) throw new Error('Invalid DDScope file');
-    // Migrate legacy key: tag_colors -> tag_styles
-    if (json.tag_colors && !json.tag_styles) json.tag_styles = json.tag_colors;
-    delete json.tag_colors;
     // Ensure all table arrays exist
     var tables = ['swim_lanes','node_types','product_types','nodes','products',
       'flows','skus','boms','bom_components','tag_styles','demands',

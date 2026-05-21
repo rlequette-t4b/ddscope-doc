@@ -41,7 +41,7 @@ The AI assistant will:
 5. Read current app metadata/version from CommWise for traceability.
 6. Append `export default <GLOBAL>;` for ESM compatibility with Vitest.
 7. Write (or overwrite) the file in `src/`.
-8. Update the **Currently extracted** table in this file, including extraction date/time and CommWise app version.
+8. Update the **Currently extracted** table in this file, including extraction date/time, CommWise app version, and CommWise revision id (`#xxxxx`).
 
 ### Prerequisite
 
@@ -77,15 +77,17 @@ Do not edit the body of these files for production fixes. If a fix is needed:
 After **every extraction or refresh**, this table must be updated immediately with:
 - extraction timestamp
 - CommWise app version used for extraction
+- CommWise revision id used for extraction
 
 How to check if a local module is up to date:
-1. Compare module row value in **Extracted from app version** with current app version in CommWise.
-2. If versions differ, refresh extraction for the module.
+1. Compare module row value in **Extracted from revision** with current revision id in CommWise.
+2. If revision differs, refresh extraction for the module.
+3. **Extracted from app version** is informational only and must not be used as the freshness gate.
 
-| File | CommWise block | Testability | Last extracted (local) | Extracted from app version |
-|---|---|---|---|---|
-| `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-21 11:37:34 | v100 |
-| `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-21 11:27:42 | v100 |
-| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-21 13:17:47 | v100 |
+| File | CommWise block | Testability | Last extracted (local) | Extracted from app version | Extracted from revision |
+|---|---|---|---|---|---|
+| `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-21 11:37:34 | v100 | #23655 |
+| `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-21 11:27:42 | v100 | #23655 |
+| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-21 13:35:26 | v100 | #23656 |
 
 *b2wise — Confidential*
