@@ -148,6 +148,32 @@ indexedDB       browser      — FileSystemFileHandle persistence across session
 
 **Pending refactor:** isolate DOM side-effects in `_markDirty` / `_markClean` behind an `onDirtyChange(dirty, name)` callback. Prerequisite for all store-dependent unit tests. See Refactor Notes below.
 
+**High-level test strategy (DDS_STORE):**
+- **Test ownership matrix:**
+
+| Area | Owner | Automation | Notes |
+|---|---|---|---|
+| Memory CRUD (`query/insert/update/remove`) | TEST | Unit (Vitest/Node) | Store-dependent tests with DDS state shim |
+| Counters and seed (`_nextId`, `_seedCounters`) | TEST | Unit (Vitest/Node) | Per-table counters, seeded from existing max IDs |
+| Dirty state and callback (`markDirty`, `resetDirty`, implicit dirty on writes) | TEST | Unit (Vitest/Node) | Validate callback contract and name resolution |
+| Project structure bootstrap (`_blankProject`, `newProject`, `_loadFromJson`) | TEST | Unit (Vitest/Node) | Validate required arrays and invalid JSON rejection |
+| File persistence (`load/save/saveAs`) | DEV + TEST | Manual | Browser API behavior, permission flows, fallback paths |
+| Handle reopen (`tryReopenLast`, `reopenWithPermission`) | DEV + TEST | Manual | IndexedDB handle persistence + permission prompts |
+| Browser internals (File System Access API, IndexedDB engine behavior) | Browser platform | Out-of-scope | Covered by platform; validate only integration paths |
+
+- **Scope split:** `DDS_STORE` has two distinct concerns.
+  - **In-memory CRUD and state transitions:** automated unit tests in Node/Vitest.
+  - **File persistence and browser capabilities:** manual tests only (File System Access API, IndexedDB handle persistence, `<input type="file">` fallback).
+- **Core unit-test axes:**
+  - **CRUD behavior:** query/insert/update/remove correctness, filtering semantics (including array filters and loose equality), ordering, and table auto-initialization.
+  - **ID counters and seed:** deterministic auto-increment per table, seeded from max existing IDs, no cross-table leakage.
+  - **Dirty lifecycle contract:** `markDirty`, `resetDirty`, and callback signaling (`onDirtyChange`) only when state changes require it.
+  - **Project structure loading:** blank project shape, `newProject` bootstrap behavior, and JSON load validation/failure paths.
+- **Manual verification focus:** `load/save/saveAs/tryReopenLast/reopenWithPermission` success and permission-denied paths across supported browsers.
+- **Known alignment points to keep explicit in tests:**
+  - First generated ID after empty table seed is currently `1`.
+  - Legacy `tag_colors` to `tag_styles` migration is expected by spec but must be confirmed/implemented in code before asserting it as passing.
+
 ---
 
 ### DDS_DURATION
