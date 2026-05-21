@@ -1,5 +1,14 @@
 # DDScope — Test Environment
-*Draft — May 2026*
+*v0.2 — Draft — May 2026*
+
+---
+
+## Version History
+
+| Version | Date | Summary |
+|---|---|---|
+| 0.1 | May 2026 | Initial bootstrap reference |
+| 0.2 | May 2026 | DDScope_Modules.md introduced as module registry; module table and testability classification moved there; this doc references it |
 
 ---
 
@@ -56,6 +65,7 @@ ddscope-tests/
 │   ├── DDScope_UI.md
 │   ├── DDScope_AI_Assistant.md
 │   ├── DDScope_Backlog.md
+│   ├── DDScope_Modules.md          ← JavaScript module registry
 │   └── DDScope_TestEnvironment.md  ← this file
 │
 ├── fixtures/                        ← JSON inputs for automated tests (Vitest + Playwright)
@@ -97,11 +107,45 @@ When a spec document is updated, it should be committed to `docs/` and re-import
 |---|---|
 | `DDScope_Overview.md` | Purpose, scope, v1 feature list, open questions |
 | `DDScope_DataModel.md` | All entities, fields, cascade rules |
-| `DDScope_Architecture.md` | Stack, persistence, key implementation details |
+| `DDScope_Architecture.md` | Stack, module structure, persistence, key implementation details |
 | `DDScope_UI.md` | Interaction model, panels, views |
 | `DDScope_AI_Assistant.md` | Action vocabulary, context format, system prompt contract |
 | `DDScope_Backlog.md` | Pre-backlog ideas by theme |
+| `DDScope_Modules.md` | **JavaScript module registry** — CommWise addresses, APIs, dependencies, testability, extraction status |
 | `DDScope_TestEnvironment.md` | This file |
+
+---
+
+## Module Registry
+
+**[DDScope_Modules.md](DDScope_Modules.md) is the authoritative source** for all `DDS_*` module definitions. It records:
+
+- CommWise block address (`code_type` + `position`) for extraction
+- Public API surface
+- Runtime dependencies
+- Testability classification (see below)
+- Extraction contract status (`met` / `partial` / `unverified` / `not-met`)
+
+The TEST context is a co-owner of this file: after extracting and testing a module, update its entry to reflect actual dependencies found and current test coverage status.
+
+### Testability classification
+
+| Class | Condition | Test layer |
+|---|---|---|
+| `pure` | No DOM, no Cytoscape, no globals beyond window shim | Vitest — no setup |
+| `store-dependent` | Uses `DDS_STORE` / `DDS` state, no rendering | Vitest — store + DDS shim required |
+| `render-dependent` | Requires Cytoscape canvas or DOM layout | Playwright |
+| `out-of-scope` | File System Access API, IndexedDB, CommWise internals | Manual only |
+
+### Store-dependent test setup
+
+```javascript
+// shims/window.js loaded first, then:
+import '../src/DDS_STORE.js'; // loads DDS_STORE on globalThis
+// DDS.state.project must be initialised before each test
+```
+
+> **Prerequisite:** `DDS_STORE` must complete the DOM isolation refactor (see `DDScope_Modules.md` — Refactor Notes) before store-dependent tests can run without a DOM shim.
 
 ---
 
@@ -119,7 +163,7 @@ CommWise SCRIPT blocks expose modules as browser globals:
 window.DDS_STORE = (function () { ... })();
 ```
 
-The `scripts/extract.js` script pulls target blocks from CommWise via the MCP API and writes them to `src/`. No manual copy-paste.
+The `scripts/extract.js` script pulls target blocks from CommWise via the MCP API and writes them to `src/`. No manual copy-paste. The selector used to identify DDScope module blocks is the `JS:` prefix in the block title (see `DDScope_Modules.md` — Naming Conventions).
 
 To make these modules runnable in Node.js, a minimal `shims/window.js` stub is imported at the top of each test file:
 
@@ -132,6 +176,8 @@ globalThis.document = { ... }; // only what DDS_STORE actually touches
 Modules that depend heavily on Cytoscape or the DOM are out of scope for unit testing — they belong in the UI test layer.
 
 ### What to test
+
+Prioritisation follows the testability classification in `DDScope_Modules.md`. Modules with `pure` or `store-dependent` classification and `contract: met` are the first extraction targets.
 
 | Module | Test scope |
 |---|---|
@@ -240,7 +286,7 @@ test('[DDS-42] cascade: delete_node removes all dependent flows', () => { ... })
 
 ### `scripts/extract.js`
 
-Calls the CommWise MCP API to fetch target SCRIPT blocks by position or title and writes them to `src/`. Driven by a manifest (block title → output filename mapping).
+Calls the CommWise MCP API to fetch target SCRIPT blocks by position or title and writes them to `src/`. Driven by the module registry in `DDScope_Modules.md` — the `block` field (e.g. `SCRIPT 150`) provides the exact `code_type` + `position` for each module. Only blocks whose title starts with `JS:` are considered DDScope modules.
 
 Parameters: `COMMWISE_APP_ID` from `.env`.
 
@@ -262,33 +308,32 @@ Intended use: local debug loop — edit in VS Code, run unit tests, inject fix b
 
 ### Naming conventions
 
-CommWise block titles follow the pattern `DDS_<MODULE>` for SCRIPT blocks. The extracted filename in `src/` mirrors this: `DDS_STORE.js`, `DDS_MAP.js`, etc.
+See `DDScope_Modules.md` §Naming Conventions for the full specification. Summary:
+
+- JS global: `DDS_<MODULE>` (e.g. `DDS_STORE`, `DDS_DURATION`)
+- CommWise block title: `JS: DDS_<MODULE> — <one-line description>`
+- Extracted file: `src/DDS_<MODULE>.js`
 
 ### Module boundaries
 
-Each module has a single stated responsibility. Dependencies between modules are explicit and documented here as they are discovered during extraction.
+Each module has a single stated responsibility. The full dependency graph is maintained in `DDScope_Modules.md`. The table below is a quick reference for the modules relevant to unit testing.
 
-| Module | Responsibility | Known dependencies |
+| Module | Responsibility | Testability |
 |---|---|---|
-| `DDS_STORE` | In-memory CRUD, dirty flag, ID counters | none |
-| `DDS_DURATION` | Duration arithmetic and formatting | none |
-| `DDS_MAP` | Cytoscape rendering, layout, overlays | `DDS_STORE`, `DDS_DURATION`, Cytoscape |
-| `DDS_AI_EXECUTOR` | Execute Claude action plans on the store | `DDS_STORE` |
-| `DDS_AI_UI` | AI assistant panel, Claude API calls | `DDS_STORE`, `DDS_AI_EXECUTOR` |
-| `DDS_LAYOUT` | Node placement algorithm | `DDS_STORE` |
-| `DDS_NODE_UI` | Node side panel | `DDS_STORE`, `DDS_MAP` |
-| `DDS_ELEMENTS` | Elements panel | `DDS_STORE`, `DDS_MAP` |
+| `DDS_STORE` | In-memory CRUD, dirty flag, ID counters, file persistence | store-dependent (after DOM refactor) |
+| `DDS_DURATION` | Duration arithmetic and formatting | pure |
+| `DDS_AI_CONTEXT` | Project → Claude context JSON serialisation | store-dependent |
+| `DDS_AI_EXECUTOR` | Execute Claude action plans on the store | store-dependent |
+| `DDS_JSON` | Project import with copy modes + ID remapping | store-dependent |
+| `DDS_PRODUCTS` | Product CRUD + SKU cascade | store-dependent |
+| `DDS_BOMS` | BOM CRUD + cascade | store-dependent |
+| `DDS_DEMANDS` | Demand CRUD + map_demands + cascade | store-dependent |
 
-*Table to be completed as modules are extracted and reviewed.*
+Render-dependent modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_LAYOUT`, all `*_UI` modules) are out of scope for unit testing.
 
 ### Testability classification
 
-| Classification | Description | Test layer |
-|---|---|---|
-| **Pure** | No DOM, no Cytoscape, no globals beyond `window` shim | Unit (Vitest) |
-| **Store-dependent** | Uses `DDS_STORE` but no rendering | Unit (Vitest, with store loaded) |
-| **Render-dependent** | Requires Cytoscape canvas or DOM layout | UI (Playwright) |
-| **Out of scope** | File System Access API, CommWise platform internals | Manual |
+Defined in `DDScope_Modules.md` and reproduced above for convenience.
 
 ---
 

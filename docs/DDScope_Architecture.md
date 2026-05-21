@@ -1,7 +1,7 @@
 # DDScope — Architecture
-*v1.6 — Draft — May 2026*
+*v1.7 — Draft — May 2026*
 
-*See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour.*
+*See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour. [DDScope_Modules.md](DDScope_Modules.md) for the JavaScript module registry.*
 
 ---
 
@@ -22,6 +22,7 @@
 | 1.4 | May 2026 | Note overlay on nodes: DDS_MAP.renderNoteGhosts, ghost node lifecycle, exclusions from fitMap and runLayout |
 | 1.5 | May 2026 | skip_in_layout on map_flows: excluded from BFS rank computation; loaded on Cytoscape edges in loadMap |
 | 1.6 | May 2026 | demands and map_demands added; DDS_DURATION utility module documented; CTT line HTML overlay documented |
+| 1.7 | May 2026 | JavaScript module registry introduced; module table updated to reference DDScope_Modules.md |
 
 ---
 
@@ -42,7 +43,64 @@ DDScope runs entirely within the CommWise platform as a single-page CommWise Web
 
 ---
 
-## 3. Data Model Structure
+## 3. JavaScript Modules
+
+DDScope logic is split across named JavaScript modules, each living in a dedicated CommWise SCRIPT block. All modules are exposed as globals on `window` under the `DDS_` prefix.
+
+**[DDScope_Modules.md](DDScope_Modules.md) is the authoritative registry** for all `DDS_*` modules. It records for each module: CommWise block address (`code_type` + `position`), public API, runtime dependencies, testability classification, and extraction readiness. Consult it before working on any module.
+
+The table below is a structural overview only — it does not duplicate the detail in the registry.
+
+### Functional layer modules
+
+| Module | Block | Responsibility |
+|---|---|---|
+| `DDS_COLORS` | SCRIPT 105 | 8-color palette constant |
+| `DDS_STORE` | SCRIPT 150 | In-memory CRUD + file persistence |
+| `DDS_DURATION` | SCRIPT 1650 | Duration arithmetic and formatting |
+| `DDS_PRODUCTS` | SCRIPT 1600 | Product CRUD + SKU cascade |
+| `DDS_BOMS` | SCRIPT 1800 | BOM CRUD + cascade |
+| `DDS_DEMANDS` | SCRIPT 1660 | Demand CRUD + map_demands + cascade |
+| `DDS_JSON` | SCRIPT 600 | Project import with copy modes + ID remapping |
+
+### AI layer modules
+
+| Module | Block | Responsibility |
+|---|---|---|
+| `DDS_AI_CONTEXT` | SCRIPT 2200 | Serialises project to Claude context JSON |
+| `DDS_AI_EXECUTOR` | SCRIPT 2300 | Executes Claude action plans on DDS_STORE |
+| `DDS_AI` | SCRIPT 2400 | System prompt, API call, response validation |
+| `DDS_AI_UI` | SCRIPT 2500 | AI panel, message bubbles, confirm/cancel |
+
+### Presentation layer modules (render-dependent)
+
+| Module | Block | Responsibility |
+|---|---|---|
+| `DDS_MAP` (state) | SCRIPT 900 | DDS_MAP state + Cytoscape style definition |
+| `DDS_MAP` (load) | SCRIPT 1000 | loadMap, fitMap, runLayout |
+| `DDS_MAP` (style) | SCRIPT 1050 | Tag colors, legend overlay |
+| `DDS_MAP` (CTT) | SCRIPT 1055 | CTT line HTML overlay |
+| `DDS_SWIMLANES` | SCRIPT 1100 | Swim-lane overlay + pan/zoom sync |
+| `DDS_SWIMLANE_GROUP` | SCRIPT 1150 | Swim-lane grouping logic |
+| `DDS_LAYOUT` | SCRIPT 1250 | Node placement algorithm |
+| `DDS_MAP_UI` | SCRIPT 1200 | Map tabs, map management, toolbar |
+| `DDS_NODE_UI` | SCRIPT 1300 | Node creation modal |
+| `DDS_FLOW_UI` | SCRIPT 1400 | Flow creation handle + rerouting |
+| `DDS_PANEL` | SCRIPT 1500 | Side panel controller |
+| `DDS_PANEL` (demand) | SCRIPT 1505 | SKU demand sub-section in node panel |
+| `DDS_ELEMENTS` | SCRIPT 2000 | Add/remove elements from map |
+| `DDS_ELEMENTS_UI` | SCRIPT 2100 | Elements panel UI + events |
+| `DDS_REMOVE` | SCRIPT 2050 | Remove modal (map-only or full delete) |
+| `DDS_NODES_UI` | SCRIPT 1750 | Node table view |
+| `DDS_FLOWS_UI` | SCRIPT 1760 | Flow table view |
+| `DDS_PRODUCTS_UI` | SCRIPT 1700 | Product table view |
+| `DDS_BOMS_UI` | SCRIPT 1900 | BOMs table view |
+| `DDS_DEMANDS_UI` | SCRIPT 1770 | Demand table view |
+| `DDS_SETTINGS_UI` | SCRIPT 2600 | Settings tab |
+
+---
+
+## 4. Data Model Structure
 
 The project is held entirely in memory as a single JSON object (`DDS.state.project`). It contains 17 named arrays corresponding to the functional and presentation layers of the data model. Entity definitions and field descriptions are in [DDScope_DataModel.md](DDScope_DataModel.md).
 
@@ -76,9 +134,9 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 
 ---
 
-## 4. Persistence
+## 5. Persistence
 
-### 4.1 In-memory store — DDS_STORE
+### 5.1 In-memory store — DDS_STORE
 
 `DDS_STORE` is the single data access layer for all DDScope modules. It exposes a synchronous CRUD API operating on `DDS.state.project`:
 
@@ -93,7 +151,7 @@ DDS_STORE.resetDirty()                     // clear dirty flag (used after proje
 
 IDs are integers auto-incremented per table, managed in `DDS_STORE._counters`. Counters are seeded from the maximum existing ID when a file is loaded.
 
-### 4.2 File persistence
+### 5.2 File persistence
 
 The project is persisted as a single `.json` file on the consultant's machine. No server, no database, no network dependency.
 
@@ -103,17 +161,17 @@ The project is persisted as a single `.json` file on the consultant's machine. N
 | **Save** | Write directly to the open file (`FileSystemWritableFileStream`) | Download (`<a download>`) |
 | **Save As** | `showSaveFilePicker()` — new file | Download |
 
-### 4.3 Auto-reopen (Chrome / Edge only)
+### 5.3 Auto-reopen (Chrome / Edge only)
 
 The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On boot, DDScope checks whether the permission is already granted. If so, the file is reopened automatically with no user interaction. If the handle exists but permission has not been granted (e.g. after a browser restart), a prompt is triggered on the first user gesture. On other browsers, each session starts from scratch.
 
-### 4.4 Dirty state
+### 5.4 Dirty state
 
 `DDS.state.dirty` is set to `true` on any `insert`, `update`, `remove`, or explicit `DDS_STORE.markDirty()` call. A bullet indicator (`•`) is appended to the project name in the navigation bar, and the **Save** button becomes active.
 
 `DDS.state.dirty` is reset to `false` on Load, Save, Save As, new project creation, and auto-reopen.
 
-### 4.5 File format
+### 5.5 File format
 
 ```json
 {
@@ -142,7 +200,7 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 
 ---
 
-## 5. Key Implementation Details
+## 6. Key Implementation Details
 
 ### Fit-to-canvas
 
@@ -152,7 +210,7 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 
 ### Node placement
 
-`DDS_LAYOUT.placeNode(nodeId, mapId)` computes the initial canvas position for a new node. It is called by the Add node modal (`DDS_NODE_UI`), the Elements panel (`DDS_ELEMENTS`), and the AI assistant executor (`DDS_AI_UI`) — ensuring consistent placement across all creation paths.
+`DDS_LAYOUT.placeNode(nodeId, mapId)` computes the initial canvas position for a new node. It is called by the Add node modal (`DDS_NODE_UI`), the Elements panel (`DDS_ELEMENTS`), and the AI assistant executor (`DDS_AI_EXECUTOR`) — ensuring consistent placement across all creation paths.
 
 The algorithm applies in order:
 
@@ -248,7 +306,7 @@ The SVG shapes used in the legend (`rectangle`, `diamond`, `ellipse`, `hexagon`,
 
 ### DDS_DURATION
 
-A utility module providing duration comparison and formatting functions. Used by the CTT line renderer and by future lead time aggregation features.
+A utility module providing duration comparison and formatting functions. Used by the CTT line renderer and by future lead time aggregation features. Fully documented in [DDScope_Modules.md](DDScope_Modules.md).
 
 ```javascript
 DDS_DURATION.toHours(value, unit)         // → number — converts any duration to hours (internal comparison base)
