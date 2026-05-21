@@ -307,10 +307,8 @@ DDSCOPE_URL=https://...   # full CommWise app URL
 ## VS Code Setup
 
 Recommended extensions:
-- `vitest.explorer` — Vitest test explorer
+- `vitest.vitest` — Vitest test explorer
 - `ms-playwright.playwright` — Playwright test runner and recorder
-- `github.vscode-pull-request-github` — PR and issue integration
-- `dbaeumer.vscode-eslint` — linting
 
 Recommended workspace settings (`.vscode/settings.json`):
 ```json
