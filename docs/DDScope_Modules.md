@@ -31,7 +31,7 @@ Human-readable summaries (for onboarding, PR descriptions, etc.) are generated o
 
 **Who writes to this file:**
 - **DEV** (Claude project) — adds and updates entries when modules are created, refactored, renamed, or their API changes; updates `contract`, `dom_mixed`, `api_documented`, `deps_declared` fields after inspection.
-- **TEST** (this repository) — updates `testability` classification and contract fields discovered during extraction; documents test coverage progress per module.
+- **TEST** (this repository) — updates `testability` classification and contract fields discovered during extraction; updates `coverage` as tests are written; may also update `test_scope` when asked. The user is responsible for keeping both copies in sync.
 
 Both contexts must keep their copy in sync (manual transfer — see `README.md`).
 
@@ -52,10 +52,17 @@ Both contexts must keep their copy in sync (manual transfer — see `README.md`)
 
 | Field | Values | Meaning |
 |---|---|---|
-| `contract` | `met` / `partial` / `unverified` / `not-met` | Whether the block can be extracted by `scripts/extract.js` without manual edits |
+| `contract` | `met` / `partial` / `unverified` / `not-met` | Whether the block can be extracted without manual edits |
 | `dom_mixed` | `yes` / `no` | DOM calls present inside core logic (not isolated in a UI bindings section) |
 | `api_documented` | `yes` / `no` | Public API surface listed in the block header comment |
 | `deps_declared` | `yes` / `no` | Dependencies listed in the block header comment under `// Depends on:` |
+
+### Test scope fields
+
+| Field | Owner | Values / Meaning |
+|---|---|---|
+| `test_scope` | DEV | Free-text per-method scenario list. Written by DEV based on API knowledge. |
+| `coverage` | TEST | `none` / `partial` / `full` — updated by TEST as tests are written. |
 
 ### CommWise block title pattern
 
@@ -154,6 +161,11 @@ contract:     met
 dom_mixed:    no
 api_documented: yes
 deps_declared:  yes
+test_scope:
+  toHours:    all 5 units (hours/days/weeks/months/years); zero value; NaN value; unknown unit → 0
+  compare:    h1 > h2; h1 < h2; h1 == h2 (tie → first argument wins)
+  toDisplay:  singular (v=1, e.g. '1 day'); plural (v>1); zero; unknown unit → ''
+coverage:     none
 ```
 
 **Responsibility:** duration arithmetic and human-readable formatting. Used by CTT line rendering and future cumulative lead time display.
