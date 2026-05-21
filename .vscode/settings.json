@@ -1,4 +1,5 @@
 {
   "vitest.enable": true,
+  "vitest.configSearchPatterns": ["vitest.config.js"],
   "playwright.reuseBrowser": true
 }

@@ -165,7 +165,7 @@ test_scope:
   toHours:    all 5 units (hours/days/weeks/months/years); zero value; NaN value; unknown unit → 0
   compare:    h1 > h2; h1 < h2; h1 == h2 (tie → first argument wins)
   toDisplay:  singular (v=1, e.g. '1 day'); plural (v>1); zero; unknown unit → ''
-coverage:     none
+coverage:     full
 ```
 
 **Responsibility:** duration arithmetic and human-readable formatting. Used by CTT line rendering and future cumulative lead time display.
