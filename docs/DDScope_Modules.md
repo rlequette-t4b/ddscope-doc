@@ -14,30 +14,6 @@
 ---
 
 ## Purpose and Usage
-- [DDScope — Module Registry](#ddscope--module-registry)
-  - [Version History](#version-history)
-  - [Purpose and Usage](#purpose-and-usage)
-  - [Reference Tables](#reference-tables)
-    - [Testability classes](#testability-classes)
-    - [Extraction contract fields](#extraction-contract-fields)
-    - [Test scope fields](#test-scope-fields)
-    - [CommWise block title pattern](#commwise-block-title-pattern)
-    - [Extracted filename pattern](#extracted-filename-pattern)
-  - [Module Entries](#module-entries)
-    - [DDS\_COLORS](#dds_colors)
-    - [DDS\_STORE](#dds_store)
-    - [DDS\_DURATION](#dds_duration)
-    - [DDS\_ACTIONS](#dds_actions)
-    - [DDS\_AI\_CONTEXT](#dds_ai_context)
-    - [DDS\_AI](#dds_ai)
-    - [DDS\_AI\_UI](#dds_ai_ui)
-    - [DDS\_JSON](#dds_json)
-    - [DDS\_PRODUCTS](#dds_products)
-    - [DDS\_BOMS](#dds_boms)
-    - [DDS\_DEMANDS](#dds_demands)
-  - [Refactor Notes](#refactor-notes)
-    - [DDS\_STORE — DOM isolation (prerequisite for all store-dependent tests)](#dds_store--dom-isolation-prerequisite-for-all-store-dependent-tests)
-    - [DDS\_AI\_EXECUTOR — supprimé](#dds_ai_executor--supprimé)
 
 **This file is a machine-readable database.** It is the authoritative source of truth for DDScope JavaScript module definitions. It is consumed by AI assistants (Claude in DEV and TEST contexts) and is not intended to be read as documentation prose.
 
@@ -62,6 +38,30 @@ Both contexts must keep their copy in sync (manual transfer — see `README.md`)
 
 ---
 
+- [DDScope — Module Registry](#ddscope--module-registry)
+  - [Version History](#version-history)
+  - [Purpose and Usage](#purpose-and-usage)
+  - [Reference Tables](#reference-tables)
+    - [Testability classes](#testability-classes)
+    - [Extraction contract fields](#extraction-contract-fields)
+    - [Test scope fields](#test-scope-fields)
+    - [CommWise block title pattern](#commwise-block-title-pattern)
+    - [Extracted filename pattern](#extracted-filename-pattern)
+  - [Module Entries](#module-entries)
+    - [DDS\_COLORS](#dds_colors)
+    - [DDS\_STORE](#dds_store)
+    - [DDS\_DURATION](#dds_duration)
+    - [DDS\_ACTIONS](#dds_actions)
+    - [DDS\_AI\_CONTEXT](#dds_ai_context)
+    - [DDS\_AI](#dds_ai)
+    - [DDS\_AI\_UI](#dds_ai_ui)
+    - [DDS\_JSON](#dds_json)
+    - [DDS\_PRODUCTS](#dds_products)
+    - [DDS\_BOMS](#dds_boms)
+    - [DDS\_DEMANDS](#dds_demands)
+  - [Refactor Notes](#refactor-notes)
+    - [DDS\_STORE — DOM isolation (prerequisite for all store-dependent tests)](#dds_store--dom-isolation-prerequisite-for-all-store-dependent-tests)
+    - [DDS\_AI\_EXECUTOR — supprimé](#dds_ai_executor--supprimé)
 ## Reference Tables
 
 ### Testability classes
@@ -267,6 +267,7 @@ execute:
   new_node_N resolved in subsequent action fields (swim_lane_id, source_id, etc.)
   new_bom_N resolved in add_bom_component.bom_id
   new_product_N resolved in add_sku, add_flow product_ids
+  add_node → applied action has _created_id set to the inserted record id
   mid-plan failure → failed non-null; applied lists actions already executed
 describe:
   empty plan → []

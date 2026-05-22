@@ -1,3 +1,72 @@
+# DDScope — Action Vocabulary
+*v0.1 — Draft — May 2026*
+
+*See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions and cascade rules. [DDScope_AI_Assistant.md](DDScope_AI_Assistant.md) for the Claude communication contract. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_ACTIONS` module definition.*
+
+---
+
+## Version History- [DDScope — Action Vocabulary](#ddscope--action-vocabulary)
+- [DDScope — Action Vocabulary](#ddscope--action-vocabulary)
+  - [Version History- DDScope — Action Vocabulary](#version-history--ddscope--action-vocabulary)
+  - [1. Purpose](#1-purpose)
+  - [2. Conventions](#2-conventions)
+    - [2.1 Action format](#21-action-format)
+    - [2.2 Temporary ID convention (`new_*`)](#22-temporary-id-convention-new_)
+    - [2.3 Validation](#23-validation)
+  - [3. Action Vocabulary](#3-action-vocabulary)
+    - [3.1 Nodes](#31-nodes)
+    - [3.2 Flows](#32-flows)
+    - [3.3 Products](#33-products)
+    - [3.4 SKUs](#34-skus)
+    - [3.5 Swim-lanes](#35-swim-lanes)
+    - [3.6 BOMs](#36-boms)
+    - [3.7 Demands](#37-demands)
+  - [4. Cross-cutting Rules](#4-cross-cutting-rules)
+    - [4.1 Product-node pattern](#41-product-node-pattern)
+    - [4.2 Cascade obligations](#42-cascade-obligations)
+    - [4.3 SKU pre-check for BOMs and demands](#43-sku-pre-check-for-boms-and-demands)
+  - [5. Versioning](#5-versioning)
+    - [v1 — included](#v1--included)
+    - [v1 — excluded](#v1--excluded)
+    - [v2 — candidates](#v2--candidates)
+  - [6. Implementation Notes](#6-implementation-notes)
+    - [6.1 Store operations per action](#61-store-operations-per-action)
+      - [Nodes](#nodes)
+      - [Flows](#flows)
+      - [Products](#products)
+      - [SKUs](#skus)
+      - [Swim-lanes](#swim-lanes)
+      - [BOMs](#boms)
+      - [Demands](#demands)
+    - [6.2 describe() label format](#62-describe-label-format)
+    - [6.3 getVocabularyText() reference output](#63-getvocabularytext-reference-output)
+
+
+| Version | Date | Summary |
+|---|---|---|
+| 0.1 | May 2026 | Initial extraction from DDScope_AI_Assistant.md §3 and §5.3 |
+
+---
+
+## 1. Purpose
+
+This document defines the DDScope action vocabulary — the complete set of operations that can be applied to the functional model. Actions are the interface between intent (user instruction, AI response, macro, UI operation) and the data layer (`DDS_STORE`).
+
+`DDS_ACTIONS` (SCRIPT 1850) is the authoritative runtime implementation of this vocabulary. Any caller — the AI assistant, the UI, or future automation — goes through `DDS_ACTIONS.execute()`.
+
+Actions operate exclusively on the **functional layer** (nodes, flows, products, SKUs, swim-lanes, BOMs, demands). Map-scoped operations (canvas positions, visibility) are excluded from this vocabulary.
+
+---
+
+## 2. Conventions
+
+### 2.1 Action format
+
+Each action is a JSON object with a `type` field identifying the operation, plus domain-specific fields:
+
+```json
+{ "type": "add_node", "name": "Fournisseur A", "swim_lane_id": "3" }
+{ "type": "add_flow", "source_id": "new_node_1", "target_id": "12" }
 - [DDScope — Action Vocabulary](#ddscope--action-vocabulary)
   - [Version History](#version-history)
   - [1. Purpose](#1-purpose)
@@ -32,40 +101,6 @@
       - [Demands](#demands)
     - [6.2 describe() label format](#62-describe-label-format)
     - [6.3 getVocabularyText() reference output](#63-getvocabularytext-reference-output)
-# DDScope — Action Vocabulary
-*v0.1 — Draft — May 2026*
-
-*See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions and cascade rules. [DDScope_AI_Assistant.md](DDScope_AI_Assistant.md) for the Claude communication contract. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_ACTIONS` module definition.*
-
----
-
-## Version History
-
-| Version | Date | Summary |
-|---|---|---|
-| 0.1 | May 2026 | Initial extraction from DDScope_AI_Assistant.md §3 and §5.3 |
-
----
-
-## 1. Purpose
-
-This document defines the DDScope action vocabulary — the complete set of operations that can be applied to the functional model. Actions are the interface between intent (user instruction, AI response, macro, UI operation) and the data layer (`DDS_STORE`).
-
-`DDS_ACTIONS` (SCRIPT 1850) is the authoritative runtime implementation of this vocabulary. Any caller — the AI assistant, the UI, or future automation — goes through `DDS_ACTIONS.execute()`.
-
-Actions operate exclusively on the **functional layer** (nodes, flows, products, SKUs, swim-lanes, BOMs, demands). Map-scoped operations (canvas positions, visibility) are excluded from this vocabulary.
-
----
-
-## 2. Conventions
-
-### 2.1 Action format
-
-Each action is a JSON object with a `type` field identifying the operation, plus domain-specific fields:
-
-```json
-{ "type": "add_node", "name": "Fournisseur A", "swim_lane_id": "3" }
-{ "type": "add_flow", "source_id": "new_node_1", "target_id": "12" }
 ```
 
 Actions are passed as an ordered array. `DDS_ACTIONS.execute(actions)` applies them sequentially.
@@ -311,6 +346,8 @@ For each action, the table below lists the `DDS_STORE` operations to perform and
 | `add_bom_component` | `DDS_STORE.insert('bom_components', { bom_id, product_id, quantity, notes })` |
 | `update_bom_component` | `DDS_STORE.update('bom_components', { bom_id, product_id }, { quantity?, notes? })` |
 | `remove_bom_component` | `DDS_STORE.remove('bom_components', { bom_id, product_id })` |
+
+**`_created_id` on applied actions:** after each successful `insert`, `execute()` attaches `_created_id` to the action object in `applied`, set to the real ID assigned by `DDS_STORE`. This allows callers (e.g. `DDS_AI_UI`) to place newly created nodes and flows on the active map without a separate store query. Actions that do not create a new record (update, delete, remove) do not have `_created_id`.
 
 #### Demands
 
