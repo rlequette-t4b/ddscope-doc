@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": {
-    "name": "DELIVER-MAKE-SOURCE",
+    "name": "Test",
     "description": "Template",
     "created_by": "r.lequette@tech4best.com"
   },
@@ -143,9 +143,43 @@
       "updated_at": "2026-05-19T11:00:51.603Z"
     }
   ],
-  "nodes": [],
+  "nodes": [
+    {
+      "name": "n1",
+      "type_code": "SHOP",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-22T15:29:16.120Z",
+      "updated_at": "2026-05-22T15:29:16.120Z"
+    },
+    {
+      "name": "n2",
+      "type_code": "SHOP",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-22T15:29:23.992Z",
+      "updated_at": "2026-05-22T15:29:23.992Z"
+    }
+  ],
   "products": [],
-  "flows": [],
+  "flows": [
+    {
+      "source_node_id": 1,
+      "target_node_id": 2,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-22T15:29:30.678Z",
+      "updated_at": "2026-05-22T15:29:30.678Z"
+    }
+  ],
   "skus": [],
   "boms": [],
   "bom_components": [],
@@ -160,8 +194,35 @@
       "updated_at": "2026-05-19T11:00:51.603Z"
     }
   ],
-  "map_nodes": [],
-  "map_flows": [],
+  "map_nodes": [
+    {
+      "map_id": 2,
+      "node_id": 1,
+      "x": 790,
+      "y": -25,
+      "id": 1,
+      "created_at": "2026-05-22T15:29:16.121Z",
+      "updated_at": "2026-05-22T15:29:30.708Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 2,
+      "x": 640,
+      "y": 35,
+      "id": 2,
+      "created_at": "2026-05-22T15:29:23.992Z",
+      "updated_at": "2026-05-22T15:29:30.708Z"
+    }
+  ],
+  "map_flows": [
+    {
+      "map_id": 2,
+      "flow_id": 1,
+      "id": 1,
+      "created_at": "2026-05-22T15:29:30.678Z",
+      "updated_at": "2026-05-22T15:29:30.678Z"
+    }
+  ],
   "map_swim_lanes": [
     {
       "map_id": 2,

@@ -13,6 +13,7 @@
 | 0.4 | May 2026 | Dependency graph added; DDS_MODEL introduced as functional integrity layer; DDS_PRODUCTS, DDS_BOMS, DDS_DEMANDS, DDS_NODES marked deprecated; DDS_ACTIONS and DDS_REMOVE dependencies updated |
 | 0.5 | May 2026 | Layered write architecture documented: UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted. Dependency graph updated. |
 | 0.6 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS created; DDS_BOMS and DDS_DEMANDS refactored as helpers (no longer deprecated). UI modules call helpers only — no direct DDS_STORE or DDS_ACTIONS calls. DDS_ACTIONS.execute() made synchronous. |
+| 0.7 | May 2026 | DDS_LANES added as helper facade for swim lane CRUD. delete() is a cascade routed via DDS_MODEL.deleteSwimLane. |
 
 ---
 
@@ -94,6 +95,7 @@ graph TD
     DDS_SKUS
     DDS_BOMS
     DDS_DEMANDS
+    DDS_LANES
   end
 
   subgraph AI["AI layer"]
@@ -119,6 +121,8 @@ graph TD
   DDS_BOMS     --> DDS_STORE
   DDS_DEMANDS  --> DDS_ACTIONS
   DDS_DEMANDS  --> DDS_STORE
+  DDS_LANES    --> DDS_ACTIONS
+  DDS_LANES    --> DDS_STORE
 
   DDS_AI          --> DDS_STORE
   DDS_AI          --> DDS_AI_CONTEXT
@@ -327,7 +331,6 @@ deps_declared:  yes
 
 **Responsibility:** single write entry point for helper and AI layers. Translates action lists into `DDS_STORE` calls (simple ops) or `DDS_MODEL` calls (cascade ops). Provides the action vocabulary and human-readable descriptions.
 
-**Synchronous:** `execute()` returns `{ applied, failed }`
 
 **Cascade actions** (routed to `DDS_MODEL`): `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`, `delete_demand`.
 
@@ -337,7 +340,7 @@ deps_declared:  yes
 
 **API:**
 ```
-DDS_ACTIONS.execute(actions)       // { applied: action[], failed: action|null }  ← synchronous
+DDS_ACTIONS.execute(actions)       // { applied: action[], failed: action|null }
 DDS_ACTIONS.describe(actions)      // { index: number, label: string }[]
 DDS_ACTIONS.getVocabularyText()    // string — injected into Claude system prompt
 DDS_ACTIONS.ACTIONS                // object — structured vocabulary definitions
@@ -563,6 +566,43 @@ DDS_DEMANDS.hideFromMap(demandId, mapId)         // → void
 DDS_DEMANDS.getAll()                             // demand[]
 DDS_DEMANDS.getForNode(nodeId)                   // demand[]
 DDS_DEMANDS.get(nodeId, productId)               // demand | null
+```
+
+**Dependencies:**
+```
+DDS_ACTIONS   SCRIPT 1850
+DDS_STORE     SCRIPT 150
+```
+
+---
+
+### DDS_LANES
+
+```
+global:         DDS_LANES
+block:          SCRIPT 1640
+file:           src/DDS_LANES.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** helper facade for swim lane operations. UI modules call this module for all swim lane writes. `delete()` is a cascade operation routed through `DDS_ACTIONS` → `DDS_MODEL.deleteSwimLane` (removes all assigned nodes, all `map_swim_lanes` references, and clears `default_swim_lane_id` on affected `node_types`).
+
+**Note:** `map_swim_lanes` (canvas geometry per map) is managed by the presentation layer (`DDS_SWIMLANES`) via direct `DDS_STORE` calls — outside this helper's scope.
+
+**API:**
+```
+// Writes — delegate to DDS_ACTIONS.execute()
+DDS_LANES.create(fields)              // { name, color? } → record
+DDS_LANES.update(laneId, fields)      // → record
+DDS_LANES.delete(laneId)              // cascade via DDS_MODEL.deleteSwimLane → void
+
+// Reads — DDS_STORE.query wrappers
+DDS_LANES.getAll()                    // swim_lane[]
+DDS_LANES.getById(laneId)             // swim_lane | null
 ```
 
 **Dependencies:**
