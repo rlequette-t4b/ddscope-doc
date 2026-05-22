@@ -374,8 +374,11 @@ Records that an annotation is visible on a specific map, and stores its canvas p
 | annotation_id | integer | Reference to `annotations[].id` |
 | x | numeric | Canvas position — horizontal |
 | y | numeric | Canvas position — vertical |
+| font_size | integer \| null | Per-map font size override in pixels. When null (default), the global ghost style applies (11px). Typical values: 8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32. |
 
 **Cascade:** deleted when the referenced `annotation` is deleted, or when the referenced `map` is deleted.
+
+Fields absent from `map_annotations` records (`font_size`) default to `null` at runtime.
 
 ---
 

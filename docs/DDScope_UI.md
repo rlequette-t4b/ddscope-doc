@@ -377,6 +377,8 @@ Opened by clicking an annotation on the canvas.
 
 **Tags** — same tag input pattern as node and flow panels.
 
+**Font size** — two buttons **A−** and **A+** step through a fixed size scale (8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32 px). The current size is displayed between the buttons. The default is 11 px (no stored value). Changes are applied immediately to the canvas ghost node and persisted to `map_annotations.font_size`. Font size is scoped per `map_annotation` — the same annotation can have different sizes on different maps.
+
 **Remove button** — triggers the Remove modal (same pattern as nodes: "Remove only from map" checkbox).
 
 ---
