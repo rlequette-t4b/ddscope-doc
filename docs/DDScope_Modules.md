@@ -199,8 +199,6 @@ DDS_STORE.isDirty()                          // boolean
 
 **Dependencies:** none.
 
-**Pending refactor:** DOM isolation — `_markDirty()` and `_markClean()` call `document.getElementById` directly. Target: expose `DDS_STORE.onDirtyChange = null` callback. See Refactor Notes below.
-
 **High-level test strategy (DDS_STORE):**
 - **Test ownership matrix:**
 
@@ -595,38 +593,10 @@ DDS         SCRIPT 400
 - [ ] **Deprecate `DDS_BOMS`** — same condition.
 - [ ] **Deprecate `DDS_DEMANDS`** — same condition.
 - [ ] **`DDS_MODEL.validateSkus()`** — non-destructive SKU coherence check. Detects missing and orphan SKUs; returns proposed corrections for consultant confirmation. See `DDScope_DataModel.md` §17.4.
-- [ ] **`DDS_STORE` DOM isolation refactor** — prerequisite for all store-dependent unit tests. See Refactor Notes below.
 
 ---
 
 ## Refactor Notes
-
-### DDS_STORE — DOM isolation (prerequisite for all store-dependent tests)
-
-**Problem:** `_markDirty()` and `_markClean()` call `document.getElementById` directly inside core CRUD logic. Any test invoking `insert()`, `update()`, or `remove()` fails without a DOM shim.
-
-**Target:** expose `DDS_STORE.onDirtyChange = null`. The store calls it instead of touching `document`:
-
-```javascript
-if (typeof DDS_STORE.onDirtyChange === 'function') {
-  DDS_STORE.onDirtyChange(dirty, projectName);
-}
-```
-
-DOM wiring moves to the boot module:
-
-```javascript
-DDS_STORE.onDirtyChange = function(dirty, name) {
-  var btn = document.getElementById('dds-btn-save');
-  if (btn) btn.disabled = !dirty;
-  var label = document.getElementById('dds-nav-project-label');
-  if (label) label.textContent = name + (dirty ? ' \u2022' : '');
-};
-```
-
-In tests: `onDirtyChange` is left `null` — no DOM, no error.
-
-**Unblocks:** `DDS_STORE`, `DDS_MODEL`, `DDS_ACTIONS`, `DDS_AI_CONTEXT`, `DDS_JSON`.
 
 ### DDS_AI_EXECUTOR — supprimé
 
