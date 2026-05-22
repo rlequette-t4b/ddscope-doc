@@ -86,11 +86,16 @@ How to check if a local module is up to date:
 
 | File | CommWise block | Testability | Last extracted (local) | Extracted from app version | Extracted from revision |
 |---|---|---|---|---|---|
-| `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-22 08:30:36 | v100 | #23759 |
-| `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-22 08:30:36 | v100 | #23759 |
-| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-22 08:30:36 | v100 | #23759 |
-| `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | 2026-05-22 13:18:23 | v100 | #23802 |
-| `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | 2026-05-22 13:55:07 | v100 | #23809 |
-| `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | 2026-05-22 14:58:42 | v100 | #23818 |
+| `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_NODES.js` | SCRIPT 1560 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_PRODUCTS.js` | SCRIPT 1610 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_FLOWS.js` | SCRIPT 1620 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
 
 *b2wise — Confidential*

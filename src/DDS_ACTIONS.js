@@ -1,9 +1,9 @@
-﻿// AUDITOR:LARGE_BLOCK_JUSTIFIED â€” single cohesive module: ACTIONS registry, execute(), describe(), getVocabularyText(). Cannot be split without breaking the internal references between the four exported members.
+// AUDITOR:LARGE_BLOCK_JUSTIFIED  single cohesive module: ACTIONS registry, execute(), describe(), getVocabularyText(). Cannot be split without breaking the internal references between the four exported members.
 
-var DDS_ACTIONS = (function () {
+window.DDS_ACTIONS = (function () {
 
   // ---------------------------------------------------------------------------
-  // ACTIONS â€” structured vocabulary (source of truth for getVocabularyText)
+  // ACTIONS  structured vocabulary (source of truth for getVocabularyText)
   // ---------------------------------------------------------------------------
 
   var ACTIONS = {
@@ -11,11 +11,11 @@ var DDS_ACTIONS = (function () {
       required: ['name'],
       optional: ['type_code', 'swim_lane_id', 'tags', 'notes'],
       notes: [
-        'x, y are NOT accepted â€” canvas position is map-specific and set manually.',
+        'x, y are NOT accepted  canvas position is map-specific and set manually.',
         'include "id": "new_node_N" in this action when referenced by subsequent actions in the same plan.',
-        'PRODUCT-NODE PATTERN (default behaviour): whenever a new product is mentioned, apply the product-node pattern â€” create a node (name = product name, type = is_product_node_default, swim_lane_id = default_swim_lane_id unless specified by the user) and emit add_sku for the node x product pair. Also emit add_flow if the product is described as a source or destination.',
-        'EXCEPTION â€” add_product_to_flow only: when the user explicitly asks to add a product to an existing flow between two existing non-product nodes (i.e. both endpoints already exist and neither represents a product), use add_product_to_flow instead. Do NOT create a node for the product in this case.',
-        'In all other cases â€” new product, product as a flow endpoint, product placed in a lane â€” apply the product-node pattern.'
+        'PRODUCT-NODE PATTERN (default behaviour): whenever a new product is mentioned, apply the product-node pattern  create a node (name = product name, type = is_product_node_default, swim_lane_id = default_swim_lane_id unless specified by the user) and emit add_sku for the node x product pair. Also emit add_flow if the product is described as a source or destination.',
+        'EXCEPTION  add_product_to_flow only: when the user explicitly asks to add a product to an existing flow between two existing non-product nodes (i.e. both endpoints already exist and neither represents a product), use add_product_to_flow instead. Do NOT create a node for the product in this case.',
+        'In all other cases  new product, product as a flow endpoint, product placed in a lane  apply the product-node pattern.'
       ]
     },
     update_node: {
@@ -182,7 +182,7 @@ var DDS_ACTIONS = (function () {
       if (!action.hasOwnProperty(key)) continue;
       var val = action[key];
       if (key === 'id') {
-        resolved[key] = val; // temporary id â€” not resolved, used as registry key
+        resolved[key] = val; // temporary id  not resolved, used as registry key
       } else if (typeof val === 'string') {
         resolved[key] = _resolveId(val, newIdMap);
       } else if (Array.isArray(val)) {
@@ -240,24 +240,22 @@ var DDS_ACTIONS = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // execute(actions) â†’ Promise<{ applied: action[], failed: action|null }>
+  // execute(actions)  { applied: action[], failed: action|null }   synchronous
   // ---------------------------------------------------------------------------
 
   function execute(actions) {
-    return new Promise(function (resolve) {
-      var applied = [];
-      var newIdMap = {}; // new_* â†’ real id
+    var applied = [];
+      var newIdMap = {}; // new_*  real id
 
       for (var i = 0; i < actions.length; i++) {
         var raw = actions[i];
 
-        // Normalise "action" â†’ "type" (robustness against model variation)
+        // Normalise "action"  "type" (robustness against model variation)
         if (raw.action !== undefined && raw.type === undefined) raw = Object.assign({}, raw, { type: raw.action });
 
         // Validate action type
         if (!ACTIONS[raw.type]) {
-          resolve({ applied: applied, failed: raw });
-          return;
+          return { applied: applied, failed: raw };
         }
 
         // Resolve new_* references in all fields
@@ -493,21 +491,19 @@ var DDS_ACTIONS = (function () {
 
         } catch (err) {
           console.error('[DDS_ACTIONS] execute failed on action', raw.type, err);
-          resolve({ applied: applied, failed: raw });
-          return;
+          return { applied: applied, failed: raw };
         }
       }
 
-      resolve({ applied: applied, failed: null });
-    });
+    return { applied: applied, failed: null };
   }
 
   // ---------------------------------------------------------------------------
-  // describe(actions) â†’ { index, label }[]
+  // describe(actions)  { index, label }[]
   // ---------------------------------------------------------------------------
 
   function describe(actions) {
-    // Pass 1 â€” collect new_* labels
+    // Pass 1  collect new_* labels
     var newLabelMap = {};
     actions.forEach(function (action) {
       if (!action.id || action.id.indexOf('new_') !== 0) return;
@@ -524,9 +520,9 @@ var DDS_ACTIONS = (function () {
       newLabelMap[action.id] = label;
     });
 
-    // Pass 2 â€” build labels
+    // Pass 2  build labels
     return actions.map(function (action, index) {
-      // Normalise "action" â†’ "type" (robustness against model variation)
+      // Normalise "action"  "type" (robustness against model variation)
       if (action.action !== undefined && action.type === undefined) action = Object.assign({}, action, { type: action.action });
       var label;
       try {
@@ -630,7 +626,7 @@ var DDS_ACTIONS = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // getVocabularyText() â†’ string
+  // getVocabularyText()  string
   // ---------------------------------------------------------------------------
 
   function getVocabularyText() {
@@ -648,7 +644,7 @@ var DDS_ACTIONS = (function () {
 
     lines.push('ACTION FORMAT: each action is a JSON object with a "type" field (required) plus domain fields.');
     lines.push('The discriminant field MUST be named "type". Example: {"type": "add_node", "name": "..."}');
-    lines.push('NEVER use "action" or any other key name â€” only "type" is accepted.');
+    lines.push('NEVER use "action" or any other key name  only "type" is accepted.');
     lines.push('');
 
     sections.forEach(function (section) {
@@ -687,5 +683,8 @@ var DDS_ACTIONS = (function () {
 
 })();
 
-export default DDS_ACTIONS;
+
+export default window.DDS_ACTIONS;
+
+
 

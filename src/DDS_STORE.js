@@ -1,10 +1,10 @@
 // AUDITOR:LARGE_BLOCK_JUSTIFIED - Single-responsibility store: memory CRUD + file persistence, must be complete.
 // ============================================================
-// DDS_STORE - In-memory project store + file persistence
+// DDS_STORE  In-memory project store + file persistence
 // ============================================================
 // All DDScope data access goes through this module.
-// Private _state holds { project, dirty } - no dependency on DDS global.
-// Files are .json - File System Access API when available,
+// Private _state holds { project, dirty }  no dependency on DDS global.
+// Files are .json  File System Access API when available,
 // download/upload fallback on other browsers.
 // ============================================================
 
@@ -12,7 +12,7 @@ var DDS_STORE = (function () {
 
   var _counters = {};                  // auto-increment counters per table
 
-  // Private state - isolated from DDS global for testability
+  // Private state  isolated from DDS global for testability
   var _state = {
     project: null,
     dirty:   false
@@ -177,7 +177,7 @@ var DDS_STORE = (function () {
   }
 
   // ------------------------------------------------------------------
-  // Serialisation (no file I/O - caller handles acquisition)
+  // Serialisation (no file I/O  caller handles acquisition)
   // ------------------------------------------------------------------
 
   // Serialise current project to JSON string.
@@ -246,13 +246,15 @@ var DDS_STORE = (function () {
     return _state.dirty;
   };
 
-  // Callback wired by DDS_INIT - isolated from DOM for testability.
-  // Signature: onDirtyChange(dirty: boolean, name: string) -> void
+  // Callback wired by DDS_INIT  isolated from DOM for testability.
+  // Signature: onDirtyChange(dirty: boolean, name: string)  void
   api.onDirtyChange = null;
 
   return api;
 
 }());
 
-// ESM export appended during extraction - do not remove
 export default DDS_STORE;
+
+
+

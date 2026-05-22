@@ -20,3 +20,11 @@ Using helpers/APIs in setup validates real integration paths and avoids tests th
 ## Exception Policy
 
 If a helper does not exist yet for a required setup path, document the temporary exception in the test with a short English comment and keep the direct store write minimal.
+
+## Target State
+
+Current migrations may use `DDS_ACTIONS.execute` as an interim setup path when no dedicated helper exists.
+
+Long term, unit tests should also phase out those action-level setup calls and use domain helpers directly as they are extracted.
+
+Example: once `DDS_NODES` helper APIs are available and stable, tests should create/update/delete nodes through `DDS_NODES` instead of `DDS_ACTIONS.execute`.

@@ -1,9 +1,9 @@
 // ============================================================
-// DDS_BOMS - helper facade (BOM CRUD via DDS_ACTIONS)
+// DDS_BOMS  helper facade (BOM CRUD via DDS_ACTIONS)
 // Depends on: DDS_ACTIONS SCRIPT 1850, DDS_STORE SCRIPT 150
 // ============================================================
 
-var DDS_BOMS = (function () {
+window.DDS_BOMS = (function () {
 
   // --- Reads ---
 
@@ -98,7 +98,7 @@ var DDS_BOMS = (function () {
     return DDS_ACTIONS.execute(actions);
   }
 
-  // delete(bomId) - cascade to bom_components handled by DDS_MODEL via DDS_ACTIONS
+  // delete(bomId)  cascade to bom_components handled by DDS_MODEL via DDS_ACTIONS
   function deleteBom(bomId) {
     return DDS_ACTIONS.execute([{ type: 'delete_bom', bom_id: bomId }]);
   }
@@ -111,6 +111,8 @@ var DDS_BOMS = (function () {
     delete: deleteBom
   };
 
-}());
+})();
 
-export default DDS_BOMS;
+export default window.DDS_BOMS;
+
+

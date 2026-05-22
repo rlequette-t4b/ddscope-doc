@@ -1,9 +1,9 @@
 // ============================================================
-// DDS_DURATION — duration utility module
+// DDS_DURATION  duration utility module
 // ============================================================
-// toHours(value, unit)       → number — converts to hours (internal base)
-// compare(v1,u1,v2,u2)       → { value, unit } — returns the longer duration
-// toDisplay(value, unit)     → string — human-readable label
+// toHours(value, unit)        number  converts to hours (internal base)
+// compare(v1,u1,v2,u2)        { value, unit }  returns the longer duration
+// toDisplay(value, unit)      string  human-readable label
 // ============================================================
 
 var DDS_DURATION = (function() {
@@ -41,7 +41,7 @@ var DDS_DURATION = (function() {
     // Singular/plural label
     var label = unit;
     if (v === 1) {
-      // Remove trailing 's' for singular (days→day, weeks→week, etc.)
+      // Remove trailing 's' for singular (daysday, weeksweek, etc.)
       label = unit.replace(/s$/, '');
     }
     return v + ' ' + label;
@@ -51,5 +51,6 @@ var DDS_DURATION = (function() {
 
 }());
 
-// ESM export appended during extraction - do not remove
 export default DDS_DURATION;
+
+
