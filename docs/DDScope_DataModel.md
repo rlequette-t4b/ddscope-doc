@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v2.7 — Draft — May 2026*
+*v2.8 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
@@ -33,6 +33,7 @@
 | 2.5 | May 2026 | bidirectional field added to flows (§3) |
 | 2.6 | May 2026 | layout_direction_inverted added to map_flows (§13); bfs_rank_min, bfs_rank_max added to map_nodes (§12, debug only) |
 | 2.7 | May 2026 | skip_in_layout deprecated in map_flows; replaced by layout_offset (integer, default 1), where 0 excludes from BFS and N sets the minimum column distance |
+| 2.8 | May 2026 | label_position added to map_nodes for per-map label position override |
 
 ---
 
@@ -277,6 +278,7 @@ A node is visible on a map if and only if a `map_node` record exists.
 | demand_length | numeric \| null | Length of the CTT line in canvas units. Defaults to node width when first placed. |
 | bfs_rank_min | integer \| null | Debug only. Minimum BFS rank assigned to this node on the last layout run. Null if layout has not been run. Not exported in JSON. |
 | bfs_rank_max | integer \| null | Debug only. Maximum BFS rank assigned to this node on the last layout run. Null if layout has not been run. Not exported in JSON. |
+| label_position | text \| null | Per-map override of the node type's `label_position`. Values: `center`, `above`, `below`. When `null` (default), the node type's value is used. |
 
 ---
 

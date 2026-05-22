@@ -33,7 +33,7 @@
   - [7. Settings Tab](#7-settings-tab)
 # DDScope — User Interface
 
-*v1.9 — Draft — May 2026*
+*v1.10 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -59,6 +59,7 @@
 | 1.7     | May 2026 | Flow rerouting: draggable endpoint handles (blue = source, purple = target) replace Shift/Ctrl+click; flow panel: endpoint summary at top |
 | 1.8     | May 2026 | Flow panel: Skip in layout checkbox; persisted in map_flows.skip_in_layout |
 | 1.9     | May 2026 | Demand feature: SKU demand sub-section in node panel, Demand tab, CTT line overlay interactions |
+| 1.10    | May 2026 | Label position override per map: select in node panel, stored in `map_nodes.label_position` |
 
 ---
 
@@ -291,6 +292,8 @@ Name, type, swim-lane, tags, notes.
 **Tags** — adding or removing a tag immediately updates the node's background color on the canvas (tag-based coloring) and refreshes the legend.
 
 **Show note on map** — a checkbox below the Notes field. When checked, the content of the Notes field is displayed as an italic text overlay on the active map, positioned below the node by default. The checkbox is disabled when the Notes field is empty. If the Notes field is cleared while the checkbox is checked, the checkbox is automatically unchecked and the ghost removed.
+
+**Label position** — a select field below "Show note on map". Overrides the label position defined on the node type for this map only. Options: *As in type* (default, no override), *Center*, *Above*, *Below*. Stored in `map_nodes.label_position`. The same node can have different label positions on different maps.
 
 **SKUs section** — lists all SKUs associated with this node, derived automatically from the flows entering and leaving it. For each SKU: product name (read-only), tags (editable), notes (editable).
 
