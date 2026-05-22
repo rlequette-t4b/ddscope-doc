@@ -16,6 +16,7 @@
 - Prefer unit tests for data/model/store logic before adding UI tests.
 - Keep changes minimal, focused, and backwards-compatible unless a deliberate refactor is requested.
 - Do not mix unrelated refactors with functional fixes.
+- For CommWise refresh/sync work, prefer selective sync of only test-relevant modules.
 
 ## Module and architecture rules
 - Preserve the `DDS_*` module naming convention and file layout in `src/`.
@@ -26,6 +27,7 @@
 ## Testing expectations
 - Every behavior change should include or update unit tests.
 - For pure/store-dependent modules, write Vitest tests first.
+- Do not run tests unless the user explicitly asks to run them in the current conversation.
 - Use Playwright only for rendering/interaction paths that cannot be validated in Node.
 - Keep test cases deterministic and fixture-driven where possible (`fixtures/`, `samples/`).
 - For Playwright tests that load project JSON from `fixtures/` or `samples/`, always use `tests/ui/helpers/open-project.js` and never automate the UI Open/filechooser flow directly.
@@ -40,17 +42,11 @@
   - `README.md` when developer workflows/scripts change.
 - Write all comments and documentation in English.
 
-## Code style and safety
-- Use clear, explicit names and small focused functions.
-- Add brief comments only for non-obvious logic.
-- Handle error paths explicitly; do not swallow errors unless there is a documented reason.
-- Avoid introducing new dependencies unless necessary and justified.
-
 ## Practical workflow for Copilot
 1. Inspect relevant module(s) and matching docs before editing.
 2. Implement the smallest correct change.
 3. Add or update tests.
-4. Run targeted tests first (`npm run test:unit` or selected files).
+4. Run tests only when the user explicitly requests execution.
 5. Update documentation references if contracts changed.
 
 ## Allowed actions in this repo

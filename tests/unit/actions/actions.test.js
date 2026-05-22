@@ -53,4 +53,44 @@ describe('DDS_ACTIONS', () => {
     expect(labels[0].label).toContain('Warehouse A');
     expect(labels[1].label).toContain('Warehouse A');
   });
+
+  it('executes customer add_node batch and persists nodes in an existing swim lane', async () => {
+    var lane = DDS_STORE.insert('swim_lanes', {
+      name: 'Customers lane',
+      color: '#1e88e5'
+    })[0];
+
+    var actions = [
+      { type: 'add_node', name: 'C1', type_code: 'CUSTOMER', swim_lane_id: String(lane.id) },
+      { type: 'add_node', name: 'C2', type_code: 'CUSTOMER', swim_lane_id: String(lane.id) },
+      { type: 'add_node', name: 'C3', type_code: 'CUSTOMER', swim_lane_id: String(lane.id) },
+      { type: 'add_node', name: 'C4', type_code: 'CUSTOMER', swim_lane_id: String(lane.id) }
+    ];
+
+    var result = await DDS_ACTIONS.execute(actions);
+    expect(result.failed).toBeNull();
+    expect(result.applied.length).toBe(4);
+
+    var lanes = DDS_STORE.query('swim_lanes', { id: lane.id });
+    var nodes = DDS_STORE.query('nodes', { type_code: 'CUSTOMER', swim_lane_id: lane.id });
+    var names = nodes.map(function (node) { return node.name; });
+
+    expect(lanes.length).toBe(1);
+    expect(nodes.length).toBe(4);
+    expect(names).toContain('C1');
+    expect(names).toContain('C2');
+    expect(names).toContain('C3');
+    expect(names).toContain('C4');
+    expect(nodes.every(function (node) { return node.swim_lane_id === lane.id; })).toBe(true);
+  });
+
+  it('fails the first action when no project is loaded', async () => {
+    DDS_STORE.setProject(null);
+
+    var action = { type: 'add_node', name: 'NoModelNode' };
+    var result = await DDS_ACTIONS.execute([action]);
+
+    expect(result.applied).toEqual([]);
+    expect(result.failed).toEqual(action);
+  });
 });
