@@ -146,8 +146,8 @@ Temporary IDs are local to the plan — they are never persisted.
 
 | Action | Required | Optional |
 |---|---|---|
-| `add_flow` | `source_id`, `target_id` | `lead_time_value`, `lead_time_unit`, `tags`, `notes` |
-| `update_flow` | `flow_id` | `lead_time_value`, `lead_time_unit`, `tags`, `notes` |
+| `add_flow` | `source_id`, `target_id` | `lead_time_value`, `lead_time_unit`, `bidirectional`, `tags`, `notes` |
+| `update_flow` | `flow_id` | `lead_time_value`, `lead_time_unit`, `bidirectional`, `tags`, `notes` |
 | `delete_flow` | `flow_id` | — |
 | `reroute_flow` | `flow_id` + at least one of `new_source_id`, `new_target_id` | `new_source_id`, `new_target_id` |
 | `add_product_to_flow` | `flow_id`, `product_id` | — |
@@ -306,12 +306,14 @@ For each action, the table below lists the `DDS_STORE` operations to perform and
 
 | Action | Store operations |
 |---|---|
-| `add_flow` | `DDS_STORE.insert('flows', { source_node_id, target_node_id, product_ids: [], tags, lead_time_value, lead_time_unit, notes })` |
+| `add_flow` | `DDS_STORE.insert('flows', { source_node_id, target_node_id, product_ids: [], tags, lead_time_value, lead_time_unit, bidirectional: false, notes })` |
 | `update_flow` | `DDS_STORE.update('flows', { id: flow_id }, { ...fields })` |
 | `delete_flow` | `DDS_STORE.remove('flows', { id: flow_id })` |
 | `reroute_flow` | `DDS_STORE.update('flows', { id: flow_id }, { source_node_id: new_source_id?, target_node_id: new_target_id? })` |
 | `add_product_to_flow` | `DDS_STORE.update('flows', { id: flow_id }, { product_ids: [...existing, product_id] })` |
 | `remove_product_from_flow` | `DDS_STORE.update('flows', { id: flow_id }, { product_ids: existing.filter(id !== product_id) })` |
+
+(update_flow already uses `{ ...fields }` — bidirectional is included automatically.)
 
 #### Products
 
@@ -375,8 +377,8 @@ Labels are in English. Entity names are quoted. Arrow direction is always `→` 
 | `update_node` | `Update node "{name}"` |
 | `delete_node` | `Delete node "{name}"` |
 | `assign_node_to_lane` | `Assign node "{name}" to lane "{lane_name}"` |
-| `add_flow` | `Add flow {source_name} → {target_name}` |
-| `update_flow` | `Update flow {source_name} → {target_name}` |
+| `add_flow` | `Add flow {source_name} → {target_name}` — if `bidirectional: true`: `Add flow {source_name} ↔ {target_name}` |
+| `update_flow` | `Update flow {source_name} → {target_name}` — if `bidirectional: true`: `Update flow {source_name} ↔ {target_name}` |
 | `delete_flow` | `Delete flow {source_name} → {target_name}` |
 | `reroute_flow` | `Reroute flow: {source_name} → {target_name}` (resolved after rerouting) |
 | `add_product_to_flow` | `Add product "{product_name}" to flow {source_name} → {target_name}` |
@@ -448,14 +450,18 @@ assign_node_to_lane
 
 add_flow
   Required : source_id, target_id
-  Optional : lead_time_value, lead_time_unit, tags, notes
+  Optional : lead_time_value, lead_time_unit, bidirectional, tags, notes
   Note     : a flow with no products is valid.
+  Note     : bidirectional (boolean, default false) — when true, the flow is rendered
+             with arrowheads at both ends. Use for symmetric exchanges (inter-site
+             transfers, overflow replenishment). Same products and lead time apply
+             in both directions. Do not create two flows for a bidirectional exchange.
   Note     : include "id": "new_flow_N" in this action when referenced
              by subsequent actions in the same plan.
 
 update_flow
   Required : flow_id
-  Optional : lead_time_value, lead_time_unit, tags, notes
+  Optional : lead_time_value, lead_time_unit, bidirectional, tags, notes
 
 delete_flow
   Required : flow_id

@@ -145,6 +145,7 @@ The following JSON structure is serialised from the current project state and tr
       "tags": ["string"],
       "lead_time_value": "number | null",
       "lead_time_unit": "string | null",
+      "bidirectional": "boolean",
       "notes": "string"
     }
   ],

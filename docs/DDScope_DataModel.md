@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v2.4 — Draft — May 2026*
+*v2.5 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
@@ -30,6 +30,7 @@
 | 2.2 | May 2026 | §17.0 added: layered write architecture — UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted |
 | 2.3 | May 2026 | §17.0 updated: helper layer added between UI and DDS_ACTIONS; DDS_ACTIONS.execute() synchronous |
 | 2.4 | May 2026 | §8 updated: icon_key, label_position, transparent_bg added to node_types; Cytoscape rendering rules documented |
+| 2.5 | May 2026 | bidirectional field added to flows (§3) |
 
 ---
 
@@ -92,7 +93,10 @@ A flow is a directed link between two nodes, representing the movement of one or
 | tags | array | Free labels (e.g. `["road", "air", "pilot"]`) |
 | lead_time_value | numeric \| null | Transit or transformation time value |
 | lead_time_unit | text \| null | Unit of the lead time — one of `hours`, `days`, `weeks`, `months`, `years` |
+| bidirectional | boolean | When `true`, the flow is rendered with arrowheads at both ends. Products and lead time apply equally in both directions. Defaults to `false`. |
 | notes | text | Free-form observations |
+
+**Bidirectional flows.** A bidirectional flow is stored as a single record. It represents a symmetric exchange between two nodes — same products, same lead time in both directions. Typical use cases: inter-site transfers, overflow warehouse replenishment. A bidirectional flow does not imply two distinct flow records.
 
 **No automatic SKU synchronisation.** Adding or removing a product from a flow does not create or delete any SKU. Rerouting a flow does not modify any SKU. SKU coherence is managed separately — see §17.4.
 

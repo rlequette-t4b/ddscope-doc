@@ -38,7 +38,7 @@
       "is_product_node_default": false,
       "id": 1,
       "created_at": "2026-05-19T11:00:51.603Z",
-      "updated_at": "2026-05-19T11:00:51.603Z"
+      "updated_at": "2026-05-22T18:18:38.992Z"
     },
     {
       "code": "SHOP",
@@ -50,7 +50,10 @@
       "color": "#1e88e5",
       "id": 2,
       "created_at": "2026-05-19T11:00:51.603Z",
-      "updated_at": "2026-05-19T11:00:51.603Z"
+      "updated_at": "2026-05-22T18:18:38.992Z",
+      "icon_key": null,
+      "label_position": "below",
+      "transparent_bg": false
     },
     {
       "code": "WH",
@@ -61,18 +64,26 @@
       "is_product_node_default": false,
       "id": 3,
       "created_at": "2026-05-19T11:00:51.603Z",
-      "updated_at": "2026-05-19T11:00:51.603Z"
+      "updated_at": "2026-05-22T18:18:58.893Z",
+      "color": "#6d4c41",
+      "icon_key": "warehouse",
+      "label_position": "above",
+      "transparent_bg": true
     },
     {
       "code": "CUSTOMER",
       "label": "Customer",
-      "shape": "ellipse",
+      "shape": "rectangle",
       "is_default": false,
       "default_swim_lane_id": 1,
       "is_product_node_default": false,
       "id": 4,
       "created_at": "2026-05-19T11:00:51.603Z",
-      "updated_at": "2026-05-19T11:00:51.603Z"
+      "updated_at": "2026-05-22T18:18:38.992Z",
+      "color": "#00897b",
+      "icon_key": "customer",
+      "label_position": "below",
+      "transparent_bg": false
     },
     {
       "code": "PRODUCT",
@@ -84,7 +95,7 @@
       "is_product_node_default": true,
       "id": 5,
       "created_at": "2026-05-19T11:00:51.603Z",
-      "updated_at": "2026-05-19T11:00:51.603Z"
+      "updated_at": "2026-05-22T18:18:38.992Z"
     },
     {
       "code": "PLANT",
@@ -96,7 +107,7 @@
       "is_product_node_default": false,
       "id": 6,
       "created_at": "2026-05-20T11:06:19.051Z",
-      "updated_at": "2026-05-20T11:06:19.051Z"
+      "updated_at": "2026-05-22T18:18:38.992Z"
     },
     {
       "code": "DC",
@@ -108,7 +119,7 @@
       "is_product_node_default": false,
       "id": 7,
       "created_at": "2026-05-20T11:06:34.355Z",
-      "updated_at": "2026-05-20T11:06:34.355Z"
+      "updated_at": "2026-05-22T18:18:38.992Z"
     }
   ],
   "product_types": [
@@ -163,6 +174,26 @@
       "id": 2,
       "created_at": "2026-05-22T15:29:23.992Z",
       "updated_at": "2026-05-22T15:29:23.992Z"
+    },
+    {
+      "name": "customer",
+      "type_code": "CUSTOMER",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-22T18:08:04.398Z",
+      "updated_at": "2026-05-22T18:08:04.398Z"
+    },
+    {
+      "name": "WH1",
+      "type_code": "WH",
+      "swim_lane_id": 3,
+      "tags": [],
+      "notes": "Very busy place",
+      "id": 4,
+      "created_at": "2026-05-22T18:15:48.566Z",
+      "updated_at": "2026-05-22T18:16:53.571Z"
     }
   ],
   "products": [],
@@ -178,6 +209,30 @@
       "id": 1,
       "created_at": "2026-05-22T15:29:30.678Z",
       "updated_at": "2026-05-22T15:29:30.678Z"
+    },
+    {
+      "source_node_id": 2,
+      "target_node_id": 3,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-22T18:08:51.160Z",
+      "updated_at": "2026-05-22T18:08:51.160Z"
+    },
+    {
+      "source_node_id": 1,
+      "target_node_id": 4,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-22T18:15:57.447Z",
+      "updated_at": "2026-05-22T18:15:57.447Z"
     }
   ],
   "skus": [],
@@ -198,20 +253,41 @@
     {
       "map_id": 2,
       "node_id": 1,
-      "x": 790,
+      "x": 865,
       "y": -25,
       "id": 1,
       "created_at": "2026-05-22T15:29:16.121Z",
-      "updated_at": "2026-05-22T15:29:30.708Z"
+      "updated_at": "2026-05-22T18:17:32.865Z"
     },
     {
       "map_id": 2,
       "node_id": 2,
-      "x": 640,
-      "y": 35,
+      "x": 715,
+      "y": 98,
       "id": 2,
       "created_at": "2026-05-22T15:29:23.992Z",
-      "updated_at": "2026-05-22T15:29:30.708Z"
+      "updated_at": "2026-05-22T18:17:32.865Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 3,
+      "x": 313,
+      "y": -25,
+      "id": 3,
+      "created_at": "2026-05-22T18:08:04.398Z",
+      "updated_at": "2026-05-22T18:17:32.865Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 4,
+      "x": 565,
+      "y": -171,
+      "id": 4,
+      "created_at": "2026-05-22T18:15:48.566Z",
+      "updated_at": "2026-05-22T18:19:05.286Z",
+      "note_visible": true,
+      "note_dx": -2,
+      "note_dy": 28
     }
   ],
   "map_flows": [
@@ -221,6 +297,21 @@
       "id": 1,
       "created_at": "2026-05-22T15:29:30.678Z",
       "updated_at": "2026-05-22T15:29:30.678Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 2,
+      "id": 2,
+      "created_at": "2026-05-22T18:08:51.160Z",
+      "updated_at": "2026-05-22T18:08:51.160Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 3,
+      "id": 3,
+      "created_at": "2026-05-22T18:15:57.447Z",
+      "updated_at": "2026-05-22T18:17:24.020Z",
+      "layout_offset": 2
     }
   ],
   "map_swim_lanes": [
