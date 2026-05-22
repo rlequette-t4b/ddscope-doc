@@ -12,8 +12,9 @@
     - [5.2 Ideas](#52-ideas)
   - [6. Constraints and Assumptions](#6-constraints-and-assumptions)
   - [7. Open Questions](#7-open-questions)
+
 # DDScope — Overview
-*v1.8 — Draft — May 2026*
+*v1.9 — Draft — May 2026*
 
 ---
 
@@ -36,6 +37,7 @@
 | 1.6 | May 2026 | JavaScript module registry introduced; reference to DDScope_Modules.md added |
 | 1.7 | May 2026 | Pre-backlog (§5) added; DDScope_Backlog.md superseded |
 | 1.8 | May 2026 | DDS_PRESENTATION candidate added to §5.1 |
+| 1.9 | May 2026 | Annotations entity added to §5.1; Unicode symbols in text fields added to §5.1 |
 
 ---
 
@@ -77,13 +79,6 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 - Tag colors — association of tags with display colors for node background coloring on the map. Configurable in the Settings tab. Priority: first match in insertion order. Copied in all three project copy modes.
 - Legend — SVG inline overlay on the map canvas (bottom-left), showing (node type x tag) combinations present on the active map, grouped by type. Toggle persisted per map. Compatible with html2canvas for future PDF export.
 - Node note overlay — display of node notes as italic text directly on the map canvas. Toggled per node per map via a "Show note on map" checkbox in the node side panel. The overlay is draggable independently of the node, with relative offset persisted per map. Excluded from fit-to-canvas and auto-layout. When the AI assistant sets a note via `update_node`, the overlay is enabled automatically on the active map.
-- **Add product on map** — toolbar shortcut that creates a node-product pair in a single action. The user selects or creates a product, optionally picks a swim-lane, and DDScope creates the node (name = product name, type resolved via `is_product_node_default`), the `map_node`, and the SKU automatically. Intended for the common pattern where a node represents a product stock point. The `is_product_node_default` flag on `node_types` (single-default, same rule as `is_default`) identifies the type to use; `default_swim_lane_id` on that type pre-selects the swim-lane in the modal.
-- **Demand management** — association of a demand record with a SKU (node x product pair), capturing Customer Tolerance Time (CTT) and average demand per period. At most one demand per SKU. Demand records are managed from the node side panel (SKU section) and reviewed in the Demand tab. CTT is displayed on the map as a red horizontal line below the node, visible opt-in per map via `map_demands`. The line is draggable and resizable per map. When multiple SKUs on the same node have a CTT visible on the active map, the longest CTT is displayed. Duration comparison and formatting handled by the `DDS_DURATION` utility module.
-- Swim-lane definition — name, colour, canvas geometry, optional grouping.
-- Configurable node types and product types per project — editable in the Settings tab. Single-default enforcement: setting a new default clears the previous one.
-- Multi-map support — each project supports multiple named maps. The functional model is shared across maps; each map defines independently which elements are visible and their canvas geometry.
-- Map management — create, rename, duplicate, and delete maps.
-- Interactive Cytoscape.js map — node drag, flow creation, flow rerouting, pan, zoom.
 - Map view: nodes and flows only. Products are visible in the detail panels of flows and nodes.
 - Fit-to-canvas and auto-layout (BFS ranking per swim-lane; nodes without a swim-lane are not repositioned).
 - Table views: node list, flow list, product list, and demand list.
@@ -140,6 +135,20 @@ Display visual indicators directly on Cytoscape nodes. Two categories:
 - *Demand badge* — displayed when at least one SKU on the node has a `demands` record.
 Multiple badges may coexist on the same node (e.g. warning + demand). Layout: horizontal row, top-right corner. Proposed rendering: Cytoscape ghost nodes (same pattern as note ghosts) for automatic pan/zoom sync and html2canvas compatibility. Visibility scope (all maps vs per-map toggle) to be defined.
 
+**Free-form annotations on the map canvas**
+Standalone text elements placed freely on the canvas, independent of nodes and flows. An annotation may optionally belong to a swim-lane (same assignment pattern as nodes). If assigned to a lane, it translates with it when the lane is repositioned; if unassigned, layout operations have no effect on it.
+
+Data model:
+- Functional entity: `annotations` — fields: `label` (free text), `swim_lane_id` (nullable), `tags`, `notes`.
+- Presentation entity: `map_annotations` — fields: `map_id`, `annotation_id`, `x`, `y`.
+
+Rendering: Cytoscape ghost node (same pattern as note ghosts and BFS rank badges). Size adjusts to text content including line breaks. Added via a "+ Annotation" button in the toolbar. Visible in a dedicated "Annotations" tab in the table view, listing all annotations in the project (not filtered by active map).
+
+**Unicode symbols in text fields displayed on the canvas**
+Node notes (displayed as ghost overlays) and annotation labels accept free Unicode text, including symbols and emoji (⚠ ▲ ℹ ✓ ✗ 🔴 🟡 🟢 …). Cytoscape renders these natively via its Canvas 2D label engine. Cross-platform rendering is best-effort — no guarantee of visual consistency across OS and browser combinations.
+
+UX complement (future): a small symbol picker in the relevant text fields offering a curated shortlist of supply-chain-relevant Unicode characters. To be specified at implementation time.
+
 **Tag color conflict resolution**
 Define a visual behaviour for nodes matching multiple `tag_colors` entries simultaneously — currently the first match wins. Candidate: display a special pattern or overlay to signal the conflict rather than silently picking the first match.
 
@@ -156,7 +165,7 @@ Configurable margin between swim-lane boundary and the first/last node column in
 Display cumulative or per-lane lead time as a label or overlay on swim-lane headers. Rendering approach to be defined.
 
 **`DDS_PRESENTATION` — presentation rules module**
-A module symmetric to `DDS_MODEL` for the presentation layer: the single authoritative layer for rules governing map state, independent of the web UI and Cytoscape. Would encapsulate: default node placement when added to a map, auto-layout rules (BFS ranking, column assignment, vertical placement), fit-to-canvas bounding box computation, map duplication logic (copy of `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`), and any other rule that determines *how* elements are arranged on a map without depending on the DOM or the Cytoscape instance. Current logic is spread across `DDS_MAP`, `DDS_LAYOUT`, and `DDS_MAP_UI`. Extracting it into `DDS_PRESENTATION` would make layout rules unit-testable independently of the rendering environment.
+A module symmetric to `DDS_MODEL` for the presentation layer: the single authoritative layer for rules governing map state, independent of the web UI and Cytoscape. Would encapsulate: default node placement when added to a map, auto-layout rules (BFS ranking, column assignment, vertical placement), fit-to-canvas bounding box computation, map duplication logic (copy of `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`), and any other rule that determines *how* elements are arranged on a map without depending on the DOM or the Cytoscape instance. Current logic is spread across `DDS_MAP`, `DDS_LAYOUT`, and `DDS_MAP_UI`.
 
 ### 5.2 Ideas
 

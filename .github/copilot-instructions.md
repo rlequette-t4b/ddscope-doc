@@ -46,6 +46,14 @@
 - Write all comments and documentation in English.
 - When drafting module specifications, do not propose or assign CommWise block IDs/positions; use the placeholder `to be defined` and leave block allocation to DEV.
 
+### Documentation patch workflow
+- When the user asks to "patch the doc" (or equivalent wording):
+  1. Search `docs/` for a patch file (`*patch*.md`, `patches*.md`, or equivalent naming).
+  2. Apply the patch instructions to the canonical spec files referenced by the patch.
+  3. Validate edited files for errors.
+  4. If and only if the patch was applied successfully, delete the temporary patch file.
+  5. Report files changed and whether the patch file was removed.
+
 ## Practical workflow for Copilot
 1. Inspect relevant module(s) and matching docs before editing.
 2. Implement the smallest correct change.
