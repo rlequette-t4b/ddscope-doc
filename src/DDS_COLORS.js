@@ -15,5 +15,5 @@ var DDS_COLORS = [
   '#6d4c41'
 ];
 
-// ESM export appended during extraction — do not remove
+// ESM export appended during extraction - do not remove
 export default DDS_COLORS;
