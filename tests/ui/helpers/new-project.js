@@ -9,9 +9,10 @@ import { expect } from '@playwright/test';
  *
  * @param {import('@playwright/test').Page} page
  * @param {string} projectName
+ * @param {{ testMode?: boolean }} [options]
  */
-export async function createNewProject(page, projectName) {
-  const response = await page.goto('', { waitUntil: 'domcontentloaded' });
+export async function createNewProject(page, projectName, options = {}) {
+  const response = await page.goto(options.testMode ? '?dds_test=1' : '', { waitUntil: 'domcontentloaded' });
   expect(response && response.ok()).toBe(true);
 
   const loginLink = page.getByRole('link', { name: /log in/i });
@@ -20,6 +21,10 @@ export async function createNewProject(page, projectName) {
       'CommWise login page detected. The Playwright context is not authenticated. ' +
         'Run "npm run test:ui:setup -- --headed" once, sign in, then resume.'
     );
+  }
+
+  if (options.testMode) {
+    await page.waitForFunction(() => typeof window.__playwright_run_actions__ === 'function');
   }
 
   const newButton = page.getByRole('button', { name: 'New' });

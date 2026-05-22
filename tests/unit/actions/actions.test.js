@@ -24,6 +24,21 @@ describe('DDS_ACTIONS', () => {
     expect(DDS_STORE.query('nodes').length).toBe(1);
   });
 
+  it('accepts add_node when the action name is provided in action instead of type', async () => {
+    var actionAliasPayload = { action: 'add_node', name: 'Factory via action key' };
+
+    var result = await DDS_ACTIONS.execute([actionAliasPayload]);
+
+    expect(result.failed).toBeNull();
+    expect(result.applied).toHaveLength(1);
+    expect(result.applied[0].type).toBe('add_node');
+    expect(result.applied[0]._created_id).toBeDefined();
+
+    var nodes = DDS_STORE.query('nodes');
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0].name).toBe('Factory via action key');
+  });
+
   it('resolves new_* references across sequential actions', async () => {
     var result = await DDS_ACTIONS.execute([
       { type: 'add_node', id: 'new_node_1', name: 'Plant' },
