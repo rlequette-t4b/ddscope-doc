@@ -1,3 +1,14 @@
+- [DDScope — Overview](#ddscope--overview)
+  - [Version History](#version-history)
+  - [1. Purpose](#1-purpose)
+  - [2. Context and Motivation](#2-context-and-motivation)
+  - [3. Implementation](#3-implementation)
+  - [4. Scope](#4-scope)
+    - [4.1 Version 1 — Target](#41-version-1--target)
+    - [4.2 Future scope](#42-future-scope)
+    - [4.3 Permanently out of scope](#43-permanently-out-of-scope)
+  - [5. Constraints and Assumptions](#5-constraints-and-assumptions)
+  - [6. Open Questions](#6-open-questions)
 # DDScope — Overview
 *v1.6 — Draft — May 2026*
 

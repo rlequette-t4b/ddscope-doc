@@ -1,5 +1,36 @@
+- [DDScope — Architecture](#ddscope--architecture)
+  - [Version History](#version-history)
+  - [1. Platform](#1-platform)
+  - [2. Stack](#2-stack)
+  - [3. JavaScript Modules](#3-javascript-modules)
+    - [Functional layer modules](#functional-layer-modules)
+    - [AI layer modules](#ai-layer-modules)
+    - [Presentation layer modules (render-dependent)](#presentation-layer-modules-render-dependent)
+  - [4. Data Model Structure](#4-data-model-structure)
+    - [Functional layer](#functional-layer)
+    - [Presentation layer](#presentation-layer)
+  - [5. Persistence](#5-persistence)
+    - [5.1 In-memory store — DDS\_STORE](#51-in-memory-store--dds_store)
+    - [5.2 File persistence](#52-file-persistence)
+    - [5.3 Auto-reopen (Chrome / Edge only)](#53-auto-reopen-chrome--edge-only)
+    - [5.4 Dirty state](#54-dirty-state)
+    - [5.5 File format](#55-file-format)
+  - [6. Key Implementation Details](#6-key-implementation-details)
+    - [Fit-to-canvas](#fit-to-canvas)
+    - [Node placement](#node-placement)
+    - [Auto-layout](#auto-layout)
+      - [BFS ranking — `_computeRanksForLane(laneNodeIds)`](#bfs-ranking--_computeranksforlanelanenodeids)
+      - [Column assignment — `_placeLaneNodes`](#column-assignment--_placelanenodes)
+      - [Vertical placement within a column](#vertical-placement-within-a-column)
+    - [Taxi edge waypoint](#taxi-edge-waypoint)
+    - [Vertical snap on node drag](#vertical-snap-on-node-drag)
+    - [Tag-based node coloring](#tag-based-node-coloring)
+    - [Legend overlay](#legend-overlay)
+    - [Note overlay on nodes](#note-overlay-on-nodes)
+    - [DDS\_DURATION](#dds_duration)
+    - [CTT line overlay](#ctt-line-overlay)
 # DDScope — Architecture
-*v1.7 — Draft — May 2026*
+*v1.8 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour. [DDScope_Modules.md](DDScope_Modules.md) for the JavaScript module registry.*
 
@@ -23,6 +54,7 @@
 | 1.5 | May 2026 | skip_in_layout on map_flows: excluded from BFS rank computation; loaded on Cytoscape edges in loadMap |
 | 1.6 | May 2026 | demands and map_demands added; DDS_DURATION utility module documented; CTT line HTML overlay documented |
 | 1.7 | May 2026 | JavaScript module registry introduced; module table updated to reference DDScope_Modules.md |
+| 1.8 | May 2026 | DDS_ACTIONS added (SCRIPT 1850) in functional layer; DDS_AI_EXECUTOR removed; DDS_AI responsibility updated |
 
 ---
 
@@ -61,6 +93,7 @@ The table below is a structural overview only — it does not duplicate the deta
 | `DDS_PRODUCTS` | SCRIPT 1600 | Product CRUD + SKU cascade |
 | `DDS_BOMS` | SCRIPT 1800 | BOM CRUD + cascade |
 | `DDS_DEMANDS` | SCRIPT 1660 | Demand CRUD + map_demands + cascade |
+| `DDS_ACTIONS` | SCRIPT 1850 | Action execution engine — apply action lists on DDS_STORE, resolve new_* references, action vocabulary |
 | `DDS_JSON` | SCRIPT 600 | Project import with copy modes + ID remapping |
 
 ### AI layer modules
@@ -68,9 +101,8 @@ The table below is a structural overview only — it does not duplicate the deta
 | Module | Block | Responsibility |
 |---|---|---|
 | `DDS_AI_CONTEXT` | SCRIPT 2200 | Serialises project to Claude context JSON |
-| `DDS_AI_EXECUTOR` | SCRIPT 2300 | Executes Claude action plans on DDS_STORE |
-| `DDS_AI` | SCRIPT 2400 | System prompt, API call, response validation |
-| `DDS_AI_UI` | SCRIPT 2500 | AI panel, message bubbles, confirm/cancel |
+| `DDS_AI` | SCRIPT 2400 | System prompt assembly via `DDS_ACTIONS.getVocabularyText()`, Claude API call, response validation |
+| `DDS_AI_UI` | SCRIPT 2500 | AI panel, message bubbles, plan display via `DDS_ACTIONS.describe()`, confirm/cancel, error reporting |
 
 ### Presentation layer modules (render-dependent)
 
@@ -210,7 +242,7 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 
 ### Node placement
 
-`DDS_LAYOUT.placeNode(nodeId, mapId)` computes the initial canvas position for a new node. It is called by the Add node modal (`DDS_NODE_UI`), the Elements panel (`DDS_ELEMENTS`), and the AI assistant executor (`DDS_AI_EXECUTOR`) — ensuring consistent placement across all creation paths.
+`DDS_LAYOUT.placeNode(nodeId, mapId)` computes the initial canvas position for a new node. It is called by the Add node modal (`DDS_NODE_UI`), the Elements panel (`DDS_ELEMENTS`), and the AI assistant executor (`DDS_ACTIONS`) — ensuring consistent placement across all creation paths.
 
 The algorithm applies in order:
 
@@ -302,7 +334,7 @@ The SVG shapes used in the legend (`rectangle`, `diamond`, `ellipse`, `hexagon`,
 - `fitMap`: ghost nodes filtered out of the bounding box calculation.
 - `runLayout`: ghost nodes filtered out of lane grouping — not repositioned by layout.
 
-**AI assistant integration:** when `DDS_AI_EXECUTOR` applies an `update_node` action containing a non-empty `notes` field, it sets `note_visible = true` on the corresponding `map_node` of the active map, so the note appears automatically after the plan is executed.
+**AI assistant integration:** when `DDS_ACTIONS` applies an `update_node` action containing a non-empty `notes` field, it sets `note_visible = true` on the corresponding `map_node` of the active map, so the note appears automatically after the plan is executed.
 
 ### DDS_DURATION
 

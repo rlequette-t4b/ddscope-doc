@@ -1,5 +1,5 @@
 # DDScope — Test Environment
-*v0.4 — Draft — May 2026*
+*v0.5 — Draft — May 2026*
 
 ---
 
@@ -9,8 +9,39 @@
 |---|---|---|
 | 0.1 | May 2026 | Initial bootstrap reference |
 | 0.2 | May 2026 | DDScope_Modules.md introduced as module registry; module table and testability classification moved there; this doc references it |
-| 0.3 | May 2026 | Module extraction moved to AI-assisted workflow (Claude + CommWise MCP); scripts/ folder removed |
-| 0.4 | May 2026 | Test mode and Playwright loading backdoor documented (Axe 2) |
+| 0.3 | May 202- [DDScope — Test Environment](#ddscope--test-environment)
+- [DDScope — Test Environment](#ddscope--test-environment)
+  - [Version History](#version-history)
+  - [Purpose](#purpose)
+  - [Repository Structure](#repository-structure)
+  - [Documentation (`docs/`)](#documentation-docs)
+  - [Module Registry](#module-registry)
+    - [Testability classification](#testability-classification)
+    - [Store-dependent test setup](#store-dependent-test-setup)
+  - [Axe 1 — Functional Tests (Vitest + Node.js)](#axe-1--functional-tests-vitest--nodejs)
+    - [Principle](#principle)
+    - [Module extraction](#module-extraction)
+    - [What to test](#what-to-test)
+    - [Fixture files](#fixture-files)
+    - [Sample projects](#sample-projects)
+    - [Running tests](#running-tests)
+  - [Axe 2 — UI Tests (Playwright)](#axe-2--ui-tests-playwright)
+    - [Principle](#principle-1)
+    - [Configuration](#configuration)
+    - [Test mode and loading backdoor](#test-mode-and-loading-backdoor)
+    - [What to test](#what-to-test-1)
+    - [Replaying tests in VS Code](#replaying-tests-in-vs-code)
+    - [Auth setup (one-time)](#auth-setup-one-time)
+  - [Axe 3 — Ticket Integration (Future)](#axe-3--ticket-integration-future)
+  - [Module Extraction Workflow](#module-extraction-workflow)
+    - [Extracting a module](#extracting-a-module)
+    - [Pushing a fix back to CommWise](#pushing-a-fix-back-to-commwise)
+  - [Module Organisation Principles](#module-organisation-principles)
+    - [Naming conventions](#naming-conventions)
+    - [Module boundaries](#module-boundaries)
+    - [Testability classification](#testability-classification-1)
+  - [Environment Variables](#environment-variables)
+  - [VS Code Setup](#vs-code-setup)
 
 ---
 
@@ -33,7 +64,8 @@ ddscope-tests/
 ├── src/                        ← DDScope modules extracted from CommWise
 │   ├── DDS_STORE.js
 │   ├── DDS_DURATION.js
-│   ├── DDS_AI_EXECUTOR.js
+│   ├── DDS_ACTIONS.js
+│   ├── DDS_AI_CONTEXT.js
 │   └── ...
 │
 ├── shims/                      ← Minimal stubs for CommWise/browser globals
@@ -47,9 +79,11 @@ ddscope-tests/
 │   │   │   └── dirty-flag.test.js
 │   │   ├── duration/
 │   │   │   └── duration.test.js
-│   │   └── ai-executor/
+│   │   └── actions/
+│   │       ├── execute.test.js
+│   │       ├── describe.test.js
 │   │       ├── new-id-resolution.test.js
-│   │       └── unknown-action.test.js
+│   │       └── vocabulary.test.js
 │   │
 │   └── ui/                     ← Playwright, targets CommWise URL
 │       ├── map/
@@ -109,6 +143,7 @@ When a spec document is updated, it should be committed to `docs/` and re-import
 | `DDScope_UI.md` | Interaction model, panels, views |
 | `DDScope_AI_Assistant.md` | Action vocabulary, context format, system prompt contract |
 | `DDScope_Backlog.md` | Pre-backlog ideas by theme |
+| `DDScope_Actions.md` | **Action vocabulary** — all supported actions, fields, new_* convention, cross-cutting rules, v1 exclusions |
 | `DDScope_Modules.md` | **JavaScript module registry** — CommWise addresses, APIs, dependencies, testability, extraction status |
 | `DDScope_TestEnvironment.md` | This file |
 
@@ -151,7 +186,7 @@ import '../src/DDS_STORE.js'; // loads DDS_STORE on globalThis
 
 ### Principle
 
-DDScope logic modules (store, duration, AI executor) are extracted from CommWise SCRIPT blocks and run as plain JS in Node.js. Vitest is the test runner — fast, native ESM, with a first-class VS Code extension.
+DDScope logic modules (store, duration, actions) are extracted from CommWise SCRIPT blocks and run as plain JS in Node.js. Vitest is the test runner — fast, native ESM, with a first-class VS Code extension.
 
 ### Module extraction
 
@@ -163,7 +198,7 @@ window.DDS_STORE = (function () { ... })();
 
 Module extraction is AI-assisted: Claude (in VS Code, connected to CommWise MCP) fetches each target block directly using `commwise_get_block` and writes it to `src/`. No manual copy-paste, no separate script to run. The selector used to identify DDScope module blocks is the `JS:` prefix in the block title (see `DDScope_Modules.md` — Naming Conventions).
 
-To request an extraction, ask Claude: *"Extract DDS_DURATION from CommWise into src/"*. Claude uses the module registry to look up the block position, fetches it, appends `export default <GLOBAL>;` for ESM compatibility, and writes the file.
+To request an extraction, ask Claude: *"Extract DDS_ACTIONS from CommWise into src/"*. Claude uses the module registry to look up the block position, fetches it, appends `export default <GLOBAL>;` for ESM compatibility, and writes the file.
 
 To make these modules runnable in Node.js, a minimal `shims/window.js` stub is imported at the top of each test file:
 
@@ -183,7 +218,7 @@ Prioritisation follows the testability classification in `DDScope_Modules.md`. M
 |---|---|
 | `DDS_STORE` | CRUD operations, ID auto-increment, cascade rules (node → flows → SKUs → demands → BOMs), dirty flag, counter seeding on load |
 | `DDS_DURATION` | `toHours`, `compare`, `toDisplay` for all unit combinations |
-| `DDS_AI_EXECUTOR` | `new_*` ID resolution across a multi-action plan, unknown action rejection, cascade action listing |
+| `DDS_ACTIONS` | `execute`: empty plan, unknown action rejection, `new_*` resolution across action fields, mid-plan failure reporting. `describe`: `new_*` label from plan, real ID from store, unknown action fallback. `ACTIONS`: all known actions present, required/optional fields match spec. `getVocabularyText`: non-empty, contains all action names |
 | Serialization | Round-trip: `buildProjectJson` → `importProjectFromJson` → state equality; partial files; ID remapping on duplicate |
 
 ### Fixture files
@@ -316,7 +351,7 @@ Module extraction is fully AI-assisted. The developer does not run any script ma
 
 Ask Claude in VS Code:
 
-> *"Extract DDS_DURATION from CommWise into src/"*
+> *"Extract DDS_ACTIONS from CommWise into src/"*
 > *"Extract all testable modules from CommWise"*
 
 Claude will:
@@ -359,8 +394,8 @@ Each module has a single stated responsibility. The full dependency graph is mai
 |---|---|---|
 | `DDS_STORE` | In-memory CRUD, dirty flag, ID counters, file persistence | store-dependent (after DOM refactor) |
 | `DDS_DURATION` | Duration arithmetic and formatting | pure |
+| `DDS_ACTIONS` | Action execution + new_* resolution + vocabulary | store-dependent |
 | `DDS_AI_CONTEXT` | Project → Claude context JSON serialisation | store-dependent |
-| `DDS_AI_EXECUTOR` | Execute Claude action plans on the store | store-dependent |
 | `DDS_JSON` | Project import with copy modes + ID remapping | store-dependent |
 | `DDS_PRODUCTS` | Product CRUD + SKU cascade | store-dependent |
 | `DDS_BOMS` | BOM CRUD + cascade | store-dependent |

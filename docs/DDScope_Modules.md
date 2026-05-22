@@ -1,5 +1,5 @@
 # DDScope — Module Registry
-*v0.2 — Draft — May 2026*
+*v0.3 — Draft — May 2026*
 
 ---
 
@@ -9,10 +9,35 @@
 |---|---|---|
 | 0.1 | May 2026 | Initial registry |
 | 0.2 | May 2026 | Reframed as machine-readable database; format densified; prose sections removed |
+| 0.3 | May 2026 | DDS_ACTIONS added (SCRIPT 1850); DDS_AI_EXECUTOR removed (absorbed into DDS_ACTIONS + DDS_AI_UI); DDS_AI and DDS_AI_UI dependencies updated |
 
 ---
 
 ## Purpose and Usage
+- [DDScope — Module Registry](#ddscope--module-registry)
+  - [Version History](#version-history)
+  - [Purpose and Usage](#purpose-and-usage)
+  - [Reference Tables](#reference-tables)
+    - [Testability classes](#testability-classes)
+    - [Extraction contract fields](#extraction-contract-fields)
+    - [Test scope fields](#test-scope-fields)
+    - [CommWise block title pattern](#commwise-block-title-pattern)
+    - [Extracted filename pattern](#extracted-filename-pattern)
+  - [Module Entries](#module-entries)
+    - [DDS\_COLORS](#dds_colors)
+    - [DDS\_STORE](#dds_store)
+    - [DDS\_DURATION](#dds_duration)
+    - [DDS\_ACTIONS](#dds_actions)
+    - [DDS\_AI\_CONTEXT](#dds_ai_context)
+    - [DDS\_AI](#dds_ai)
+    - [DDS\_AI\_UI](#dds_ai_ui)
+    - [DDS\_JSON](#dds_json)
+    - [DDS\_PRODUCTS](#dds_products)
+    - [DDS\_BOMS](#dds_boms)
+    - [DDS\_DEMANDS](#dds_demands)
+  - [Refactor Notes](#refactor-notes)
+    - [DDS\_STORE — DOM isolation (prerequisite for all store-dependent tests)](#dds_store--dom-isolation-prerequisite-for-all-store-dependent-tests)
+    - [DDS\_AI\_EXECUTOR — supprimé](#dds_ai_executor--supprimé)
 
 **This file is a machine-readable database.** It is the authoritative source of truth for DDScope JavaScript module definitions. It is consumed by AI assistants (Claude in DEV and TEST contexts) and is not intended to be read as documentation prose.
 
@@ -196,6 +221,69 @@ DDS_DURATION.toDisplay(value, unit)      // string — e.g. "5 days", "1 week"
 
 ---
 
+### DDS_ACTIONS
+
+```
+global:       DDS_ACTIONS
+block:        SCRIPT 1850
+file:         src/DDS_ACTIONS.js
+testability:  store-dependent
+contract:     unverified
+dom_mixed:    no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** action execution engine for the DDScope functional model. Receives a JSON action list, resolves `new_*` temporary references across all fields, validates against the known action vocabulary, and applies operations sequentially on `DDS_STORE`. Also provides the action vocabulary definition (structured and as formatted text for Claude) and human-readable action descriptions for the confirmation UI. The vocabulary specification is defined in **[DDScope_Actions.md](DDScope_Actions.md)**; `DDS_ACTIONS` is its authoritative runtime implementation.
+
+**API:**
+```
+DDS_ACTIONS.execute(actions)       // Promise<{ applied: action[], failed: action|null }>
+                                   // Executes actions sequentially. Rejects unknown action types
+                                   // before any write. Resolves new_* references as IDs are created.
+
+DDS_ACTIONS.describe(actions)      // { index: number, label: string }[]
+                                   // Returns a human-readable label for each action.
+                                   // Resolves real IDs from DDS_STORE and new_* from the plan itself
+                                   // (two-pass: collect new_* labels, then resolve).
+
+DDS_ACTIONS.getVocabularyText()    // string — action vocabulary injected into the Claude system prompt
+
+DDS_ACTIONS.ACTIONS                // object — structured action definitions used as source of truth
+                                   // for getVocabularyText() and for unit tests
+                                   // Shape per action: { required: string[], optional: string[], notes: string[] }
+```
+
+**Dependencies:**
+```
+DDS_STORE   SCRIPT 150
+```
+
+**test_scope:**
+```
+execute:
+  empty plan → { applied: [], failed: null }
+  unknown action type → rejected before any write; failed set; applied empty
+  new_node_N resolved in subsequent action fields (swim_lane_id, source_id, etc.)
+  new_bom_N resolved in add_bom_component.bom_id
+  new_product_N resolved in add_sku, add_flow product_ids
+  mid-plan failure → failed non-null; applied lists actions already executed
+describe:
+  empty plan → []
+  new_* label resolved from plan (add_node name used in subsequent action label)
+  real ID resolved from DDS_STORE (existing node name displayed)
+  unknown action → generic or error label, no throw
+ACTIONS:
+  every known action present
+  required and optional fields match AI Assistant spec §3
+getVocabularyText:
+  returns non-empty string
+  contains all known action names
+coverage: none
+```
+
+---
+
 ### DDS_AI_CONTEXT
 
 ```
@@ -224,30 +312,52 @@ DDS         SCRIPT 400
 
 ---
 
-### DDS_AI_EXECUTOR
+### DDS_AI
 
 ```
-global:       DDS_AI_EXECUTOR
-block:        SCRIPT 2300
-file:         src/DDS_AI_EXECUTOR.js
-testability:  store-dependent
+global:       DDS_AI
+block:        SCRIPT 2400
+file:         src/DDS_AI.js
+testability:  out-of-scope
 contract:     unverified
 dom_mixed:    no  (expected)
 api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** sequential execution of a Claude action plan against `DDS_STORE`. Resolves `new_*` temporary IDs across actions. Rejects unknown action types before any write.
-
-**API:**
-```
-DDS_AI_EXECUTOR.execute(actions)   // Promise<{ applied: action[], failed: action|null }>
-```
+**Responsibility:** system prompt assembly via `DDS_ACTIONS.getVocabularyText()`, Claude API call via CommWise secure proxy, response validation (schema check, unknown action rejection).
 
 **Dependencies:**
 ```
-DDS_STORE   SCRIPT 150
-DDS         SCRIPT 400
+DDS_STORE        SCRIPT 150
+DDS              SCRIPT 400
+DDS_AI_CONTEXT   SCRIPT 2200
+DDS_ACTIONS      SCRIPT 1850
+```
+
+---
+
+### DDS_AI_UI
+
+```
+global:       DDS_AI_UI
+block:        SCRIPT 2500
+file:         src/DDS_AI_UI.js
+testability:  render-dependent
+contract:     unverified
+dom_mixed:    yes  (expected)
+api_documented: no
+deps_declared:  no
+```
+
+**Responsibility:** AI panel rendering, message bubbles, plan display via `DDS_ACTIONS.describe()`, confirm/cancel interactions, error reporting from `DDS_ACTIONS.execute()` result (`{ applied, failed }`).
+
+**Dependencies:**
+```
+DDS_STORE        SCRIPT 150
+DDS              SCRIPT 400
+DDS_AI           SCRIPT 2400
+DDS_ACTIONS      SCRIPT 1850
 ```
 
 ---
@@ -386,6 +496,10 @@ In tests: `onDirtyChange` is left `null` — no DOM, no error.
 **Browser impact:** none. Behaviour identical.
 
 **Unblocks:** `DDS_STORE`, `DDS_AI_EXECUTOR`, `DDS_AI_CONTEXT`, `DDS_JSON`, `DDS_PRODUCTS`, `DDS_BOMS`, `DDS_DEMANDS`.
+
+### DDS_AI_EXECUTOR — supprimé
+
+Logique absorbée dans `DDS_ACTIONS` (exécution + résolution `new_*`) et `DDS_AI_UI` (reporting d'erreur, affichage du plan). Le bloc CommWise correspondant peut être archivé ou supprimé lors du prochain chantier AI.
 
 ---
 

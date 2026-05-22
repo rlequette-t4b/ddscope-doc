@@ -1,3 +1,11 @@
+- [DDScope — Backlog d'idées](#ddscope--backlog-didées)
+  - [UX / Interface](#ux--interface)
+  - [Map / Visualisation](#map--visualisation)
+  - [Données / Modèle](#données--modèle)
+  - [Assistant IA](#assistant-ia)
+  - [Export / Import](#export--import)
+  - [Gestion de projet](#gestion-de-projet)
+  - [Divers](#divers)
 # DDScope — Backlog d'idées
 
 > Fichier de collecte d'idées, améliorations et fonctions manquantes.
