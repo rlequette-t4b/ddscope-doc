@@ -44,6 +44,7 @@
   - `docs/DDScope_DataModel.md` for schema/relationship changes.
   - `README.md` when developer workflows/scripts change.
 - Write all comments and documentation in English.
+- When drafting module specifications, do not propose or assign CommWise block IDs/positions; use the placeholder `to be defined` and leave block allocation to DEV.
 
 ## Practical workflow for Copilot
 1. Inspect relevant module(s) and matching docs before editing.

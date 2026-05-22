@@ -1,5 +1,5 @@
 # DDScope — Module Registry
-*v0.6 — Draft — May 2026*
+*v0.8 — Draft — May 2026*
 
 ---
 
@@ -14,6 +14,7 @@
 | 0.5 | May 2026 | Layered write architecture documented: UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted. Dependency graph updated. |
 | 0.6 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS created; DDS_BOMS and DDS_DEMANDS refactored as helpers (no longer deprecated). UI modules call helpers only — no direct DDS_STORE or DDS_ACTIONS calls. DDS_ACTIONS.execute() made synchronous. |
 | 0.7 | May 2026 | DDS_LANES added as helper facade for swim lane CRUD. delete() is a cascade routed via DDS_MODEL.deleteSwimLane. |
+| 0.8 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library for node types; icon_key, label_position, transparent_bg documented. |
 
 ---
 
@@ -77,6 +78,7 @@ graph TD
 
   subgraph Pure["Pure — no dependencies"]
     DDS_COLORS
+    DDS_ICONS
     DDS_STORE
     DDS_DURATION
   end
@@ -135,6 +137,7 @@ graph TD
 
 **Notes:**
 - `DDS_STORE` is the root dependency of all layers.
+- `DDS_ICONS` is pure — no dependencies. Used by presentation layer (`DDS_MAP`) at render time.
 - `DDS_MODEL` handles all cascade operations.
 - `DDS_ACTIONS` is the single write entry point — synchronous. Calls `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.
 - Helper layer modules translate semantic UI calls into action lists and delegate to `DDS_ACTIONS.execute()`.
@@ -203,6 +206,61 @@ deps_declared:  yes
 ```
 DDS_COLORS   // string[] — 8 hex color strings
 ```
+
+**Dependencies:** none.
+
+---
+
+### DDS_ICONS
+
+```
+global:         DDS_ICONS
+block:          SCRIPT 110
+file:           src/DDS_ICONS.js
+testability:    pure
+contract:       not-met
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** centralised SVG icon library for node types. Exposes a keyed dictionary of SVG strings and utility methods for rendering. All SVGs in the library carry explicit `width="32" height="32"` attributes — required for correct Cytoscape `background-image` sizing.
+
+**Two icon modes** (driven by `node_types[].transparent_bg`):
+
+| Mode | `transparent_bg` | SVG fill | Cytoscape background |
+|---|---|---|---|
+| White icon | `false` (default) | `fill="white"` fixed | `background-color` = tag color, `background-opacity: 1` |
+| Colored icon | `true` | `fill="{{color}}"` replaced at render time | `background-opacity: 0` (transparent) |
+
+**API:**
+```
+DDS_ICONS.LIBRARY                    // { [key: string]: string } — raw SVG strings with {{color}} placeholder where applicable
+DDS_ICONS.list()                     // { key: string, label: string }[] — for Settings UI icon selector
+DDS_ICONS.get(key)                   // string | null — raw SVG or null if key unknown
+DDS_ICONS.toDataUrl(key, color?)     // string | null — encoded data URL; replaces {{color}} when provided
+```
+
+**SVG authoring conventions:**
+- `viewBox="0 0 100 100"` — normalised coordinate space.
+- `width="32" height="32"` — explicit intrinsic size, mandatory for Cytoscape `background-image` sizing.
+- White-icon mode: all shapes use `fill="white"`.
+- Colored-icon mode: all shapes use `fill="{{color}}"` — replaced by `toDataUrl(key, color)` at render time.
+- All shapes must stay within `x=5..95`, `y=5..95` to avoid clipping.
+- No `<style>` blocks, no external references, no scripts.
+
+**Initial library (v1):**
+
+| Key | Label | Mode |
+|---|---|---|
+| `factory` | Usine / Site de production | white |
+| `warehouse` | Entrepôt | white |
+| `supplier` | Fournisseur externe | white |
+| `customer` | Client | white |
+| `dc` | Centre de distribution | white |
+| `cylinder` | Système informatique | colored |
+
+**Fallback:** if `icon_key` is absent, null, or not found in `DDS_ICONS.LIBRARY`, the node renders using `shape` and `background-color` only — no `background-image` applied. Fully backwards-compatible with existing projects.
 
 **Dependencies:** none.
 
@@ -312,8 +370,6 @@ DDS_MODEL.removeProductFromFlow(flowId, productId)
 DDS_STORE    SCRIPT 150
 ```
 
-**test_scope:** (see v0.5 entry — unchanged)
-
 ---
 
 ### DDS_ACTIONS
@@ -330,7 +386,6 @@ deps_declared:  yes
 ```
 
 **Responsibility:** single write entry point for helper and AI layers. Translates action lists into `DDS_STORE` calls (simple ops) or `DDS_MODEL` calls (cascade ops). Provides the action vocabulary and human-readable descriptions.
-
 
 **Cascade actions** (routed to `DDS_MODEL`): `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`, `delete_demand`.
 
@@ -371,13 +426,10 @@ deps_declared:  yes
 
 **API:**
 ```
-// Writes — delegate to DDS_ACTIONS.execute()
 DDS_NODES.create(fields)                    // { name, type_code?, swim_lane_id?, tags?, notes? } → record
 DDS_NODES.update(nodeId, fields)            // → record
 DDS_NODES.delete(nodeId)                    // → void
 DDS_NODES.assignToLane(nodeId, laneId)      // → void
-
-// Reads — DDS_STORE.query wrappers
 DDS_NODES.getAll()                          // node[]
 DDS_NODES.getById(nodeId)                   // node | null
 ```
@@ -403,16 +455,13 @@ api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** helper facade for product operations. Replaces the previous DDS_PRODUCTS (SCRIPT 1600) which called DDS_STORE directly. UI modules call this module for all product writes.
+**Responsibility:** helper facade for product operations.
 
 **API:**
 ```
-// Writes — delegate to DDS_ACTIONS.execute()
 DDS_PRODUCTS.create(fields)                 // { name, type_code?, tags?, notes? } → record
 DDS_PRODUCTS.update(productId, fields)      // → record
 DDS_PRODUCTS.delete(productId)              // → void
-
-// Reads — DDS_STORE.query wrappers
 DDS_PRODUCTS.getAll()                       // product[]
 DDS_PRODUCTS.getById(productId)             // product | null
 ```
@@ -438,22 +487,19 @@ api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** helper facade for flow operations. UI modules call this module for all flow writes.
+**Responsibility:** helper facade for flow operations.
 
 **API:**
 ```
-// Writes — delegate to DDS_ACTIONS.execute()
 DDS_FLOWS.create(fields)                              // { source_id, target_id, lead_time_value?, lead_time_unit?, tags?, notes? } → record
 DDS_FLOWS.update(flowId, fields)                      // → record
 DDS_FLOWS.delete(flowId)                              // → void
 DDS_FLOWS.reroute(flowId, newSourceId?, newTargetId?) // → void
 DDS_FLOWS.addProduct(flowId, productId)               // → void
 DDS_FLOWS.removeProduct(flowId, productId)            // → void
-
-// Reads — DDS_STORE.query wrappers
 DDS_FLOWS.getAll()                                    // flow[]
 DDS_FLOWS.getById(flowId)                             // flow | null
-DDS_FLOWS.getForNode(nodeId)                          // flow[] — flows where node is source or target
+DDS_FLOWS.getForNode(nodeId)                          // flow[]
 ```
 
 **Dependencies:**
@@ -477,16 +523,13 @@ api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** helper facade for SKU operations. UI modules call this module for all SKU writes.
+**Responsibility:** helper facade for SKU operations.
 
 **API:**
 ```
-// Writes — delegate to DDS_ACTIONS.execute()
 DDS_SKUS.add(nodeId, productId, fields?)    // { tags?, notes? } → void
 DDS_SKUS.update(nodeId, productId, fields)  // → void
 DDS_SKUS.remove(nodeId, productId)          // → void
-
-// Reads — DDS_STORE.query wrappers
 DDS_SKUS.getAll()                           // sku[]
 DDS_SKUS.getForNode(nodeId)                 // sku[]
 DDS_SKUS.getForProduct(productId)           // sku[]
@@ -514,16 +557,13 @@ api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** helper facade for BOM operations. Refactored from direct DDS_STORE calls to DDS_ACTIONS delegation. `updateComponents` performs an internal diff (remove / add / update) to produce the minimal action list.
+**Responsibility:** helper facade for BOM operations. `updateComponents` performs an internal diff (remove / add / update) to produce the minimal action list.
 
 **API:**
 ```
-// Writes — delegate to DDS_ACTIONS.execute()
 DDS_BOMS.create(nodeId, outputProductId, components)   // components: [{ product_id, quantity }] → void
 DDS_BOMS.updateComponents(bomId, components)           // diff against existing → void
 DDS_BOMS.delete(bomId)                                 // → void
-
-// Reads — DDS_STORE.query wrappers
 DDS_BOMS.getAll()                                      // bom[]
 DDS_BOMS.getComponents(bomId)                          // bom_component[]
 ```
@@ -549,20 +589,15 @@ api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** helper facade for demand operations. Refactored from direct DDS_STORE calls to DDS_ACTIONS delegation. Map visibility methods (`showOnMap`, `hideFromMap`) operate on the presentation layer (`map_demands`) and remain direct DDS_STORE calls — they are outside DDS_ACTIONS scope.
+**Responsibility:** helper facade for demand operations. Map visibility methods (`showOnMap`, `hideFromMap`) operate on the presentation layer (`map_demands`) and remain direct DDS_STORE calls.
 
 **API:**
 ```
-// Writes — delegate to DDS_ACTIONS.execute()
 DDS_DEMANDS.create(nodeId, productId, fields?)   // { ctt_value?, ctt_unit?, demand_value?, demand_period?, notes? } → void
 DDS_DEMANDS.update(nodeId, productId, fields)    // → void
 DDS_DEMANDS.delete(nodeId, productId)            // → void
-
-// Presentation layer — direct DDS_STORE (not via DDS_ACTIONS)
 DDS_DEMANDS.showOnMap(demandId, mapId)           // → void
 DDS_DEMANDS.hideFromMap(demandId, mapId)         // → void
-
-// Reads — DDS_STORE.query wrappers
 DDS_DEMANDS.getAll()                             // demand[]
 DDS_DEMANDS.getForNode(nodeId)                   // demand[]
 DDS_DEMANDS.get(nodeId, productId)               // demand | null
@@ -589,18 +624,13 @@ api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** helper facade for swim lane operations. UI modules call this module for all swim lane writes. `delete()` is a cascade operation routed through `DDS_ACTIONS` → `DDS_MODEL.deleteSwimLane` (removes all assigned nodes, all `map_swim_lanes` references, and clears `default_swim_lane_id` on affected `node_types`).
-
-**Note:** `map_swim_lanes` (canvas geometry per map) is managed by the presentation layer (`DDS_SWIMLANES`) via direct `DDS_STORE` calls — outside this helper's scope.
+**Responsibility:** helper facade for swim lane operations. `delete()` is a cascade operation routed through `DDS_ACTIONS` → `DDS_MODEL.deleteSwimLane`.
 
 **API:**
 ```
-// Writes — delegate to DDS_ACTIONS.execute()
 DDS_LANES.create(fields)              // { name, color? } → record
 DDS_LANES.update(laneId, fields)      // → record
 DDS_LANES.delete(laneId)              // cascade via DDS_MODEL.deleteSwimLane → void
-
-// Reads — DDS_STORE.query wrappers
 DDS_LANES.getAll()                    // swim_lane[]
 DDS_LANES.getById(laneId)             // swim_lane | null
 ```
@@ -736,6 +766,9 @@ DDS         SCRIPT 400
 - [X] **Migrate `DDS_FLOWS_UI`** — replace any direct store calls with DDS_FLOWS.*
 - [X] **Remove SCRIPT 1600** (old DDS_PRODUCTS + DDS_NODES) — replaced by empty superseded stub
 - [X] **`DDS_STORE` DOM isolation refactor** — prerequisite for all store-dependent unit tests
+- [ ] **Implement `DDS_ICONS`** (SCRIPT 110) — new pure module, SVG icon library
+- [ ] **Extend `DDS_MAP.applyNodeColors()`** → `applyAllNodeStyles()` — icon + label_position + transparent_bg support
+- [ ] **Settings UI** — icon selector + label_position dropdown + transparent_bg toggle in node_types table
 - [ ] **`DDS_MODEL.validateSkus()`** — non-destructive SKU coherence check (v2)
 
 ---

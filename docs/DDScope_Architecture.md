@@ -1,5 +1,5 @@
 # DDScope — Architecture
-*v1.9 — Draft — May 2026*
+*v2.0 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour. [DDScope_Modules.md](DDScope_Modules.md) for the JavaScript module registry.*
 
@@ -25,6 +25,7 @@
 | 1.7 | May 2026 | JavaScript module registry introduced; module table updated to reference DDScope_Modules.md |
 | 1.8 | May 2026 | DDS_ACTIONS added (SCRIPT 1850) in functional layer; DDS_AI_EXECUTOR removed; DDS_AI responsibility updated |
 | 1.9 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS, DDS_BOMS, DDS_DEMANDS. DDS_ACTIONS.execute() made synchronous. UI modules call helpers only. |
+| 2.0 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library; icon_key, label_position, transparent_bg on node_types; applyNodeColors extended to applyAllNodeStyles. |
 
 ---
 
@@ -58,6 +59,7 @@ The table below is a structural overview only — it does not duplicate the deta
 | Module | Block | Responsibility |
 |---|---|---|
 | `DDS_COLORS` | SCRIPT 105 | 8-color palette constant |
+| `DDS_ICONS` | SCRIPT 110 | SVG icon library — keyed dictionary, `toDataUrl()` with color injection |
 | `DDS_STORE` | SCRIPT 150 | In-memory CRUD + file persistence |
 | `DDS_DURATION` | SCRIPT 1650 | Duration arithmetic and formatting |
 | `DDS_MODEL` | SCRIPT 1550 | Cascade delete rules — authoritative runtime |
@@ -91,7 +93,7 @@ UI modules call helpers for all functional writes and reads. Helpers translate s
 |---|---|---|
 | `DDS_MAP` (state) | SCRIPT 900 | DDS_MAP state + Cytoscape style definition |
 | `DDS_MAP` (load) | SCRIPT 1000 | loadMap, fitMap, runLayout |
-| `DDS_MAP` (style) | SCRIPT 1050 | Tag colors, legend overlay |
+| `DDS_MAP` (style) | SCRIPT 1050 | Tag colors, legend overlay, node icon rendering (`applyAllNodeStyles`) |
 | `DDS_MAP` (CTT) | SCRIPT 1055 | CTT line HTML overlay |
 | `DDS_SWIMLANES` | SCRIPT 1100 | Swim-lane overlay + pan/zoom sync |
 | `DDS_SWIMLANE_GROUP` | SCRIPT 1150 | Swim-lane grouping logic |
@@ -217,7 +219,7 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
 }
 ```
 
-A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `skip_in_layout`) default to `0.5` and `false` respectively at runtime.
+A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `skip_in_layout`) default to `0.5` and `false` respectively at runtime. Fields absent from `node_types` records (`icon_key`, `label_position`, `transparent_bg`) default to `null`, `"center"`, and `false` respectively at runtime.
 
 ---
 
@@ -285,13 +287,36 @@ During manual drag, a guide line (`.dds-snap-guide`) appears when the dragged no
 1. **Rule 1** — Y of any directly connected neighbour (amont or aval) visible on the active map.
 2. **Rule 2** — Y median of two same-side neighbours (both amont or both aval) sharing the same X column (within 20px tolerance), with no other map node between them on that column.
 
-### Tag-based node coloring
+### Tag-based node coloring and icon rendering
 
-`DDS_MAP.resolveNodeColor(nodeId)` returns the background color for a node: it iterates `tag_colors` in insertion order and returns the color of the first entry whose `tag` is present in the node's `tags` array. If no match is found, it returns `DDS_MAP.DEFAULT_NODE_COLOR` (`#e2e8f0`).
+`DDS_MAP.resolveNodeColor(nodeId)` returns the background color for a node: iterates `tag_colors` in insertion order and returns the color of the first entry whose `tag` is present in the node's `tags` array. Falls back to `DDS_MAP.DEFAULT_NODE_COLOR` (`#e2e8f0`) when no match is found.
 
-`DDS_MAP.applyNodeColors()` applies `resolveNodeColor` to every node currently on the Cytoscape canvas. It is called at the end of `loadMap` and whenever `tag_colors` is modified (add or delete in Settings).
+`DDS_MAP.applyAllNodeStyles()` applies the full visual style for every node currently on the Cytoscape canvas. It is called at the end of `loadMap` and whenever `tag_colors` is modified (add or delete in Settings).
 
-Node color is also refreshed immediately in the side panel when a tag is added or removed from a node, without requiring a full map reload.
+`DDS_MAP.applyNodeStyle(nodeId)` applies the style for a single node. Called immediately when a tag is added or removed from a node in the side panel, without requiring a full map reload. The logic:
+
+1. Resolve `color = DDS_MAP.resolveNodeColor(nodeId)`.
+2. Look up `node_type` for the node → read `icon_key`, `label_position`, `transparent_bg`.
+3. **No `icon_key`** (absent, null, or not found in `DDS_ICONS`): apply `background-color: color`, shape and label position only. Fallback — fully backwards-compatible.
+4. **`icon_key` found, `transparent_bg: false`** (default — white icon on colored background):
+   - `background-color`: resolved tag color
+   - `background-image`: `DDS_ICONS.toDataUrl(icon_key)` — SVG with `fill="white"`
+   - `background-fit: contain`, `background-clip: none`
+   - `background-opacity: 1`
+5. **`icon_key` found, `transparent_bg: true`** (colored icon on transparent background):
+   - `background-opacity: 0` — node shape background is invisible
+   - `background-image`: `DDS_ICONS.toDataUrl(icon_key, color)` — SVG with `fill="{{color}}"` replaced by resolved tag color
+   - `background-fit: contain`, `background-clip: none`
+6. Apply label position from `node_types[].label_position`:
+   - `center` (default): `text-valign: center`, `text-margin-y: 0`, label color `white`
+   - `below`: `text-valign: bottom`, `text-margin-y: 8`, label color `#222222`
+   - `above`: `text-valign: top`, `text-margin-y: -8`, label color `#222222`
+
+**Cytoscape `background-image` constraints (validated experimentally):**
+- The SVG must carry explicit `width` and `height` attributes (e.g. `width="32" height="32"`). Without them, Cytoscape cannot determine the intrinsic size and clips the image.
+- `background-fit: contain` scales the image to fit the node — do not combine with `background-width`/`background-height` in pixels, as they conflict.
+- `background-color: transparent` is not supported — use `background-opacity: 0` instead.
+- `background-clip` has no significant effect on rectangular nodes with `background-fit: contain`.
 
 ### Legend overlay
 

@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v2.3 — Draft — May 2026*
+*v2.4 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
@@ -29,6 +29,7 @@
 | 2.1 | May 2026 | §17 rewritten: integrity rules simplified — no automatic SKU sync on flow or product operations; reroute_flow added; DDS_MODEL introduced as authoritative runtime; validateSkus deferred to future scope |
 | 2.2 | May 2026 | §17.0 added: layered write architecture — UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted |
 | 2.3 | May 2026 | §17.0 updated: helper layer added between UI and DDS_ACTIONS; DDS_ACTIONS.execute() synchronous |
+| 2.4 | May 2026 | §8 updated: icon_key, label_position, transparent_bg added to node_types; Cytoscape rendering rules documented |
 
 ---
 
@@ -178,10 +179,28 @@ Each project maintains its own list of node types and product types, seeded at p
 |---|---|---|
 | code | text | Internal identifier (e.g. `SUPPLIER`, `PROD`) |
 | label | text | Display name |
-| shape | text | Cytoscape shape |
+| shape | text | Cytoscape shape — used as fallback when no `icon_key` is defined, and always defines the hit area |
 | is_default | boolean | Pre-selected when adding a node. Only one record may be default at a time. |
 | is_product_node_default | boolean | Used by the "Add product on map" shortcut and the AI assistant product-node pattern. Only one record may have this flag at a time. Falls back to `is_default` then first type if absent. |
 | default_swim_lane_id | integer \| null | Swim-lane pre-selected in Add node and Add product on map modals. Cleared if the swim-lane is deleted. |
+| icon_key | text \| null | Key into `DDS_ICONS.LIBRARY`. When defined, the corresponding SVG is rendered as `background-image` on the Cytoscape node. When absent or unresolved, the node renders with `shape` and `background-color` only. |
+| label_position | text | Controls label placement relative to the node shape. Values: `center` (default), `below`, `above`. Maps to Cytoscape `text-valign` + `text-margin-y`. |
+| transparent_bg | boolean | When `true`, the node background is transparent (`background-opacity: 0`) and the tag color is injected into the SVG icon via `DDS_ICONS.toDataUrl(key, color)`. When `false` (default), the icon uses `fill="white"` and the tag color fills the node background. |
+
+**Cytoscape rendering rules for nodes with `icon_key`:**
+
+- `background-image`: SVG data URL from `DDS_ICONS.toDataUrl(icon_key, color?)` — the SVG must carry explicit `width` and `height` attributes for Cytoscape to size it correctly.
+- `background-fit: contain` — icon scales to fit the node.
+- `background-clip: none`
+- `transparent_bg: false` — `background-color` = resolved tag color; SVG uses `fill="white"`.
+- `transparent_bg: true` — `background-opacity: 0`; SVG uses `fill="{{color}}"` replaced with resolved tag color at render time.
+- `shape` is always set (defines the hit area and acts as visual fallback).
+
+| `label_position` | `text-valign` | `text-margin-y` | Label color |
+|---|---|---|---|
+| `center` (default) | `center` | `0` | `white` |
+| `below` | `bottom` | `8` | `#222222` |
+| `above` | `top` | `-8` | `#222222` |
 
 **JSON array:** `product_types`
 
