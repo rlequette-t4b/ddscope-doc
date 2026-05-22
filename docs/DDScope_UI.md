@@ -317,6 +317,15 @@ SKUs cannot be added or removed manually from this section.
 
 Lead time (value + unit), tags, notes, and the list of products on the flow. Each product has a × button to remove it. A selector allows adding a product from the project's product list.
 
+**Show note on map** — a checkbox below the Notes field. When checked, `flows.notes` is displayed on the canvas for the active map. The checkbox is disabled when the Notes field is empty. If the Notes field is cleared while the checkbox is checked, the checkbox is automatically unchecked and any canvas rendering removed. Persists `map_flows.show_notes_label`.
+
+**Note display mode** — a radio group or select visible only when "Show note on map" is checked. Two options:
+
+- *Label* (default) — the note is rendered as a native edge label centred on the edge.
+- *Annotation* — the note is rendered as a draggable ghost node positioned relative to the flow midpoint. The ghost can be repositioned; the offset is persisted to `map_flows.notes_annotation_dx` and `map_flows.notes_annotation_dy`.
+
+Persists `map_flows.notes_as_annotation` (`false` for Label, `true` for Annotation). Switching mode updates the canvas immediately.
+
 **Layout controls** — visible only when both endpoint nodes are in the same swim-lane present on the active map:
 
 | Field | Description |

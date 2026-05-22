@@ -34,6 +34,7 @@
 | 2.6 | May 2026 | layout_direction_inverted added to map_flows (§13); bfs_rank_min, bfs_rank_max added to map_nodes (§12, debug only) |
 | 2.7 | May 2026 | skip_in_layout deprecated in map_flows; replaced by layout_offset (integer, default 1), where 0 excludes from BFS and N sets the minimum column distance |
 | 2.8 | May 2026 | label_position added to map_nodes for per-map label position override |
+| 2.9 | May 2026 | notes_annotation_dx, notes_annotation_dy added to map_flows for flow note ghost offset |
 
 ---
 
@@ -297,11 +298,15 @@ Records that a flow is visible on a specific map, and stores per-map presentatio
 | layout_direction_inverted | boolean | For bidirectional flows only. When `true`, source and target are swapped in the BFS graph, controlling which direction drives rank propagation. Defaults to `false`. |
 | show_notes_label | boolean | When `true`, `flows.notes` is displayed as an edge label on the canvas. Defaults to `false`. |
 | notes_as_annotation | boolean | When `true` (and `show_notes_label` is `true`), flow notes are rendered as a draggable ghost node positioned relative to the flow midpoint, instead of as an edge label. Relative offset persisted per map. Same pattern as node note ghosts. Defaults to `false`. |
+| notes_annotation_dx | numeric | Horizontal offset of the flow note ghost relative to the flow midpoint. Defaults to `0`. |
+| notes_annotation_dy | numeric | Vertical offset of the flow note ghost relative to the flow midpoint. Defaults to `-30`. |
 | curve_style | text | Edge curve style: `taxi` (default) or `straight`. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 
 `notes_as_annotation` has no effect when `show_notes_label` is `false`. When `true`, the ghost node is excluded from fit-to-canvas and auto-layout, following the same exclusion rules as node note ghosts.
+
+Fields absent from `map_flows` records (`waypoint_pct`, `layout_offset`, `layout_direction_inverted`, `show_notes_label`, `notes_as_annotation`, `notes_annotation_dx`, `notes_annotation_dy`, `curve_style`) default to `0.5`, `1`, `false`, `false`, `false`, `0`, `-30`, and `"taxi"` respectively at runtime.
 
 ---
 

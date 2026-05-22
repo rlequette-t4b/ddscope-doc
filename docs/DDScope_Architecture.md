@@ -219,7 +219,7 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
 }
 ```
 
-A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_nodes` records (`bfs_rank_min`, `bfs_rank_max`) default to `null` at runtime. `label_position` defaults to `null` (uses node type value) at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `layout_offset`, `layout_direction_inverted`, `show_notes_label`, `curve_style`) default to `0.5`, `1`, `false`, `false`, and `"taxi"` respectively at runtime. Fields absent from `node_types` records (`icon_key`, `label_position`, `transparent_bg`) default to `null`, `"center"`, and `false` respectively at runtime.
+A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_nodes` records (`bfs_rank_min`, `bfs_rank_max`) default to `null` at runtime. `label_position` defaults to `null` (uses node type value) at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `layout_offset`, `layout_direction_inverted`, `show_notes_label`, `notes_as_annotation`, `notes_annotation_dx`, `notes_annotation_dy`, `curve_style`) default to `0.5`, `1`, `false`, `false`, `false`, `0`, `-30`, and `"taxi"` respectively at runtime. Fields absent from `node_types` records (`icon_key`, `label_position`, `transparent_bg`) default to `null`, `"center"`, and `false` respectively at runtime.
 
 ---
 
@@ -286,6 +286,8 @@ Edges use `curve-style: taxi` with `taxi-direction: horizontal`. The bend positi
 `layout_direction_inverted` (boolean) is loaded as `edge.data('layoutDirectionInverted')` for bidirectional flows only. When active, `_computeRanksForLane` swaps source and target in the predecessor/successor graph.
 
 `show_notes_label` (boolean) controls whether `flows.notes` is rendered as an edge label on the canvas.
+
+`notes_as_annotation` (boolean) controls the rendering mode of the flow note when `show_notes_label` is `true`. When `false` (default), the note is rendered as a native Cytoscape edge label. When `true`, a ghost node (class `dds-flow-note-ghost`, id `flow-note-{flow_id}`) is created and positioned at the flow midpoint offset by `notes_annotation_dx` and `notes_annotation_dy`. The ghost is draggable; releasing it persists the new offset to `map_flows`. The ghost is excluded from fit-to-canvas and auto-layout using the same filter as `dds-note-ghost` nodes (`node.hasClass('dds-flow-note-ghost')`).
 
 `curve_style` (text) controls the edge routing style. Supported values are `taxi` (default) and `straight`.
 
