@@ -327,7 +327,7 @@ deps_declared:  yes
 
 **Responsibility:** single write entry point for helper and AI layers. Translates action lists into `DDS_STORE` calls (simple ops) or `DDS_MODEL` calls (cascade ops). Provides the action vocabulary and human-readable descriptions.
 
-**Synchronous:** `execute()` returns `{ applied, failed }` directly — no Promise.
+**Synchronous:** `execute()` returns `{ applied, failed }`
 
 **Cascade actions** (routed to `DDS_MODEL`): `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`, `delete_demand`.
 
@@ -687,7 +687,7 @@ DDS         SCRIPT 400
 - [ ] **Implement `DDS_SKUS`** (SCRIPT 1630) — new helper
 - [ ] **Refactor `DDS_BOMS`** (SCRIPT 1800) — migrate to helper pattern
 - [ ] **Refactor `DDS_DEMANDS`** (SCRIPT 1660) — migrate to helper pattern
-- [ ] **Make `DDS_ACTIONS.execute()` synchronous** — remove Promise wrapper (SCRIPT 1850)
+- [X] **Make `DDS_ACTIONS.execute()` synchronous** — remove Promise wrapper (SCRIPT 1850)
 - [ ] **Migrate `DDS_BOMS_UI`** — replace DDS_BOMS.* (old) with new helper API
 - [ ] **Migrate `DDS_PANEL` (demand section)** — replace DDS_DEMANDS.* (old) with new helper API
 - [ ] **Migrate `DDS_DEMANDS_UI`** — replace DDS_DEMANDS.* (old) with new helper API
