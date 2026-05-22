@@ -17,14 +17,15 @@
   - [14. Map Swim-lane](#14-map-swim-lane)
   - [15. Map Demand](#15-map-demand)
   - [16. Project](#16-project)
-  - [17. Removing and Deleting Elements](#17-removing-and-deleting-elements)
-    - [Remove from map only](#remove-from-map-only)
-    - [Delete from the functional model (full delete)](#delete-from-the-functional-model-full-delete)
-    - [UI](#ui)
+  - [17. Integrity Rules](#17-integrity-rules)
+    - [17.1 Delete operations and cascades](#171-delete-operations-and-cascades)
+    - [17.2 SKU lifecycle](#172-sku-lifecycle)
+    - [17.3 UI](#173-ui)
+    - [17.4 Future — SKU validation](#174-future--sku-validation)
 # DDScope — Data Model
-*v2.0 — Draft — May 2026*
+*v2.1 — Draft — May 2026*
 
-*See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence.*
+*See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of these rules.*
 
 ---
 
@@ -49,6 +50,7 @@
 | 1.8 | May 2026 | is_product_node_default added to node_types for "Add product on map" feature |
 | 1.9 | May 2026 | skip_in_layout added to map_flows; excluded from BFS rank computation in auto-layout |
 | 2.0 | May 2026 | demands and map_demands added; demand_x, demand_y, demand_length added to map_nodes |
+| 2.1 | May 2026 | §17 rewritten: integrity rules simplified — no automatic SKU sync on flow or product operations; reroute_flow added; DDS_MODEL introduced as authoritative runtime; validateSkus deferred to future scope |
 
 ---
 
@@ -61,6 +63,8 @@ Every entity includes the following system fields, not repeated in the field def
 **Functional vs presentation separation.** The model distinguishes two layers:
 - The **functional layer** (nodes, products, flows, SKUs, swim-lanes, BOMs, tag colors, demands) describes the supply chain as it exists — independent of any visual representation.
 - The **presentation layer** (maps and map-scoped entities) describes how elements are arranged and which elements are visible on a given map.
+
+**SKU lifecycle.** SKUs are not automatically synchronised with flows. Adding or removing a product from a flow does not create or delete SKUs. SKU coherence with the flow structure is the responsibility of the consultant, assisted by the future `validateSkus` function (see §17.4). The only automatic SKU operations are deletions triggered by `delete_node`, `delete_product`, and `remove_sku` (see §17.1).
 
 ---
 
@@ -111,17 +115,13 @@ A flow is a directed link between two nodes, representing the movement of one or
 | lead_time_unit | text \| null | Unit of the lead time — one of `hours`, `days`, `weeks`, `months`, `years` |
 | notes | text | Free-form observations |
 
+**No automatic SKU synchronisation.** Adding or removing a product from a flow (`add_product_to_flow`, `remove_product_from_flow`) does not create or delete any SKU. Rerouting a flow (`reroute_flow`) does not modify any SKU. SKU coherence is managed separately — see §17.4.
+
 ---
 
 ## 4. SKU
 
 A SKU is the association between a node and a product. The nature of the association is expressed through tags.
-
-**SKU lifecycle — derived from flows.** SKUs are managed automatically:
-- Created when a product is added to a flow and the corresponding node × product pair does not yet exist.
-- Deleted when a product no longer appears on any flow entering or leaving the node.
-
-SKUs can also be created independently via the "Add product on map" shortcut (see §7 and DDScope_UI.md §5). Such SKUs coexist with the flow-derived lifecycle: if no flow carries the product for that node, the SKU persists until explicitly removed or the node is deleted.
 
 **JSON array:** `skus`
 
@@ -132,13 +132,7 @@ SKUs can also be created independently via the "Add product on map" shortcut (se
 | tags | array | Free labels (e.g. `["buffer", "stock", "transit"]`) |
 | notes | text | Free-form observations |
 
-**Cascade triggers:**
-- `add_product_to_flow(flow, product)` → create SKU for source and target nodes if absent.
-- `remove_product_from_flow(flow, product)` → delete SKU for source/target if no other connected flow carries this product. Apply BOM cascade for each deleted SKU.
-- `delete_flow(flow)` → apply remove logic for all products. Apply BOM cascade.
-- `delete_node(node)` → delete all SKUs, BOMs, `bom_components`, and demands for that node.
-- `delete_product(product)` → delete all SKUs, then apply BOM cascade for each affected node.
-- `remove_sku(node, product)` → delete the demand for that node × product pair if it exists.
+**SKU lifecycle.** SKUs are created explicitly — via the "Add product on map" shortcut, via `add_sku` in the action vocabulary, or manually in the UI. They are deleted only by the cascade rules in §17.1. There is no automatic creation or deletion of SKUs when products are added to or removed from flows.
 
 ---
 
@@ -158,21 +152,11 @@ A demand record captures the customer-facing requirements associated with a SKU:
 | demand_period | text \| null | Demand period — one of `hours`, `days`, `weeks`, `months`, `years` |
 | notes | text | Free-form observations |
 
-**Cascade triggers:**
-- `delete_node(node)` → delete all demands where `node_id` matches.
-- `delete_product(product)` → delete all demands where `product_id` matches.
-- `remove_sku(node, product)` → delete the demand for that node × product pair if it exists.
-- In all cases, deletion of a demand cascades to its `map_demands` records and resets `demand_x`, `demand_y`, `demand_length` to `null` on all `map_nodes` records for that node.
-
 ---
 
 ## 6. BOM (Bill of Material)
 
 A BOM describes the transformation performed by a node: one output product manufactured from one or more input components with quantities. A node can have multiple BOMs (one per output product). BOMs are used to constitute the DDOptim export package.
-
-**BOM cascade — triggered by SKU deletion:**
-- If the deleted SKU's product is the **output product** of a BOM on this node → the entire BOM is deleted, including all its components.
-- If the deleted SKU's product is a **component** in a BOM → the component line is deleted. If this leaves the BOM with no components, the BOM itself is deleted.
 
 **JSON array:** `boms`
 
@@ -195,7 +179,7 @@ A BOM describes the transformation performed by a node: one output product manuf
 
 ## 7. Swim-lane
 
-A swim-lane is a named, coloured supply chain stage. Canvas geometry is map-specific (see §13).
+A swim-lane is a named, coloured supply chain stage. Canvas geometry is map-specific (see §14).
 
 **JSON array:** `swim_lanes`
 
@@ -305,7 +289,7 @@ Records that a flow is visible on a specific map, and stores per-map presentatio
 | map_id | integer | Reference to `maps[].id` |
 | flow_id | integer | Reference to `flows[].id` |
 | waypoint_pct | float \| null | Taxi edge bend position — fraction of the horizontal distance between source and target (0–1). `null` or absent defaults to `0.5` (midpoint). Edited via the waypoint handle on the canvas. |
-| skip_in_layout | boolean | When `true`, this flow is excluded from the BFS rank computation in `DDS_MAP.runLayout`. The edge is still rendered on the canvas. Defaults to `false`. Use to allow nodes connected by non-sequential flows (e.g. returns, co-products, parallel paths) to be placed in the same column without rank constraint. |
+| skip_in_layout | boolean | When `true`, this flow is excluded from the BFS rank computation in `DDS_MAP.runLayout`. The edge is still rendered on the canvas. Defaults to `false`. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 
@@ -357,35 +341,59 @@ Project metadata, stored under the `project` key (object, not array) in the JSON
 
 ---
 
-## 17. Removing and Deleting Elements
+## 17. Integrity Rules
 
-DDScope distinguishes two operations when the user clicks **Remove** on a selected element:
+`DDS_MODEL` (see [DDScope_Modules.md](DDScope_Modules.md)) is the authoritative runtime implementation of all rules in this section. No other module may apply cascade deletions directly — all destructive operations on the functional model must go through `DDS_MODEL`.
 
-### Remove from map only
+### 17.1 Delete operations and cascades
 
-The element is removed from the **active map** only. The functional model is unchanged — the element still exists in the project and can be re-added to any map via the Elements panel.
+The table below defines what is deleted when each operation is performed. All listed deletions are applied by `DDS_MODEL` in a single synchronous operation. Presentation-layer records (`map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`) are cleaned up as part of referential integrity, not as a functional concern.
 
-| Element | What is removed |
+| Operation | What is deleted |
 |---|---|
-| Node | `map_nodes` record for this map (including note overlay state and CTT line geometry). All `map_flows` for flows where this node is source or target, on this map only. All `map_demands` for demands associated with this node, on this map only. |
-| Flow | `map_flows` record for this map only. |
-| Swim-lane | `map_swim_lanes` record for this map. Nodes assigned to the lane remain on the map. |
+| `delete_node(nodeId)` | All `flows` where this node is source or target. All `map_flows` for those flows across all maps. All `skus` where `node_id` matches. All `boms` for this node and their `bom_components`. All `demands` for this node and their `map_demands`. All `map_nodes` for this node across all maps. The `nodes` record. |
+| `delete_flow(flowId)` | All `map_flows` for this flow across all maps. The `flows` record. **No SKU deletion.** |
+| `delete_product(productId)` | Removes `productId` from `flows[].product_ids` on all flows. All `skus` where `product_id` matches. All `boms` where `output_product_id` matches and their `bom_components`. All `bom_components` where `product_id` matches (and their parent `boms` if left with no components). All `demands` where `product_id` matches and their `map_demands`. The `products` record. |
+| `delete_swim_lane(swimLaneId)` | All nodes assigned to this swim-lane — each with its full `delete_node` cascade. All `map_swim_lanes` for this lane across all maps. Clears `default_swim_lane_id` on any `node_types` record that referenced this lane. The `swim_lanes` record. |
+| `remove_sku(nodeId, productId)` | The `demands` record for this node × product pair if it exists, and its `map_demands`. The `skus` record. |
+| `delete_demand(nodeId, productId)` | All `map_demands` where `demand_id` matches. The `demands` record. |
+| `delete_bom(bomId)` | All `bom_components` where `bom_id` matches. The `boms` record. |
+| `reroute_flow(flowId, newSourceId?, newTargetId?)` | Updates `source_node_id` and/or `target_node_id` on the `flows` record. **No SKU modification.** |
+| `add_product_to_flow(flowId, productId)` | Appends `productId` to `flows[flowId].product_ids`. **No SKU creation.** |
+| `remove_product_from_flow(flowId, productId)` | Removes `productId` from `flows[flowId].product_ids`. **No SKU deletion.** |
 
-### Delete from the functional model (full delete)
+### 17.2 SKU lifecycle
 
-The element is permanently deleted from the project across all maps, with full cascade.
+SKUs are **not automatically synchronised** with flow product lists. The presence of a product on a flow does not guarantee the existence of a SKU on the endpoint nodes, and vice versa.
 
-| Element | What is deleted |
+SKUs are created:
+- Explicitly via `add_sku` (action vocabulary, UI)
+- Via the "Add product on map" shortcut
+
+SKUs are deleted only by:
+- `delete_node` — removes all SKUs for that node
+- `delete_product` — removes all SKUs for that product
+- `remove_sku` — removes one specific SKU
+
+### 17.3 UI
+
+The **Remove** button in the map toolbar opens a confirmation modal. A **Remove only from map** checkbox (unchecked by default) controls which operation is performed.
+
+| Checkbox state | Behaviour |
 |---|---|
-| Node | The `nodes` record. All flows where this node is source or target (all maps). All SKUs for this node. All BOMs and `bom_components` for this node. All demands for this node and their `map_demands`. All `map_nodes` and `map_flows` records across all maps. |
-| Flow | The `flows` record. Orphan SKUs on source and target nodes (SKUs whose product no longer appears on any other connected flow). BOM cascade for each orphan SKU. Demand cascade for each deleted SKU. All `map_flows` records across all maps. |
-| Swim-lane | The `swim_lanes` record. All nodes assigned to this swim-lane — with their full node cascade (flows, SKUs, BOMs, demands). All `map_swim_lanes` records across all maps. Clears `default_swim_lane_id` on any node type that referenced this lane. |
+| **Unchecked** (default) | Full delete via `DDS_MODEL` — cascades as defined in §17.1 |
+| **Checked** | Remove from active map only — presentation layer only, functional model unchanged |
 
-### UI
+Map-only removal is handled by `DDS_ELEMENTS`, not `DDS_MODEL`.
 
-The **Remove** button in the map toolbar is active when a node, flow, or swim-lane is selected. It opens a confirmation modal displaying the element name and a summary of the cascade consequences. A **Remove only from map** checkbox (unchecked by default) controls which operation is performed. Confirming with the checkbox unchecked performs the full delete; confirming with it checked performs the map-only removal.
+### 17.4 Future — SKU validation
 
-> For swim-lanes, an unchecked delete also deletes all nodes assigned to that swim-lane and their full cascade (flows, SKUs, BOMs, demands).
+A future `DDS_MODEL.validateSkus()` function will detect SKU inconsistencies and propose corrections. Typical cases:
+
+- **Missing SKU** — a product appears on a flow but no SKU exists on one or both endpoint nodes
+- **Orphan SKU** — a SKU exists on a node for a product that does not appear on any connected flow and the node is not of type `is_product_node_default`
+
+This function will be non-destructive: it reports inconsistencies and proposes additions or deletions, which the consultant confirms before any write.
 
 ---
 

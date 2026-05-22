@@ -7,10 +7,13 @@
     - [4.1 Version 1 — Target](#41-version-1--target)
     - [4.2 Future scope](#42-future-scope)
     - [4.3 Permanently out of scope](#43-permanently-out-of-scope)
-  - [5. Constraints and Assumptions](#5-constraints-and-assumptions)
-  - [6. Open Questions](#6-open-questions)
+  - [5. Pre-backlog](#5-pre-backlog)
+    - [5.1 Candidates](#51-candidates)
+    - [5.2 Ideas](#52-ideas)
+  - [6. Constraints and Assumptions](#6-constraints-and-assumptions)
+  - [7. Open Questions](#7-open-questions)
 # DDScope — Overview
-*v1.6 — Draft — May 2026*
+*v1.8 — Draft — May 2026*
 
 ---
 
@@ -31,6 +34,8 @@
 | 1.4 | May 2026 | Add product on map shortcut added to v1 feature list |
 | 1.5 | May 2026 | Demand feature added to v1 feature list |
 | 1.6 | May 2026 | JavaScript module registry introduced; reference to DDScope_Modules.md added |
+| 1.7 | May 2026 | Pre-backlog (§5) added; DDScope_Backlog.md superseded |
+| 1.8 | May 2026 | DDS_PRESENTATION candidate added to §5.1 |
 
 ---
 
@@ -110,6 +115,7 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 - Cumulative lead time display on the map using `DDS_DURATION.add`.
 - SKU visibility per map.
 - Product visibility model (currently derived from flow visibility).
+- SKU validation — `DDS_MODEL.validateSkus()`: non-destructive detection of missing and orphan SKUs, with proposed corrections for consultant confirmation (see `DDScope_DataModel.md` §17.4).
 
 ### 4.3 Permanently out of scope
 
@@ -120,7 +126,49 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 
 ---
 
-## 5. Constraints and Assumptions
+## 5. Pre-backlog
+
+Items below are collected but not yet committed to any version. They are not to-do items — they are inputs for future planning sessions.
+
+**§5.1** contains items with sufficient definition to be discussed for prioritisation. **§5.2** contains fragments and early ideas that need further thinking before they can be scoped.
+
+### 5.1 Candidates
+
+**Node badges on the map canvas**
+Display visual indicators directly on Cytoscape nodes. Two categories:
+- *Tag-triggered badges* — a badge appears when a specific tag is present on the node. Target tags: `warning` (⚠️), `info` (ℹ️), `buffer` (dedicated icon). Configurable list, potential link with `tag_colors`.
+- *Demand badge* — displayed when at least one SKU on the node has a `demands` record.
+Multiple badges may coexist on the same node (e.g. warning + demand). Layout: horizontal row, top-right corner. Proposed rendering: Cytoscape ghost nodes (same pattern as note ghosts) for automatic pan/zoom sync and html2canvas compatibility. Visibility scope (all maps vs per-map toggle) to be defined.
+
+**Tag color conflict resolution**
+Define a visual behaviour for nodes matching multiple `tag_colors` entries simultaneously — currently the first match wins. Candidate: display a special pattern or overlay to signal the conflict rather than silently picking the first match.
+
+**Pain points and objectives**
+Capture supply chain pain points and project objectives as structured entities. Proposed categories aligned with the 7 DDMRP buffer reasons (with custom additions). Linked to nodes with badge display on the map. Dedicated side panel. Requires a separate spec document before implementation.
+
+**Information flows**
+Model information flows and planning processes as a separate layer alongside material flows. Roles, entities, and planning cycles. Requires a separate spec document.
+
+**Swim-lane layout offset**
+Configurable margin between swim-lane boundary and the first/last node column in auto-layout. Currently hardcoded.
+
+**Lead time display on swim-lanes**
+Display cumulative or per-lane lead time as a label or overlay on swim-lane headers. Rendering approach to be defined.
+
+**`DDS_PRESENTATION` — presentation rules module**
+A module symmetric to `DDS_MODEL` for the presentation layer: the single authoritative layer for rules governing map state, independent of the web UI and Cytoscape. Would encapsulate: default node placement when added to a map, auto-layout rules (BFS ranking, column assignment, vertical placement), fit-to-canvas bounding box computation, map duplication logic (copy of `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`), and any other rule that determines *how* elements are arranged on a map without depending on the DOM or the Cytoscape instance. Current logic is spread across `DDS_MAP`, `DDS_LAYOUT`, and `DDS_MAP_UI`. Extracting it into `DDS_PRESENTATION` would make layout rules unit-testable independently of the rendering environment.
+
+### 5.2 Ideas
+
+**Tag-specific selection style**
+A distinct visual style for selected nodes when tag-based coloring is active — to avoid confusion between selection highlight and tag color. Approach undefined.
+
+**`DDS_MODEL` — deprecate legacy cascade modules**
+Once `DDS_MODEL` is implemented, progressively migrate callers of `DDS_PRODUCTS`, `DDS_BOMS`, `DDS_DEMANDS` to `DDS_MODEL` / `DDS_STORE` direct calls, then remove the deprecated modules. Tracked in `DDScope_Modules.md` backlog.
+
+---
+
+## 6. Constraints and Assumptions
 
 - The application runs entirely within the CommWise platform.
 - Data entry is manual.
@@ -135,7 +183,7 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 
 ---
 
-## 6. Open Questions
+## 7. Open Questions
 
 | # | Question |
 |---|---|
@@ -143,7 +191,7 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 | 2 | DDOpt handoff: expected input format? This will define structured export requirements. |
 | 3 | Tag filtering in table views: approach to be defined. |
 | 4 | Cumulative lead time display on the map: approach to be confirmed. |
-| 5 | Node badges: use cases and trigger conditions to be defined before implementation. |
+| 5 | Node badges: visibility scope — all maps or per-map toggle? |
 | 6 | SKU visibility per map: to be addressed in a dedicated session. |
 | 7 | Product visibility model: derived from flow visibility. To be revisited in a dedicated session. |
 | 8 | CTT line rendering: html2canvas compatibility of the HTML overlay approach for future PDF export — to be validated. |
