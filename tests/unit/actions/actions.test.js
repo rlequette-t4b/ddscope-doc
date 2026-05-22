@@ -70,10 +70,11 @@ describe('DDS_ACTIONS', () => {
   });
 
   it('executes customer add_node batch and persists nodes in an existing swim lane', async () => {
-    var lane = DDS_STORE.insert('swim_lanes', {
-      name: 'Customers lane',
-      color: '#1e88e5'
-    })[0];
+    var laneCreate = await DDS_ACTIONS.execute([
+      { type: 'add_swim_lane', name: 'Customers lane', color: '#1e88e5' }
+    ]);
+    expect(laneCreate.failed).toBeNull();
+    var lane = DDS_STORE.query('swim_lanes')[0];
 
     var actions = [
       { type: 'add_node', name: 'C1', type_code: 'CUSTOMER', swim_lane_id: String(lane.id) },
