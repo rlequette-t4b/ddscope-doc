@@ -222,19 +222,28 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 | Drag resize handle (bottom-right) | Resize lane. All lanes in the same group adopt the same height.                                                                                                         |
 | Click lane header                 | Opens swim-lane side panel.                                                                                                                                             |
 
-### Vertical snap
+### Vertical and horizontal snap on node drag
 
-When dragging a node manually, a dashed green guide line appears when the node's Y approaches a snap target (threshold: 6px canvas units). Snap is applied on release. Two snap rules apply:
+When dragging a node manually, two guide lines appear when the node is within 6px canvas units of a snap target:
 
-1. **Direct neighbour** — snap to the Y of any node directly connected by a flow on the active map.
-2. **Median of aligned neighbours** — if two neighbours on the same side share the same X column (within 20px tolerance) and no other map node lies between them on that column, snap to their Y median.
+- A horizontal guide (`.dds-snap-guide`) for Y snap.
+- A vertical guide (`.dds-snap-guide-v`) for X snap.
+
+Both snaps are applied on release, not during drag, to avoid cursor detachment. The final position combines the snapped X and Y independently.
+
+Snap targets follow the same two rules on both axes:
+
+1. **Direct neighbour** — snap to the coordinate of any node directly connected by a flow on the active map.
+2. **Median of aligned neighbours** — if two neighbours on the same side share the same perpendicular coordinate (within 20px tolerance) and no other map node lies between them on that axis, snap to their median coordinate.
+
+Y snap uses neighbours aligned on the same X column; X snap uses neighbours aligned on the same Y row.
 
 ### Canvas controls
 
 | Control              | Behaviour                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Ghost note nodes and CTT lines are excluded from this calculation. Also triggered on project open and map tab switch. |
-| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Flows with `skip_in_layout = true` are excluded from rank computation. Positions saved to `map_nodes`. |
+| **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Flows with `layout_offset = 0` are excluded from rank computation. Flows with `layout_offset = N > 1` impose a minimum column distance of `N` between source and target. Bidirectional flows with `layout_direction_inverted = true` have their source and target swapped in the BFS graph. Positions saved to `map_nodes`. |
 | **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
 | **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
 | **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal). |
@@ -258,7 +267,7 @@ Two buttons: **Remove** (destructive) and **Cancel**.
 
 ### Auto-layout behaviour
 
-The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Flows with `skip_in_layout = true` are excluded from this rank computation — the nodes they connect are free to receive any rank, including the same rank, enabling vertical alignment in a column. Nodes without a swim-lane on the active map are left in place — their positions are not modified. Ghost note nodes are excluded entirely.
+The **Layout** button triggers `DDS_MAP.runLayout()`. For each swim-lane on the active map, a BFS rank is computed locally (flows internal to the lane only). Flows with `layout_offset = 0` are excluded from this rank computation, so the nodes they connect are free to receive any rank, including the same rank. Flows with `layout_offset = N > 0` impose a minimum distance of `N` columns between source and target. For bidirectional flows, `layout_direction_inverted = true` swaps source and target in the BFS graph. Nodes without a swim-lane on the active map are left in place — their positions are not modified. Ghost note nodes are excluded entirely.
 
 ### Legend overlay
 
@@ -305,7 +314,12 @@ SKUs cannot be added or removed manually from this section.
 
 Lead time (value + unit), tags, notes, and the list of products on the flow. Each product has a × button to remove it. A selector allows adding a product from the project's product list.
 
-**Skip in layout** — a checkbox in the map-specific section of the panel (below the functional fields). When checked, this flow is excluded from the BFS rank computation when **Layout** is run on the active map. The edge remains visible on the canvas. This setting is stored in `map_flows.skip_in_layout` and is therefore independent per map.
+**Layout controls** — visible only when both endpoint nodes are in the same swim-lane present on the active map:
+
+| Field | Description |
+|---|---|
+| Layout offset | Integer `>= 0`. `0` excludes the flow from BFS. `N` enforces a minimum column distance of `N` (default `1`). |
+| Inverser sens layout | Checkbox visible only for bidirectional flows. When checked, source and target are swapped in the BFS rank graph. |
 
 > Adding a product to a flow automatically creates the corresponding SKU on the source and target nodes if it does not already exist. Removing the last occurrence of a product on all flows connected to a node automatically deletes the SKU.
 
@@ -330,6 +344,12 @@ Provides tables for managing swim-lanes, node types, product types, and tag colo
 Adding a tag color: the shared settings modal opens in `tagcolor` mode, showing only the tag field (with native autocomplete from all tags used in the project) and the colour swatch. No code or shape fields.
 
 Modifying or deleting tag colors immediately refreshes node colors on the canvas and updates the legend.
+
+**Developer** — advanced toggles persisted in the DataStore.
+
+| Toggle | Behaviour |
+|---|---|
+| Show BFS ranks | Displays amber badges above swim-lane nodes showing their min-max BFS rank. Requires running Layout after enabling. Persisted in DataStore. |
 
 All changes are persisted on Save. If no project is open, a placeholder is shown.
 

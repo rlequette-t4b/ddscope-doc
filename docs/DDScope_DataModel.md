@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v2.5 — Draft — May 2026*
+*v2.7 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
@@ -31,6 +31,8 @@
 | 2.3 | May 2026 | §17.0 updated: helper layer added between UI and DDS_ACTIONS; DDS_ACTIONS.execute() synchronous |
 | 2.4 | May 2026 | §8 updated: icon_key, label_position, transparent_bg added to node_types; Cytoscape rendering rules documented |
 | 2.5 | May 2026 | bidirectional field added to flows (§3) |
+| 2.6 | May 2026 | layout_direction_inverted added to map_flows (§13); bfs_rank_min, bfs_rank_max added to map_nodes (§12, debug only) |
+| 2.7 | May 2026 | skip_in_layout deprecated in map_flows; replaced by layout_offset (integer, default 1), where 0 excludes from BFS and N sets the minimum column distance |
 
 ---
 
@@ -273,6 +275,8 @@ A node is visible on a map if and only if a `map_node` record exists.
 | demand_x | numeric \| null | Horizontal offset of CTT line centre relative to node centre. Defaults to `0`. |
 | demand_y | numeric \| null | Vertical offset of CTT line centre relative to node centre. Defaults to `60`. |
 | demand_length | numeric \| null | Length of the CTT line in canvas units. Defaults to node width when first placed. |
+| bfs_rank_min | integer \| null | Debug only. Minimum BFS rank assigned to this node on the last layout run. Null if layout has not been run. Not exported in JSON. |
+| bfs_rank_max | integer \| null | Debug only. Maximum BFS rank assigned to this node on the last layout run. Null if layout has not been run. Not exported in JSON. |
 
 ---
 
@@ -287,7 +291,10 @@ Records that a flow is visible on a specific map, and stores per-map presentatio
 | map_id | integer | Reference to `maps[].id` |
 | flow_id | integer | Reference to `flows[].id` |
 | waypoint_pct | float \| null | Taxi edge bend position (0–1). Defaults to `0.5`. |
-| skip_in_layout | boolean | When `true`, excluded from BFS rank computation. Defaults to `false`. |
+| layout_offset | integer | BFS column distance constraint. `0` = excluded from rank computation (nodes may share a column). `N > 0` = target must be at least N columns after source (default `1`). |
+| layout_direction_inverted | boolean | For bidirectional flows only. When `true`, source and target are swapped in the BFS graph, controlling which direction drives rank propagation. Defaults to `false`. |
+| show_notes_label | boolean | When `true`, `flows.notes` is displayed as an edge label on the canvas. Defaults to `false`. |
+| curve_style | text | Edge curve style: `taxi` (default) or `straight`. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 

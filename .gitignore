@@ -4,3 +4,4 @@ test-results/
 coverage/
 .env
 tests/ui/auth/.auth/*.json
+samples/Test.json

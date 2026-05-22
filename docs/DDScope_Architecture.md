@@ -141,7 +141,7 @@ The project is held entirely in memory as a single JSON object (`DDS.state.proje
 |---|---|
 | `maps` | Map definitions — name, tab order, direction, legend_visible |
 | `map_nodes` | Node visibility, canvas position, note overlay state, and CTT line geometry per map |
-| `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) + layout flag (`skip_in_layout`) |
+| `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) + layout controls (`layout_offset`, `layout_direction_inverted`) + rendering flags (`show_notes_label`, `curve_style`) |
 | `map_swim_lanes` | Swim-lane canvas geometry per map |
 | `map_demands` | Demand visibility per map — presence = CTT line shown |
 
@@ -219,7 +219,7 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
 }
 ```
 
-A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `skip_in_layout`) default to `0.5` and `false` respectively at runtime. Fields absent from `node_types` records (`icon_key`, `label_position`, `transparent_bg`) default to `null`, `"center"`, and `false` respectively at runtime.
+A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_nodes` records (`bfs_rank_min`, `bfs_rank_max`) default to `null` at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `layout_offset`, `layout_direction_inverted`, `show_notes_label`, `curve_style`) default to `0.5`, `1`, `false`, `false`, and `"taxi"` respectively at runtime. Fields absent from `node_types` records (`icon_key`, `label_position`, `transparent_bg`) default to `null`, `"center"`, and `false` respectively at runtime.
 
 ---
 
@@ -251,7 +251,11 @@ The algorithm applies in order:
 
 Ranks are computed **locally per swim-lane**, considering only flows where both endpoints belong to the lane. Flows entering from other swim-lanes are ignored — nodes with no internal predecessor are treated as sources (rank 0).
 
-**Flows with `skip_in_layout = true`** (loaded from `map_flows`) are excluded from the rank computation entirely. They are not added to the predecessor/successor graph. The nodes they connect remain free to receive any rank, including the same rank — enabling vertical alignment in a column. These flows are still rendered on the canvas.
+**`layout_offset`** (integer, loaded from `map_flows` onto each Cytoscape edge as `edge.data('layoutOffset')`) controls BFS inclusion and column distance:
+- `0` — the flow is excluded from BFS entirely; the nodes it connects are free to share a column.
+- `N > 0` (default `1`) — the target must be placed at least `N` columns after the source.
+
+**`layout_direction_inverted`** (boolean, loaded as `edge.data('layoutDirectionInverted')`) applies to bidirectional flows only. When `true`, source and target are swapped in the BFS predecessor/successor graph, so the rank propagates in the opposite direction.
 
 **rankMin** — longest-path from sources (Kahn topological sort, cycle-safe). Ensures a node is placed after all its internal predecessors.
 
@@ -277,15 +281,39 @@ Edges use `curve-style: taxi` with `taxi-direction: horizontal`. The bend positi
 
 `waypoint_pct` (float, 0–1, nullable) is stored in `map_flows` and loaded with each edge. Default: `0.5` (midpoint). A draggable handle (`.dds-waypoint-handle`) appears on the bend of the selected edge. Drag updates `taxi-turn` in real time; release persists `waypoint_pct` to `map_flows`. Double-click resets to `0.5`.
 
-`skip_in_layout` (boolean) is also loaded from `map_flows` onto each Cytoscape edge as a data attribute (`edge.data('skipInLayout', true/false)`) during `loadMap`. `_computeRanksForLane` reads this attribute to exclude the edge from the predecessor/successor graph.
+`layout_offset` (integer) is loaded from `map_flows` onto each Cytoscape edge as `edge.data('layoutOffset')`. It controls whether the edge participates in BFS and the minimum column distance it enforces.
 
-### Vertical snap on node drag
+`layout_direction_inverted` (boolean) is loaded as `edge.data('layoutDirectionInverted')` for bidirectional flows only. When active, `_computeRanksForLane` swaps source and target in the predecessor/successor graph.
 
-During manual drag, a guide line (`.dds-snap-guide`) appears when the dragged node's Y is within 6px canvas of a snap target. Snap is applied on `dragfree`, not during drag, to avoid cursor detachment.
+`show_notes_label` (boolean) controls whether `flows.notes` is rendered as an edge label on the canvas.
 
-**Snap targets:**
-1. **Rule 1** — Y of any directly connected neighbour (amont or aval) visible on the active map.
-2. **Rule 2** — Y median of two same-side neighbours (both amont or both aval) sharing the same X column (within 20px tolerance), with no other map node between them on that column.
+`curve_style` (text) controls the edge routing style. Supported values are `taxi` (default) and `straight`.
+
+### Vertical and horizontal snap on node drag
+
+During manual drag, two guide lines appear when the dragged node is within 6px canvas of a snap target:
+- A horizontal guide (`.dds-snap-guide`) for Y snap.
+- A vertical guide (`.dds-snap-guide-v`) for X snap.
+
+Both snaps are applied simultaneously on `dragfree`, not during drag, to avoid cursor detachment. The final position is `(newX, newY)`, combining both axes independently.
+
+**Snap targets (identical rules for both axes):**
+1. **Rule 1** — coordinate of any directly connected neighbour (amont or aval) visible on the active map.
+2. **Rule 2** — median coordinate of two same-side neighbours (both amont or both aval) sharing the same perpendicular coordinate (within 20px tolerance), with no other map node between them on that axis.
+
+Y snap considers neighbours sharing the same X column; X snap considers neighbours sharing the same Y row.
+
+### BFS rank badges (debug)
+
+When the `show_bfs_ranks` setting is active, `DDS_MAP.renderBfsRankBadges(mapId)` creates a Cytoscape ghost node (class `dds-bfs-badge`) above each swim-lane node that has stored `bfs_rank_min` and `bfs_rank_max` values. The badge label shows `min` when `min === max`, or `min-max` otherwise.
+
+Badges are non-selectable, non-draggable, styled as amber rounded rectangles, and excluded from the `fitMap` bounding box and `runLayout` grouping — identical exclusion pattern to `dds-note-ghost`.
+
+`DDS_MAP.clearBfsRankBadges()` removes all badges from the canvas.
+
+`renderBfsRankBadges` is called at the end of `_persist()` in `runLayout` (after storing ranks) and at the end of `loadMap` (if ranks are already stored). Both calls are conditional on `DDS_SETTINGS.isShowBfsRanks()`.
+
+Ranks are stored on `map_nodes` (`bfs_rank_min`, `bfs_rank_max`) only when `show_bfs_ranks` is active — `runLayout` skips the store update otherwise.
 
 ### Tag-based node coloring and icon rendering
 
@@ -311,6 +339,10 @@ During manual drag, a guide line (`.dds-snap-guide`) appears when the dragged no
    - `center` (default): `text-valign: center`, `text-margin-y: 0`, label color `white`
    - `below`: `text-valign: bottom`, `text-margin-y: 8`, label color `#222222`
    - `above`: `text-valign: top`, `text-margin-y: -8`, label color `#222222`
+
+**Fixed size for icon nodes with external label:** when `label_position` is `below` or `above` and `icon_key` is defined, `width` and `height` are forced to `40px` to prevent the node shape from resizing with the label length. Shape-only nodes (no `icon_key`) keep their natural Cytoscape dimensions.
+
+**Selection highlight for transparent_bg nodes:** nodes with `transparent_bg: true` have `border-opacity: 0` by default. On `select`, `border-opacity` is temporarily set to `1` to make the selection border visible. On `unselect`, `border-opacity` is restored to `0`.
 
 **Cytoscape `background-image` constraints (validated experimentally):**
 - The SVG must carry explicit `width` and `height` attributes (e.g. `width="32" height="32"`). Without them, Cytoscape cannot determine the intrinsic size and clips the image.
