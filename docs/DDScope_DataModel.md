@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v2.8 — Draft — May 2026*
+*v3.0 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
@@ -35,6 +35,7 @@
 | 2.7 | May 2026 | skip_in_layout deprecated in map_flows; replaced by layout_offset (integer, default 1), where 0 excludes from BFS and N sets the minimum column distance |
 | 2.8 | May 2026 | label_position added to map_nodes for per-map label position override |
 | 2.9 | May 2026 | notes_annotation_dx, notes_annotation_dy added to map_flows for flow note ghost offset |
+| 3.0 | May 2026 | annotations and map_annotations added (§9, §16); cascade rules updated (§17.1) |
 
 ---
 
@@ -222,6 +223,24 @@ Each project maintains its own list of node types and product types, seeded at p
 
 ---
 
+## 9. Annotation
+
+A free-form text element placed on the map canvas, independent of nodes and flows. Annotations are used to add contextual remarks, warnings, or labels directly on the supply chain map.
+
+**JSON array:** `annotations`
+
+| Field | Type | Description |
+|---|---|---|
+| notes | text | Content displayed on the map canvas |
+| swim_lane_id | integer \| null | Reference to `swim_lanes[].id`. When assigned, the annotation translates with the swim-lane when it is repositioned. When null, layout operations have no effect on its position. |
+| tags | array | Free labels for grouping and filtering |
+
+**Visibility model.** An annotation exists in the project independently of any map. It becomes visible on a map when a `map_annotations` record is created for it (see §16). A newly created annotation is automatically placed on the active map.
+
+**Rendering.** Cytoscape ghost node. Size adjusts to text content. Excluded from fit-to-canvas and auto-layout. Draggable independently on each map.
+
+---
+
 ## 9. Tags
 
 Free-text labels stored as arrays. Not hierarchical. Applied to nodes, products, flows, and SKUs. Tags defined in `tag_colors` are offered as autocomplete suggestions wherever a tag input is available.
@@ -343,6 +362,23 @@ The rendered line represents the **maximum CTT** among all `map_demands` for a g
 
 ---
 
+## 16. Map Annotation
+
+Records that an annotation is visible on a specific map, and stores its canvas position on that map.
+
+**JSON array:** `map_annotations`
+
+| Field | Type | Description |
+|---|---|---|
+| map_id | integer | Reference to `maps[].id` |
+| annotation_id | integer | Reference to `annotations[].id` |
+| x | numeric | Canvas position — horizontal |
+| y | numeric | Canvas position — vertical |
+
+**Cascade:** deleted when the referenced `annotation` is deleted, or when the referenced `map` is deleted.
+
+---
+
 ## 16. Project
 
 Project metadata, stored under the `project` key (object, not array) in the JSON file.
@@ -400,7 +436,7 @@ Returns `{ applied: action[], failed: action|null }` directly. No Promise.
 Any module may call `DDS_STORE.query` on any table at any time. UI modules should prefer helper read methods over direct `DDS_STORE.query` calls for consistency.
 
 **Exceptions — presentation layer:**
-Presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, `DDS_PANEL` for canvas state, etc.) manage `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands` directly via `DDS_STORE`. These tables are outside `DDS_ACTIONS`' and helpers' scope.
+Presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, `DDS_PANEL` for canvas state, etc.) manage `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`, `map_annotations` directly via `DDS_STORE`. These tables are outside `DDS_ACTIONS`' and helpers' scope.
 
 ### 17.1 Delete operations and cascades
 
@@ -414,6 +450,7 @@ The table below defines what is deleted when each destructive operation is perfo
 | `deleteSwimLane(swimLaneId)` | All nodes assigned to this swim-lane — each with its full `deleteNode` cascade. All `map_swim_lanes` for this lane across all maps. Clears `default_swim_lane_id` on any `node_types` record that referenced this lane. The `swim_lanes` record. |
 | `removeSku(nodeId, productId)` | The `demands` record for this node × product pair if it exists, and its `map_demands`. The `skus` record. |
 | `deleteDemand(nodeId, productId)` | All `map_demands` where `demand_id` matches. The `demands` record. |
+| `delete_annotation` | Deletes the `annotations` record. Cascades to all `map_annotations` records for this annotation. |
 | `deleteBom(bomId)` | All `bom_components` where `bom_id` matches. The `boms` record. |
 | `rerouteFlow(flowId, newSourceId?, newTargetId?)` | Updates `source_node_id` and/or `target_node_id`. **No SKU modification.** |
 | `addProductToFlow(flowId, productId)` | Appends `productId` to `flows[flowId].product_ids`. **No SKU creation.** |

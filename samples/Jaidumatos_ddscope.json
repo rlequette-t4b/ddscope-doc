@@ -186,10 +186,10 @@
         "Sud",
         "externe"
       ],
-      "notes": "",
+      "notes": "Excess stock 🧨🔥",
       "id": 3,
       "created_at": "2026-05-22T20:33:09.228Z",
-      "updated_at": "2026-05-22T21:12:53.334Z"
+      "updated_at": "2026-05-22T22:23:17.084Z"
     },
     {
       "name": "DEPOT EXTERNE",
@@ -210,10 +210,10 @@
       "tags": [
         "externe"
       ],
-      "notes": "",
+      "notes": "⚠️ stock critique⚠️🚧",
       "id": 5,
       "created_at": "2026-05-22T21:01:32.335Z",
-      "updated_at": "2026-05-22T21:11:58.199Z"
+      "updated_at": "2026-05-22T22:16:11.447Z"
     },
     {
       "name": "fournisseurs externes",
@@ -252,10 +252,10 @@
       "lead_time_value": null,
       "lead_time_unit": null,
       "bidirectional": false,
-      "notes": "",
+      "notes": "délai très long 🐌",
       "id": 1,
       "created_at": "2026-05-22T20:30:38.574Z",
-      "updated_at": "2026-05-22T21:04:31.280Z"
+      "updated_at": "2026-05-22T22:43:45.405Z"
     },
     {
       "source_node_id": 3,
@@ -267,10 +267,10 @@
       "lead_time_value": null,
       "lead_time_unit": null,
       "bidirectional": false,
-      "notes": "",
+      "notes": "rapide 🐰🚄",
       "id": 2,
       "created_at": "2026-05-22T20:33:23.735Z",
-      "updated_at": "2026-05-22T21:04:31.280Z"
+      "updated_at": "2026-05-22T22:49:08.719Z"
     },
     {
       "source_node_id": 2,
@@ -285,7 +285,7 @@
       "notes": "RARES\nTRANSFERTS\nINTERSITES",
       "id": 3,
       "created_at": "2026-05-22T20:34:08.388Z",
-      "updated_at": "2026-05-22T21:05:54.753Z"
+      "updated_at": "2026-05-22T22:49:37.385Z"
     },
     {
       "source_node_id": 2,
@@ -459,10 +459,10 @@
       "map_id": 2,
       "node_id": 1,
       "x": 97,
-      "y": 215,
+      "y": 231,
       "id": 1,
       "created_at": "2026-05-22T20:28:16.466Z",
-      "updated_at": "2026-05-22T21:12:53.366Z"
+      "updated_at": "2026-05-22T22:49:57.068Z"
     },
     {
       "map_id": 2,
@@ -471,17 +471,20 @@
       "y": 150,
       "id": 2,
       "created_at": "2026-05-22T20:30:38.575Z",
-      "updated_at": "2026-05-22T21:12:53.366Z",
+      "updated_at": "2026-05-22T22:49:57.068Z",
       "label_position": "above"
     },
     {
       "map_id": 2,
       "node_id": 3,
       "x": 766,
-      "y": 311,
+      "y": 308,
       "id": 3,
       "created_at": "2026-05-22T20:33:09.229Z",
-      "updated_at": "2026-05-22T21:12:53.366Z"
+      "updated_at": "2026-05-22T22:49:57.068Z",
+      "note_visible": true,
+      "note_dx": -5,
+      "note_dy": 82
     },
     {
       "map_id": 2,
@@ -490,7 +493,7 @@
       "y": 95,
       "id": 4,
       "created_at": "2026-05-22T21:01:03.294Z",
-      "updated_at": "2026-05-22T21:12:53.366Z",
+      "updated_at": "2026-05-22T22:49:57.068Z",
       "label_position": "above"
     },
     {
@@ -500,7 +503,10 @@
       "y": 393,
       "id": 5,
       "created_at": "2026-05-22T21:01:32.336Z",
-      "updated_at": "2026-05-22T21:12:53.366Z"
+      "updated_at": "2026-05-22T22:49:57.068Z",
+      "note_visible": true,
+      "note_dx": 25,
+      "note_dy": -43
     },
     {
       "map_id": 2,
@@ -509,19 +515,19 @@
       "y": 87,
       "id": 6,
       "created_at": "2026-05-22T21:07:28.542Z",
-      "updated_at": "2026-05-22T21:12:53.366Z"
+      "updated_at": "2026-05-22T22:49:57.068Z"
     },
     {
       "map_id": 2,
       "node_id": 7,
       "x": 1271,
-      "y": 387,
+      "y": 383,
       "id": 7,
       "created_at": "2026-05-22T21:07:28.543Z",
-      "updated_at": "2026-05-22T21:12:53.366Z",
+      "updated_at": "2026-05-22T22:49:57.068Z",
       "note_visible": true,
-      "note_dx": 0,
-      "note_dy": 74
+      "note_dx": -13,
+      "note_dy": 77
     }
   ],
   "map_flows": [
@@ -530,23 +536,33 @@
       "flow_id": 1,
       "id": 1,
       "created_at": "2026-05-22T20:30:38.575Z",
-      "updated_at": "2026-05-22T20:30:38.575Z"
+      "updated_at": "2026-05-22T22:44:18.380Z",
+      "show_notes_label": true,
+      "waypoint_pct": 0.54
     },
     {
       "map_id": 2,
       "flow_id": 2,
       "id": 2,
       "created_at": "2026-05-22T20:33:23.736Z",
-      "updated_at": "2026-05-22T20:33:23.736Z"
+      "updated_at": "2026-05-22T22:17:25.249Z",
+      "show_notes_label": true,
+      "notes_as_annotation": false,
+      "notes_annotation_dx": -35,
+      "notes_annotation_dy": 12,
+      "waypoint_pct": 0.48
     },
     {
       "map_id": 2,
       "flow_id": 3,
       "id": 3,
       "created_at": "2026-05-22T20:34:08.388Z",
-      "updated_at": "2026-05-22T21:05:54.908Z",
+      "updated_at": "2026-05-22T22:09:01.066Z",
       "layout_offset": 0,
-      "show_notes_label": true
+      "show_notes_label": true,
+      "notes_as_annotation": true,
+      "notes_annotation_dx": 37,
+      "notes_annotation_dy": 3
     },
     {
       "map_id": 2,

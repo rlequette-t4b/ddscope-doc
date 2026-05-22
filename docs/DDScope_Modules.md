@@ -1,5 +1,5 @@
 # DDScope — Module Registry
-*v0.8 — Draft — May 2026*
+*v0.9 — Draft — May 2026*
 
 ---
 
@@ -15,6 +15,7 @@
 | 0.6 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS created; DDS_BOMS and DDS_DEMANDS refactored as helpers (no longer deprecated). UI modules call helpers only — no direct DDS_STORE or DDS_ACTIONS calls. DDS_ACTIONS.execute() made synchronous. |
 | 0.7 | May 2026 | DDS_LANES added as helper facade for swim lane CRUD. delete() is a cascade routed via DDS_MODEL.deleteSwimLane. |
 | 0.8 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library for node types; icon_key, label_position, transparent_bg documented. |
+| 0.9 | May 2026 | DDS_ANNOTATIONS (SCRIPT 1670) and DDS_ANNOTATIONS_UI (SCRIPT 1780) added. DDS_MODEL.deleteAnnotation added. |
 
 ---
 
@@ -35,10 +36,11 @@ Both DEV and TEST contexts must keep their copy in sync (manual transfer — see
 ```
 UI modules / AI modules
         ↓  (all writes)
-   Helper layer                    ← NEW: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS,
-   (DDS_NODES, DDS_PRODUCTS,           DDS_SKUS, DDS_BOMS, DDS_DEMANDS
-    DDS_FLOWS, DDS_SKUS,
-    DDS_BOMS, DDS_DEMANDS)
+   Helper layer                    ← DDS_NODES, DDS_PRODUCTS, DDS_FLOWS,
+   (DDS_NODES, DDS_PRODUCTS,         DDS_SKUS, DDS_BOMS, DDS_DEMANDS,
+    DDS_FLOWS, DDS_SKUS,             DDS_ANNOTATIONS
+    DDS_BOMS, DDS_DEMANDS,
+    DDS_ANNOTATIONS)
         ↓  translates to actions
    DDS_ACTIONS  (synchronous)
         ↓ simple ops          ↓ cascade ops
@@ -48,7 +50,7 @@ UI modules / AI modules
 ```
 
 **Rule 1 — UI writes only via helpers.**
-No UI module may call `DDS_ACTIONS.execute()`, `DDS_STORE.insert/update/remove`, or `DDS_MODEL.*` directly on functional layer tables. All writes from UI go through a domain helper (e.g. `DDS_NODES.create(...)`, `DDS_BOMS.delete(...)`).
+No UI module may call `DDS_ACTIONS.execute()`, `DDS_STORE.insert/update/remove`, or `DDS_MODEL.*` directly on functional layer tables. All writes from UI go through a domain helper (e.g. `DDS_NODES.create(...)`, `DDS_BOMS.delete(...)`, `DDS_ANNOTATIONS.delete(...)`).
 
 **Rule 2 — AI writes via `DDS_ACTIONS` directly.**
 AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly — they do not go through helpers.
@@ -61,13 +63,13 @@ Returns `{ applied: action[], failed: action|null }` directly. No Promise, no as
 
 **Rule 5 — `DDS_ACTIONS` uses `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.**
 - Simple mutations (add, update): `DDS_ACTIONS` calls `DDS_STORE` directly.
-- Cascade operations (delete_node, delete_flow, delete_product, delete_bom, remove_sku, delete_demand): `DDS_ACTIONS` delegates to `DDS_MODEL`.
+- Cascade operations (delete_node, delete_flow, delete_product, delete_bom, remove_sku, delete_demand, delete_annotation): `DDS_ACTIONS` delegates to `DDS_MODEL`.
 
 **Rule 6 — reads are unrestricted.**
 Any module may call `DDS_STORE.query` on any table at any time. Helpers expose named read methods for UI convenience — UI modules should prefer helper reads over direct `DDS_STORE.query` calls.
 
 **Exception — presentation layer:**
-`map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands` are managed directly by presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, etc.) and are outside `DDS_ACTIONS`' scope.
+`map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`, `map_annotations` are managed directly by presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, etc.) and are outside `DDS_ACTIONS`' scope.
 
 ---
 
@@ -97,6 +99,7 @@ graph TD
     DDS_SKUS
     DDS_BOMS
     DDS_DEMANDS
+    DDS_ANNOTATIONS
     DDS_LANES
   end
 
@@ -123,6 +126,8 @@ graph TD
   DDS_BOMS     --> DDS_STORE
   DDS_DEMANDS  --> DDS_ACTIONS
   DDS_DEMANDS  --> DDS_STORE
+  DDS_ANNOTATIONS --> DDS_ACTIONS
+  DDS_ANNOTATIONS --> DDS_STORE
   DDS_LANES    --> DDS_ACTIONS
   DDS_LANES    --> DDS_STORE
 
@@ -363,6 +368,7 @@ DDS_MODEL.deleteBom(bomId)
 DDS_MODEL.rerouteFlow(flowId, newSourceId?, newTargetId?)
 DDS_MODEL.addProductToFlow(flowId, productId)
 DDS_MODEL.removeProductFromFlow(flowId, productId)
+DDS_MODEL.deleteAnnotation(annotationId)
 ```
 
 **Dependencies:**
@@ -387,7 +393,7 @@ deps_declared:  yes
 
 **Responsibility:** single write entry point for helper and AI layers. Translates action lists into `DDS_STORE` calls (simple ops) or `DDS_MODEL` calls (cascade ops). Provides the action vocabulary and human-readable descriptions.
 
-**Cascade actions** (routed to `DDS_MODEL`): `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`, `delete_demand`.
+**Cascade actions** (routed to `DDS_MODEL`): `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`, `delete_demand`, `delete_annotation`.
 
 **Simple actions** (routed to `DDS_STORE` directly): all others.
 
@@ -611,6 +617,38 @@ DDS_STORE     SCRIPT 150
 
 ---
 
+### DDS_ANNOTATIONS
+
+```
+global:         DDS_ANNOTATIONS
+block:          SCRIPT 1670
+file:           src/DDS_ANNOTATIONS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** helper facade for annotation operations. Translates semantic calls into `DDS_ACTIONS` action lists. UI modules call this module — never `DDS_ACTIONS` or `DDS_STORE` directly for annotation writes.
+
+**API:**
+```
+DDS_ANNOTATIONS.create(fields)               // { notes?, swim_lane_id?, tags? } → record
+DDS_ANNOTATIONS.update(annotationId, fields) // → record
+DDS_ANNOTATIONS.delete(annotationId)         // → void
+DDS_ANNOTATIONS.getAll()                     // annotation[]
+DDS_ANNOTATIONS.getById(annotationId)        // annotation | null
+```
+
+**Dependencies:**
+```
+DDS_ACTIONS   SCRIPT 1850
+DDS_STORE     SCRIPT 150
+```
+
+---
+
 ### DDS_LANES
 
 ```
@@ -717,6 +755,35 @@ DDS_STORE        SCRIPT 150
 DDS              SCRIPT 400
 DDS_AI           SCRIPT 2400
 DDS_ACTIONS      SCRIPT 1850
+```
+
+---
+
+### DDS_ANNOTATIONS_UI
+
+```
+global:         DDS_ANNOTATIONS_UI
+block:          SCRIPT 1780
+file:           src/DDS_ANNOTATIONS_UI.js
+testability:    render-dependent
+contract:       unverified
+dom_mixed:      yes
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** Annotations table view — flat list of all project annotations with inline edit and delete. Tab placed after Demand in the nav bar.
+
+**API:**
+```
+DDS_ANNOTATIONS_UI.load()    // renders the annotations table for the current project
+DDS_ANNOTATIONS_UI.refresh() // re-renders after a model change
+```
+
+**Dependencies:**
+```
+DDS_ANNOTATIONS   SCRIPT 1670
+DDS_STORE         SCRIPT 150
 ```
 
 ---

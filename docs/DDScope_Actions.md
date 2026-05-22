@@ -1,5 +1,5 @@
 # DDScope — Action Vocabulary
-*v0.1 — Draft — May 2026*
+*v0.2 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions and cascade rules. [DDScope_AI_Assistant.md](DDScope_AI_Assistant.md) for the Claude communication contract. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_ACTIONS` module definition.*
 
@@ -45,6 +45,7 @@
 | Version | Date | Summary |
 |---|---|---|
 | 0.1 | May 2026 | Initial extraction from DDScope_AI_Assistant.md §3 and §5.3 |
+| 0.2 | May 2026 | §3.8 Annotations added; §5 versioning updated; §6.1 store operations for annotations added; §6.2 describe() labels for annotations added; §6.3 getVocabularyText() updated |
 
 ---
 
@@ -54,7 +55,7 @@ This document defines the DDScope action vocabulary — the complete set of oper
 
 `DDS_ACTIONS` (SCRIPT 1850) is the authoritative runtime implementation of this vocabulary. Any caller — the AI assistant, the UI, or future automation — goes through `DDS_ACTIONS.execute()`.
 
-Actions operate exclusively on the **functional layer** (nodes, flows, products, SKUs, swim-lanes, BOMs, demands). Map-scoped operations (canvas positions, visibility) are excluded from this vocabulary.
+Actions operate exclusively on the **functional layer** (nodes, flows, products, SKUs, swim-lanes, BOMs, demands, annotations). Map-scoped operations (canvas positions, visibility) are excluded from this vocabulary.
 
 ---
 
@@ -82,6 +83,7 @@ Each action is a JSON object with a `type` field identifying the operation, plus
     - [3.5 Swim-lanes](#35-swim-lanes)
     - [3.6 BOMs](#36-boms)
     - [3.7 Demands](#37-demands)
+    - [3.8 Annotations](#38-annotations)
   - [4. Cross-cutting Rules](#4-cross-cutting-rules)
     - [4.1 Product-node pattern](#41-product-node-pattern)
     - [4.2 Cascade obligations](#42-cascade-obligations)
@@ -233,6 +235,18 @@ A demand record captures the CTT (Customer Tolerance Time) and average demand pe
 
 > Map demand visibility (`map_demands`) is excluded from the action vocabulary. Opt-in display is a manual operation via the UI.
 
+### 3.8 Annotations
+
+| Action | Required | Optional |
+|---|---|---|
+| `add_annotation` | — | `notes`, `swim_lane_id`, `tags` |
+| `update_annotation` | `annotation_id` | `notes`, `swim_lane_id`, `tags` |
+| `delete_annotation` | `annotation_id` | — |
+
+**`add_annotation`** — `x, y` are not accepted. Canvas position is map-specific and is never set via actions. The annotation is not automatically placed on any map — map placement is a presentation-layer operation performed by the UI after the action is applied. Include `"id": "new_annotation_N"` when the annotation is referenced by subsequent actions in the same plan.
+
+**`delete_annotation`** — cascades to all `map_annotations` records for this annotation. All cascade consequences must be listed explicitly in the action plan.
+
 ---
 
 ## 4. Cross-cutting Rules
@@ -254,7 +268,7 @@ In all other cases — new product, product as a flow endpoint, product placed i
 
 When an action implicitly triggers cascade deletions (see `DDScope_DataModel.md` §17), all cascade consequences must be listed explicitly as separate actions in the plan. Implicit cascades are not assumed — they must be stated.
 
-Actions subject to this rule: `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`.
+Actions subject to this rule: `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`, `delete_annotation`.
 
 ### 4.3 SKU pre-check for BOMs and demands
 
@@ -267,6 +281,8 @@ Before emitting `add_bom`, `add_bom_component`, or `add_demand`, verify that the
 ### v1 — included
 
 All actions in §3 above.
+
+All annotation actions in §3.8 above.
 
 ### v1 — excluded
 
@@ -359,6 +375,14 @@ For each action, the table below lists the `DDS_STORE` operations to perform and
 | `update_demand` | `DDS_STORE.update('demands', { node_id, product_id }, { ...fields })` |
 | `delete_demand` | `DDS_STORE.remove('demands', { node_id, product_id })` |
 
+#### Annotations
+
+| Action | Store operations |
+|---|---|
+| `add_annotation` | `DDS_STORE.insert('annotations', { notes, swim_lane_id, tags })` |
+| `update_annotation` | `DDS_STORE.update('annotations', { id: annotation_id }, { ...fields })` |
+| `delete_annotation` | `DDS_MODEL.deleteAnnotation(annotation_id)` |
+
 ---
 
 ### 6.2 describe() label format
@@ -400,6 +424,9 @@ Labels are in English. Entity names are quoted. Arrow direction is always `→` 
 | `add_demand` | `Add demand: node "{node_name}" × product "{product_name}"` |
 | `update_demand` | `Update demand: node "{node_name}" × product "{product_name}"` |
 | `delete_demand` | `Delete demand: node "{node_name}" × product "{product_name}"` |
+| `add_annotation` | `Add annotation` — if `notes` is non-empty: `Add annotation "{notes_truncated}"` (truncated to 30 chars) |
+| `update_annotation` | `Update annotation "{notes_truncated}"` |
+| `delete_annotation` | `Delete annotation "{notes_truncated}"` |
 | unknown type | `Unknown action: {type}` — no throw |
 
 ---
@@ -581,6 +608,12 @@ update_demand
 delete_demand
   Required : node_id, product_id
   Note     : cascades to map_demands. State explicitly in reasoning.
+
+
+## Annotations
+- add_annotation: optional notes, swim_lane_id, tags
+- update_annotation: required annotation_id; optional notes, swim_lane_id, tags
+- delete_annotation: required annotation_id — cascades to map_annotations
 
 Note: map_demands visibility is excluded from v1 — opt-in display is manual.
 

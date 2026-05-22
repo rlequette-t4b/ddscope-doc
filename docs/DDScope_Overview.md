@@ -14,7 +14,7 @@
   - [7. Open Questions](#7-open-questions)
 
 # DDScope — Overview
-*v1.9 — Draft — May 2026*
+*v2.1 — Draft — May 2026*
 
 ---
 
@@ -38,6 +38,8 @@
 | 1.7 | May 2026 | Pre-backlog (§5) added; DDScope_Backlog.md superseded |
 | 1.8 | May 2026 | DDS_PRESENTATION candidate added to §5.1 |
 | 1.9 | May 2026 | Annotations entity added to §5.1; Unicode symbols in text fields added to §5.1 |
+| 2.0 | May 2026 | Annotations entity renamed to Notes (notes / map_notes) |
+| 2.1 | May 2026 | Annotations feature promoted from pre-backlog to v1 scope |
 
 ---
 
@@ -82,6 +84,7 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 - Map view: nodes and flows only. Products are visible in the detail panels of flows and nodes.
 - Fit-to-canvas and auto-layout (BFS ranking per swim-lane; nodes without a swim-lane are not repositioned).
 - Table views: node list, flow list, product list, and demand list.
+- Annotations — free-form text elements placed freely on the map canvas. Optional swim-lane assignment (annotation translates with its lane). Tags. Created via the "+ Annotation" button in the toolbar. Visible per map via the Elements panel. Side panel for editing. Remove modal (map-only or full delete). Dedicated Annotations tab in the table view (all project annotations, not filtered by active map).
 - Side panel for editing node, flow, swim-lane, and SKU properties. Tag changes on nodes immediately refresh node color and legend.
 - JSON file operations — New, Load, Save, Save As. Each project is a standalone `.json` file on the consultant's machine.
 - Project copy modes — three levels of copy when creating a project from an existing source:
@@ -94,7 +97,11 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 
   All IDs are remapped in memory — the new project is fully independent of the source.
 
+  Annotations are included in **Full project** copy only. Swim-lanes & types and Types only copies do not include annotations.
+
 - AI assistant — natural language modification of the functional model with human confirmation before any write. The assistant understands the product-node pattern: when asked to place a product on the map it creates the node + SKU; when asked to associate a product with a flow between existing nodes it uses `add_product_to_flow` without creating a node.
+
+Navigation tab order (v1): `Map — Nodes — Flows — Products — BOMs — Demand — Annotations — Settings`.
 
 ### 4.2 Future scope
 
@@ -135,17 +142,8 @@ Display visual indicators directly on Cytoscape nodes. Two categories:
 - *Demand badge* — displayed when at least one SKU on the node has a `demands` record.
 Multiple badges may coexist on the same node (e.g. warning + demand). Layout: horizontal row, top-right corner. Proposed rendering: Cytoscape ghost nodes (same pattern as note ghosts) for automatic pan/zoom sync and html2canvas compatibility. Visibility scope (all maps vs per-map toggle) to be defined.
 
-**Free-form annotations on the map canvas**
-Standalone text elements placed freely on the canvas, independent of nodes and flows. An annotation may optionally belong to a swim-lane (same assignment pattern as nodes). If assigned to a lane, it translates with it when the lane is repositioned; if unassigned, layout operations have no effect on it.
-
-Data model:
-- Functional entity: `annotations` — fields: `label` (free text), `swim_lane_id` (nullable), `tags`, `notes`.
-- Presentation entity: `map_annotations` — fields: `map_id`, `annotation_id`, `x`, `y`.
-
-Rendering: Cytoscape ghost node (same pattern as note ghosts and BFS rank badges). Size adjusts to text content including line breaks. Added via a "+ Annotation" button in the toolbar. Visible in a dedicated "Annotations" tab in the table view, listing all annotations in the project (not filtered by active map).
-
 **Unicode symbols in text fields displayed on the canvas**
-Node notes (displayed as ghost overlays) and annotation labels accept free Unicode text, including symbols and emoji (⚠ ▲ ℹ ✓ ✗ 🔴 🟡 🟢 …). Cytoscape renders these natively via its Canvas 2D label engine. Cross-platform rendering is best-effort — no guarantee of visual consistency across OS and browser combinations.
+Node notes (displayed as ghost overlays) and annotation content accept free Unicode text, including symbols and emoji (⚠ ▲ ℹ ✓ ✗ 🔴 🟡 🟢 …). Cytoscape renders these natively via its Canvas 2D label engine. Cross-platform rendering is best-effort — no guarantee of visual consistency across OS and browser combinations.
 
 UX complement (future): a small symbol picker in the relevant text fields offering a curated shortlist of supply-chain-relevant Unicode characters. To be specified at implementation time.
 

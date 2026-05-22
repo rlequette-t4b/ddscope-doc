@@ -16,7 +16,7 @@
     - [6.4 Partial failure](#64-partial-failure)
   - [7. Open Questions](#7-open-questions)
 # DDScope — AI Assistant (Claude)
-## Request for Comments — v1.5 — Draft — May 2026
+## Request for Comments — v1.6 — Draft — May 2026
 
 ---
 
@@ -39,6 +39,7 @@
 | 1.3     | May 2026 | Demand actions added (section 3.9); context format updated with demands |
 | 1.4     | May 2026 | ACTION_VOCABULARY_TEXT source moved to DDS_ACTIONS.getVocabularyText(); execution and error reporting delegated to DDS_ACTIONS.execute() and DDS_AI_UI; DDS_AI_EXECUTOR removed |
 | 1.5     | May 2026 | Action vocabulary extracted to DDScope_Actions.md; §3 and §5.3 replaced by pointers |
+| 1.6     | May 2026 | Annotation actions added to §3 pointer; annotations array added to context format (§4) |
 
 ---
 
@@ -64,7 +65,7 @@ The complete action vocabulary — operations, fields, cross-cutting rules, and 
 
 The complete action vocabulary is defined in **[DDScope_Actions.md](DDScope_Actions.md)**. It covers:
 
-- All supported action types (nodes, flows, products, SKUs, swim-lanes, BOMs, demands)
+- All supported action types (nodes, flows, products, SKUs, swim-lanes, BOMs, demands, annotations)
 - Required and optional fields per action
 - Temporary ID convention (`new_*`) and cross-action reference resolution
 - Cross-cutting rules: product-node pattern, cascade obligations, SKU pre-checks
@@ -184,6 +185,14 @@ The following JSON structure is serialised from the current project state and tr
       "demand_period": "string | null",
       "notes": "string"
     }
+  ],
+  "annotations": [
+    {
+      "id": "string",
+      "notes": "string",
+      "swim_lane_id": "string | null",
+      "tags": ["string"]
+    }
   ]
 }
 ```
@@ -191,6 +200,8 @@ The following JSON structure is serialised from the current project state and tr
 > `node_types` transmits `is_default`, `is_product_node_default`, and `default_swim_lane_id` so Claude can resolve the correct type and swim-lane for the product-node pattern without guessing.
 
 > `product_types` transmits `is_default` so Claude can select the correct default product type when creating a product.
+
+> `annotations` lists all project annotations regardless of which maps they appear on. Canvas positions (`x`, `y`) are omitted — they are map-specific and not relevant to the action vocabulary.
 
 ---
 

@@ -1,5 +1,5 @@
 # DDScope — Architecture
-*v2.0 — Draft — May 2026*
+*v2.1 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour. [DDScope_Modules.md](DDScope_Modules.md) for the JavaScript module registry.*
 
@@ -26,6 +26,7 @@
 | 1.8 | May 2026 | DDS_ACTIONS added (SCRIPT 1850) in functional layer; DDS_AI_EXECUTOR removed; DDS_AI responsibility updated |
 | 1.9 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS, DDS_BOMS, DDS_DEMANDS. DDS_ACTIONS.execute() made synchronous. UI modules call helpers only. |
 | 2.0 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library; icon_key, label_position, transparent_bg on node_types; applyNodeColors extended to applyAllNodeStyles. |
+| 2.1 | May 2026 | DDS_ANNOTATIONS helper and DDS_ANNOTATIONS_UI table view added to module registry |
 
 ---
 
@@ -78,6 +79,7 @@ UI modules call helpers for all functional writes and reads. Helpers translate s
 | `DDS_SKUS` | SCRIPT 1630 | SKU CRUD helper — wraps add_sku, update_sku, remove_sku |
 | `DDS_BOMS` | SCRIPT 1800 | BOM CRUD helper — wraps add_bom, delete_bom, add/update/remove_bom_component; updateComponents performs internal diff |
 | `DDS_DEMANDS` | SCRIPT 1660 | Demand CRUD helper — wraps add_demand, update_demand, delete_demand; showOnMap/hideFromMap operate on presentation layer directly |
+| `DDS_ANNOTATIONS` | SCRIPT 1670 | Annotation CRUD helper — wraps add_annotation, update_annotation, delete_annotation |
 
 ### AI layer modules
 
@@ -111,13 +113,14 @@ UI modules call helpers for all functional writes and reads. Helpers translate s
 | `DDS_PRODUCTS_UI` | SCRIPT 1700 | Product table view |
 | `DDS_BOMS_UI` | SCRIPT 1900 | BOMs table view |
 | `DDS_DEMANDS_UI` | SCRIPT 1770 | Demand table view |
+| `DDS_ANNOTATIONS_UI` | SCRIPT 1780 | Annotations table view |
 | `DDS_SETTINGS_UI` | SCRIPT 2600 | Settings tab |
 
 ---
 
 ## 4. Data Model Structure
 
-The project is held entirely in memory as a single JSON object (`DDS.state.project`). It contains 17 named arrays corresponding to the functional and presentation layers of the data model. Entity definitions and field descriptions are in [DDScope_DataModel.md](DDScope_DataModel.md).
+The project is held entirely in memory as a single JSON object (`DDS.state.project`). It contains 19 named arrays corresponding to the functional and presentation layers of the data model. Entity definitions and field descriptions are in [DDScope_DataModel.md](DDScope_DataModel.md).
 
 ### Functional layer
 
@@ -134,6 +137,7 @@ The project is held entirely in memory as a single JSON object (`DDS.state.proje
 | `bom_components` | BOM lines — input components with quantities |
 | `tag_colors` | Tag → color associations for node background coloring |
 | `demands` | SKU-level demand records — CTT and demand per period |
+| `annotations` | Free-form map annotations — functional content and lane assignment |
 
 ### Presentation layer
 
@@ -144,6 +148,7 @@ The project is held entirely in memory as a single JSON object (`DDS.state.proje
 | `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) + layout controls (`layout_offset`, `layout_direction_inverted`) + rendering flags (`show_notes_label`, `curve_style`) |
 | `map_swim_lanes` | Swim-lane canvas geometry per map |
 | `map_demands` | Demand visibility per map — presence = CTT line shown |
+| `map_annotations` | Annotation visibility and canvas position per map |
 
 Every record includes system fields: `id` (integer, auto-incremented in memory), `created_at`, `updated_at` (ISO timestamps).
 
@@ -156,7 +161,7 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 `DDS_STORE` is the raw data access layer. It exposes a synchronous CRUD API operating on `DDS.state.project`.
 
 **Write access rules:**
-- UI modules write exclusively through **helper modules** (`DDS_NODES`, `DDS_PRODUCTS`, `DDS_FLOWS`, `DDS_SKUS`, `DDS_BOMS`, `DDS_DEMANDS`).
+- UI modules write exclusively through **helper modules** (`DDS_NODES`, `DDS_PRODUCTS`, `DDS_FLOWS`, `DDS_SKUS`, `DDS_BOMS`, `DDS_DEMANDS`, `DDS_ANNOTATIONS`).
 - Helper modules call `DDS_ACTIONS.execute()` for all functional writes.
 - `DDS_ACTIONS` calls `DDS_STORE.insert/update/remove` (simple ops) or `DDS_MODEL.*` (cascade ops).
 - AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly.
@@ -211,11 +216,13 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
   "bom_components": [...],
   "tag_colors":     [...],
   "demands":        [...],
+   "annotations":    [...],
   "maps":           [...],
   "map_nodes":      [...],
   "map_flows":      [...],
   "map_swim_lanes": [...],
-  "map_demands":    [...]
+   "map_demands":    [...],
+   "map_annotations": [...]
 }
 ```
 

@@ -8,6 +8,7 @@
     - [2.4 Table — Products](#24-table--products)
     - [2.5 Table — BOMs](#25-table--boms)
     - [2.6 Table — Demand](#26-table--demand)
+    - [2.7 Table — Annotations](#27-table--annotations)
   - [3. Navigation Bar](#3-navigation-bar)
     - [Project name](#project-name)
     - [Save button](#save-button)
@@ -30,10 +31,11 @@
     - [Node panel](#node-panel)
     - [Flow panel](#flow-panel)
     - [Swim-lane panel](#swim-lane-panel)
+    - [Annotation panel](#annotation-panel)
   - [7. Settings Tab](#7-settings-tab)
 # DDScope — User Interface
 
-*v1.10 — Draft — May 2026*
+*v1.11 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -60,6 +62,7 @@
 | 1.8     | May 2026 | Flow panel: Skip in layout checkbox; persisted in map_flows.skip_in_layout |
 | 1.9     | May 2026 | Demand feature: SKU demand sub-section in node panel, Demand tab, CTT line overlay interactions |
 | 1.10    | May 2026 | Label position override per map: select in node panel, stored in `map_nodes.label_position` |
+| 1.11    | May 2026 | Annotations feature: toolbar button, canvas interactions, side panel, table view, Elements panel, Remove modal |
 
 ---
 
@@ -67,7 +70,9 @@
 
 DDScope is used primarily during or immediately after discovery workshops. The consultant operates the tool on their own device, entering information in real time or consolidating notes after a session.
 
-Typical workflow: create a project → define swim-lanes → add nodes → define products → connect them with flows → review SKUs → define BOMs → apply tags → configure tag colors → switch between maps and views for presentation or export.
+Typical workflow: create a project → define swim-lanes → add nodes → define products → connect them with flows → review SKUs → define BOMs → apply tags → configure tag colors → add annotations → switch between maps and views for presentation or export.
+
+Project copy scope note: annotations are included in **Full project** copy only. Swim-lanes & types and Types only copies do not include annotations.
 
 ---
 
@@ -115,13 +120,26 @@ Supported actions directly from the table:
 - **Edit** — inline editing of all fields.
 - **Delete** — removes the demand record. Cascades to `map_demands` and resets `demand_x`, `demand_y`, `demand_length` on all `map_nodes` for that node.
 
+### 2.7 Table — Annotations
+
+Flat list of all annotations in the project. Not filtered by active map — all project annotations are listed regardless of which maps they appear on. Automatically loaded when switching to the Annotations tab if a project is open.
+
+Each row displays: notes (truncated to one line), swim-lane (name or empty), tags.
+
+Supported actions directly from the table:
+
+- **Edit** — inline editing of notes, swim-lane (selector), and tags.
+- **Delete** — removes the annotation from the project entirely. Cascades to all `map_annotations` records for this annotation.
+
+No side panel is opened on row click. All editing is inline.
+
 ---
 
 ## 3. Navigation Bar
 
 The nav bar is always visible and contains three zones: tabs on the left, project name centred, and actions on the right.
 
-The tab order is: **Map — Nodes — Flows — Products — BOMs — Demand — Settings**
+The tab order is: **Map — Nodes — Flows — Products — BOMs — Demand — Annotations — Settings**
 
 ### Project name
 
@@ -146,12 +164,12 @@ Each project contains one or more maps, displayed as a tab bar above the canvas.
 | Map tab (click)                       | Switches the active map. Loads `map_nodes`, `map_flows`, `map_swim_lanes`, and `map_demands` for the selected map and re-renders the canvas. |
 | Map name (double-click)               | Makes the name editable inline. Confirmed on Enter or blur.                                                                   |
 | **+ New map** button                  | Creates a new empty map (default name: "Map N", direction: `right-left`, `legend_visible: true`).                            |
-| **Duplicate map** button (active tab) | Creates a copy of the active map with all its `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`, `direction`, and `legend_visible`. |
+| **Duplicate map** button (active tab) | Creates a copy of the active map with all its `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`, `map_annotations`, `direction`, and `legend_visible`. |
 | **Delete map** button (active tab)    | Deletes the active map and all its map-scoped data. Disabled when only one map remains.                                       |
 
 ### Elements panel
 
-An **Elements** button in the map toolbar opens a side panel listing all project elements (nodes, flows, swim-lanes) not yet present on the active map. Each element can be added individually via an "Add to map" button.
+An **Elements** button in the map toolbar opens a side panel listing all project elements (nodes, flows, swim-lanes, annotations) not yet present on the active map. Each element can be added individually via an "Add to map" button.
 
 A flow can only be added to a map if both its source and target nodes are already present on that map. Flows whose endpoint nodes are not both on the map are greyed out in the Elements panel.
 
@@ -197,6 +215,14 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 - Note ghosts are **draggable independently**: drag repositions the ghost and persists the new `note_dx`/`note_dy` offsets to `map_nodes`.
 - Note ghosts are **not selectable** — clicking a ghost does not open the side panel.
 - Note ghosts are excluded from fit-to-canvas and auto-layout.
+
+### Annotation interactions
+
+- **Creation** — via the **+ Annotation** button in the map toolbar. Opens a modal with a textarea for the `notes` content, a swim-lane selector (optional), and a tags field. On confirm: creates the `annotations` record and a `map_annotations` record placing it at the viewport centre of the active map.
+- **Selection** — click an annotation ghost node to open the annotation side panel. Click the canvas background to close.
+- **Drag** — free positioning; position saved to `map_annotations` on `dragfree`. Excluded from fit-to-canvas and auto-layout.
+- **Keyboard delete** — `Del` key on a selected annotation triggers the Remove modal.
+- **Swim-lane assignment** — when assigned to a swim-lane, the annotation translates with the lane when the lane is repositioned. When unassigned, lane repositioning has no effect on the annotation.
 
 ### CTT line interactions
 
@@ -265,6 +291,8 @@ A **Remove only from map** checkbox is present, unchecked by default.
 Two buttons: **Remove** (destructive) and **Cancel**.
 
 > For swim-lanes, an unchecked delete also deletes all nodes assigned to that swim-lane and their full cascade (flows, SKUs, BOMs, demands).
+
+Annotations follow the same Remove modal pattern as nodes: "Remove only from map" checkbox (unchecked by default removes from project entirely; checked removes from active map only while keeping the annotation in the project).
 
 ### Auto-layout behaviour
 
@@ -338,6 +366,18 @@ Persists `map_flows.notes_as_annotation` (`false` for Label, `true` for Annotati
 ### Swim-lane panel
 
 Name, colour swatch selector (8 colours).
+
+### Annotation panel
+
+Opened by clicking an annotation on the canvas.
+
+**Notes** — textarea displaying and editing `annotations.notes`. Changes saved on blur or Enter (Ctrl+Enter for multiline). The canvas ghost node updates in real time as the content changes.
+
+**Swim-lane** — selector for `annotations.swim_lane_id`. Optional. Cleared by selecting "None". When assigned, the annotation will translate with the lane on repositioning.
+
+**Tags** — same tag input pattern as node and flow panels.
+
+**Remove button** — triggers the Remove modal (same pattern as nodes: "Remove only from map" checkbox).
 
 ---
 
