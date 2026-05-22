@@ -1,36 +1,5 @@
-- [DDScope — Architecture](#ddscope--architecture)
-  - [Version History](#version-history)
-  - [1. Platform](#1-platform)
-  - [2. Stack](#2-stack)
-  - [3. JavaScript Modules](#3-javascript-modules)
-    - [Functional layer modules](#functional-layer-modules)
-    - [AI layer modules](#ai-layer-modules)
-    - [Presentation layer modules (render-dependent)](#presentation-layer-modules-render-dependent)
-  - [4. Data Model Structure](#4-data-model-structure)
-    - [Functional layer](#functional-layer)
-    - [Presentation layer](#presentation-layer)
-  - [5. Persistence](#5-persistence)
-    - [5.1 In-memory store — DDS\_STORE](#51-in-memory-store--dds_store)
-    - [5.2 File persistence](#52-file-persistence)
-    - [5.3 Auto-reopen (Chrome / Edge only)](#53-auto-reopen-chrome--edge-only)
-    - [5.4 Dirty state](#54-dirty-state)
-    - [5.5 File format](#55-file-format)
-  - [6. Key Implementation Details](#6-key-implementation-details)
-    - [Fit-to-canvas](#fit-to-canvas)
-    - [Node placement](#node-placement)
-    - [Auto-layout](#auto-layout)
-      - [BFS ranking — `_computeRanksForLane(laneNodeIds)`](#bfs-ranking--_computeranksforlanelanenodeids)
-      - [Column assignment — `_placeLaneNodes`](#column-assignment--_placelanenodes)
-      - [Vertical placement within a column](#vertical-placement-within-a-column)
-    - [Taxi edge waypoint](#taxi-edge-waypoint)
-    - [Vertical snap on node drag](#vertical-snap-on-node-drag)
-    - [Tag-based node coloring](#tag-based-node-coloring)
-    - [Legend overlay](#legend-overlay)
-    - [Note overlay on nodes](#note-overlay-on-nodes)
-    - [DDS\_DURATION](#dds_duration)
-    - [CTT line overlay](#ctt-line-overlay)
 # DDScope — Architecture
-*v1.8 — Draft — May 2026*
+*v1.9 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour. [DDScope_Modules.md](DDScope_Modules.md) for the JavaScript module registry.*
 
@@ -55,6 +24,7 @@
 | 1.6 | May 2026 | demands and map_demands added; DDS_DURATION utility module documented; CTT line HTML overlay documented |
 | 1.7 | May 2026 | JavaScript module registry introduced; module table updated to reference DDScope_Modules.md |
 | 1.8 | May 2026 | DDS_ACTIONS added (SCRIPT 1850) in functional layer; DDS_AI_EXECUTOR removed; DDS_AI responsibility updated |
+| 1.9 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS, DDS_BOMS, DDS_DEMANDS. DDS_ACTIONS.execute() made synchronous. UI modules call helpers only. |
 
 ---
 
@@ -90,11 +60,22 @@ The table below is a structural overview only — it does not duplicate the deta
 | `DDS_COLORS` | SCRIPT 105 | 8-color palette constant |
 | `DDS_STORE` | SCRIPT 150 | In-memory CRUD + file persistence |
 | `DDS_DURATION` | SCRIPT 1650 | Duration arithmetic and formatting |
-| `DDS_PRODUCTS` | SCRIPT 1600 | Product CRUD + SKU cascade |
-| `DDS_BOMS` | SCRIPT 1800 | BOM CRUD + cascade |
-| `DDS_DEMANDS` | SCRIPT 1660 | Demand CRUD + map_demands + cascade |
-| `DDS_ACTIONS` | SCRIPT 1850 | Action execution engine — apply action lists on DDS_STORE, resolve new_* references, action vocabulary |
+| `DDS_MODEL` | SCRIPT 1550 | Cascade delete rules — authoritative runtime |
+| `DDS_ACTIONS` | SCRIPT 1850 | Action execution engine — synchronous; apply action lists on DDS_STORE/DDS_MODEL, resolve new_* references, action vocabulary |
 | `DDS_JSON` | SCRIPT 600 | Project import with copy modes + ID remapping |
+
+### Helper layer modules
+
+UI modules call helpers for all functional writes and reads. Helpers translate semantic calls into `DDS_ACTIONS` action lists. They never call `DDS_STORE.insert/update/remove` directly except for presentation-layer operations explicitly noted.
+
+| Module | Block | Responsibility |
+|---|---|---|
+| `DDS_NODES` | SCRIPT 1560 | Node CRUD helper — wraps add_node, update_node, delete_node, assign_node_to_lane |
+| `DDS_PRODUCTS` | SCRIPT 1610 | Product CRUD helper — wraps add_product, update_product, delete_product |
+| `DDS_FLOWS` | SCRIPT 1620 | Flow CRUD helper — wraps add_flow, update_flow, delete_flow, reroute_flow, add/remove_product_to/from_flow |
+| `DDS_SKUS` | SCRIPT 1630 | SKU CRUD helper — wraps add_sku, update_sku, remove_sku |
+| `DDS_BOMS` | SCRIPT 1800 | BOM CRUD helper — wraps add_bom, delete_bom, add/update/remove_bom_component; updateComponents performs internal diff |
+| `DDS_DEMANDS` | SCRIPT 1660 | Demand CRUD helper — wraps add_demand, update_demand, delete_demand; showOnMap/hideFromMap operate on presentation layer directly |
 
 ### AI layer modules
 
@@ -170,14 +151,22 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 
 ### 5.1 In-memory store — DDS_STORE
 
-`DDS_STORE` is the single data access layer for all DDScope modules. It exposes a synchronous CRUD API operating on `DDS.state.project`:
+`DDS_STORE` is the raw data access layer. It exposes a synchronous CRUD API operating on `DDS.state.project`.
+
+**Write access rules:**
+- UI modules write exclusively through **helper modules** (`DDS_NODES`, `DDS_PRODUCTS`, `DDS_FLOWS`, `DDS_SKUS`, `DDS_BOMS`, `DDS_DEMANDS`).
+- Helper modules call `DDS_ACTIONS.execute()` for all functional writes.
+- `DDS_ACTIONS` calls `DDS_STORE.insert/update/remove` (simple ops) or `DDS_MODEL.*` (cascade ops).
+- AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly.
+- Presentation layer modules manage `map_*` tables directly via `DDS_STORE` — this is the only exception.
+- `DDS_STORE.query` is unrestricted — any module may read any table.
 
 ```javascript
 DDS_STORE.query(table, filters, options)   // → array
 DDS_STORE.insert(table, records)           // → array with generated ids
 DDS_STORE.update(table, filters, updates)  // → array of updated records
 DDS_STORE.remove(table, filters)           // → array of removed records
-DDS_STORE.markDirty()                      // mark project as modified (for out-of-store mutations)
+DDS_STORE.markDirty()                      // mark project as modified
 DDS_STORE.resetDirty()                     // clear dirty flag (used after project open)
 ```
 

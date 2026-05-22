@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v2.2 — Draft — May 2026*
+*v2.3 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
@@ -27,7 +27,8 @@
 | 1.9 | May 2026 | skip_in_layout added to map_flows; excluded from BFS rank computation in auto-layout |
 | 2.0 | May 2026 | demands and map_demands added; demand_x, demand_y, demand_length added to map_nodes |
 | 2.1 | May 2026 | §17 rewritten: integrity rules simplified — no automatic SKU sync on flow or product operations; reroute_flow added; DDS_MODEL introduced as authoritative runtime; validateSkus deferred to future scope |
-| 2.2 | May 2026 | §17.0 added: layered write architecture — UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted via DDS_STORE.query |
+| 2.2 | May 2026 | §17.0 added: layered write architecture — UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted |
+| 2.3 | May 2026 | §17.0 updated: helper layer added between UI and DDS_ACTIONS; DDS_ACTIONS.execute() synchronous |
 
 ---
 
@@ -322,29 +323,44 @@ Project metadata, stored under the `project` key (object, not array) in the JSON
 DDScope enforces a layered write architecture for all mutations to the functional model:
 
 ```
-UI modules / AI modules
-        ↓  (all writes)
-   DDS_ACTIONS
-        ↓ simple ops          ↓ cascade ops
-   DDS_STORE              DDS_MODEL
-        ↓                      ↓
-              DDS_STORE (raw CRUD)
+UI modules
+    ↓  (all writes)
+Helper layer                    ← DDS_NODES, DDS_PRODUCTS, DDS_FLOWS,
+(domain helpers)                    DDS_SKUS, DDS_BOMS, DDS_DEMANDS
+    ↓  translates to actions
+DDS_ACTIONS  (synchronous)
+    ↓ simple ops          ↓ cascade ops
+DDS_STORE              DDS_MODEL
+    ↓                      ↓
+          DDS_STORE (raw CRUD)
+
+AI modules
+    ↓  (write directly — no helper)
+DDS_ACTIONS
+    ↓  ...
 ```
 
-**Rule 1 — UI and AI write only via `DDS_ACTIONS`.**
-No UI module (`DDS_BOMS_UI`, `DDS_PANEL`, `DDS_DEMANDS_UI`, `DDS_NODES_UI`, `DDS_PRODUCTS_UI`, `DDS_FLOWS_UI`, `DDS_SETTINGS_UI`, etc.) and no AI module (`DDS_AI`, `DDS_AI_UI`) may call `DDS_STORE.insert/update/remove` or `DDS_MODEL.*` directly. All writes from these layers go through `DDS_ACTIONS.execute()`.
+**Rule 1 — UI writes only via helpers.**
+No UI module (`DDS_BOMS_UI`, `DDS_PANEL`, `DDS_DEMANDS_UI`, `DDS_NODES_UI`, `DDS_PRODUCTS_UI`, `DDS_FLOWS_UI`, `DDS_SETTINGS_UI`, etc.) may call `DDS_ACTIONS.execute()`, `DDS_STORE.insert/update/remove`, or `DDS_MODEL.*` directly. All writes from UI go through a domain helper.
 
-This rule enables cross-cutting concerns — tracing, macros, undo, audit — to be implemented once in `DDS_ACTIONS`.
+**Rule 2 — AI writes via `DDS_ACTIONS` directly.**
+AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly — bypassing helpers.
 
-**Rule 2 — `DDS_ACTIONS` uses `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.**
-- Simple mutations (add, update, non-cascade remove): `DDS_ACTIONS` calls `DDS_STORE.insert/update/remove` directly.
+**Rule 3 — Helpers translate to actions.**
+Each helper method builds an action list and calls `DDS_ACTIONS.execute()` synchronously. Helpers also expose named read methods as `DDS_STORE.query` wrappers for UI convenience.
+
+**Rule 4 — `DDS_ACTIONS.execute()` is synchronous.**
+Returns `{ applied: action[], failed: action|null }` directly. No Promise.
+
+**Rule 5 — `DDS_ACTIONS` uses `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.**
+- Simple mutations (add, update): `DDS_ACTIONS` calls `DDS_STORE.insert/update/remove` directly.
 - Operations with cascade (delete_node, delete_flow, delete_product, delete_bom, remove_sku, delete_demand): `DDS_ACTIONS` delegates to `DDS_MODEL`.
 
-**Rule 3 — reads are unrestricted.**
-Any module may call `DDS_STORE.query` on any table at any time. There is no restriction on reads.
+**Rule 6 — reads are unrestricted.**
+Any module may call `DDS_STORE.query` on any table at any time. UI modules should prefer helper read methods over direct `DDS_STORE.query` calls for consistency.
 
 **Exceptions — presentation layer:**
-Presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, `DDS_PANEL` for canvas state, etc.) manage `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands` directly via `DDS_STORE`. These tables are outside `DDS_ACTIONS`' scope.
+Presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, `DDS_PANEL` for canvas state, etc.) manage `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands` directly via `DDS_STORE`. These tables are outside `DDS_ACTIONS`' and helpers' scope.
 
 ### 17.1 Delete operations and cascades
 
@@ -368,8 +384,8 @@ The table below defines what is deleted when each destructive operation is perfo
 SKUs are **not automatically synchronised** with flow product lists.
 
 SKUs are created:
-- Explicitly via `add_sku` action (routed through `DDS_ACTIONS`)
-- Via the "Add product on map" shortcut (routed through `DDS_ACTIONS`)
+- Explicitly via `add_sku` action (routed through helpers → `DDS_ACTIONS`)
+- Via the "Add product on map" shortcut (routed through helpers → `DDS_ACTIONS`)
 
 SKUs are deleted only by:
 - `deleteNode` — removes all SKUs for that node
@@ -382,10 +398,10 @@ The **Remove** button in the map toolbar opens a confirmation modal. A **Remove 
 
 | Checkbox state | Behaviour |
 |---|---|
-| **Unchecked** (default) | Full delete via `DDS_ACTIONS` → `DDS_MODEL` cascade |
+| **Unchecked** (default) | Full delete via helper → `DDS_ACTIONS` → `DDS_MODEL` cascade |
 | **Checked** | Remove from active map only — presentation layer only, functional model unchanged |
 
-Map-only removal is handled by `DDS_ELEMENTS`, not `DDS_ACTIONS`.
+Map-only removal is handled by `DDS_ELEMENTS`, not via helpers or `DDS_ACTIONS`.
 
 ### 17.4 Future — SKU validation
 

@@ -1,5 +1,5 @@
 # DDScope — Module Registry
-*v0.5 — Draft — May 2026*
+*v0.6 — Draft — May 2026*
 
 ---
 
@@ -12,6 +12,7 @@
 | 0.3 | May 2026 | DDS_ACTIONS added (SCRIPT 1850); DDS_AI_EXECUTOR removed; DDS_AI and DDS_AI_UI dependencies updated |
 | 0.4 | May 2026 | Dependency graph added; DDS_MODEL introduced as functional integrity layer; DDS_PRODUCTS, DDS_BOMS, DDS_DEMANDS, DDS_NODES marked deprecated; DDS_ACTIONS and DDS_REMOVE dependencies updated |
 | 0.5 | May 2026 | Layered write architecture documented: UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted. Dependency graph updated. |
+| 0.6 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS created; DDS_BOMS and DDS_DEMANDS refactored as helpers (no longer deprecated). UI modules call helpers only — no direct DDS_STORE or DDS_ACTIONS calls. DDS_ACTIONS.execute() made synchronous. |
 
 ---
 
@@ -32,22 +33,36 @@ Both DEV and TEST contexts must keep their copy in sync (manual transfer — see
 ```
 UI modules / AI modules
         ↓  (all writes)
-   DDS_ACTIONS
+   Helper layer                    ← NEW: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS,
+   (DDS_NODES, DDS_PRODUCTS,           DDS_SKUS, DDS_BOMS, DDS_DEMANDS
+    DDS_FLOWS, DDS_SKUS,
+    DDS_BOMS, DDS_DEMANDS)
+        ↓  translates to actions
+   DDS_ACTIONS  (synchronous)
         ↓ simple ops          ↓ cascade ops
    DDS_STORE              DDS_MODEL
         ↓                      ↓
               DDS_STORE (raw CRUD)
 ```
 
-**Rule 1 — UI and AI write only via `DDS_ACTIONS`.**
-No UI module and no AI module may call `DDS_STORE.insert/update/remove` or `DDS_MODEL.*` directly on functional layer tables. All writes from these layers go through `DDS_ACTIONS.execute()`.
+**Rule 1 — UI writes only via helpers.**
+No UI module may call `DDS_ACTIONS.execute()`, `DDS_STORE.insert/update/remove`, or `DDS_MODEL.*` directly on functional layer tables. All writes from UI go through a domain helper (e.g. `DDS_NODES.create(...)`, `DDS_BOMS.delete(...)`).
 
-**Rule 2 — `DDS_ACTIONS` uses `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.**
+**Rule 2 — AI writes via `DDS_ACTIONS` directly.**
+AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly — they do not go through helpers.
+
+**Rule 3 — Helpers translate to actions.**
+Each helper method builds an action list and calls `DDS_ACTIONS.execute()` synchronously. Helpers also expose read methods (`getAll`, `getById`, etc.) as wrappers over `DDS_STORE.query`.
+
+**Rule 4 — `DDS_ACTIONS.execute()` is synchronous.**
+Returns `{ applied: action[], failed: action|null }` directly. No Promise, no async/await in the call chain from UI to store.
+
+**Rule 5 — `DDS_ACTIONS` uses `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.**
 - Simple mutations (add, update): `DDS_ACTIONS` calls `DDS_STORE` directly.
 - Cascade operations (delete_node, delete_flow, delete_product, delete_bom, remove_sku, delete_demand): `DDS_ACTIONS` delegates to `DDS_MODEL`.
 
-**Rule 3 — reads are unrestricted.**
-Any module may call `DDS_STORE.query` on any table at any time.
+**Rule 6 — reads are unrestricted.**
+Any module may call `DDS_STORE.query` on any table at any time. Helpers expose named read methods for UI convenience — UI modules should prefer helper reads over direct `DDS_STORE.query` calls.
 
 **Exception — presentation layer:**
 `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands` are managed directly by presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, etc.) and are outside `DDS_ACTIONS`' scope.
@@ -72,8 +87,11 @@ graph TD
     DDS_AI_CONTEXT
   end
 
-  subgraph Deprecated["Deprecated — to be absorbed into DDS_MODEL"]
+  subgraph Helpers["Helper layer (UI facade)"]
+    DDS_NODES
     DDS_PRODUCTS
+    DDS_FLOWS
+    DDS_SKUS
     DDS_BOMS
     DDS_DEMANDS
   end
@@ -89,6 +107,19 @@ graph TD
   DDS_JSON        --> DDS_STORE
   DDS_AI_CONTEXT  --> DDS_STORE
 
+  DDS_NODES    --> DDS_ACTIONS
+  DDS_NODES    --> DDS_STORE
+  DDS_PRODUCTS --> DDS_ACTIONS
+  DDS_PRODUCTS --> DDS_STORE
+  DDS_FLOWS    --> DDS_ACTIONS
+  DDS_FLOWS    --> DDS_STORE
+  DDS_SKUS     --> DDS_ACTIONS
+  DDS_SKUS     --> DDS_STORE
+  DDS_BOMS     --> DDS_ACTIONS
+  DDS_BOMS     --> DDS_STORE
+  DDS_DEMANDS  --> DDS_ACTIONS
+  DDS_DEMANDS  --> DDS_STORE
+
   DDS_AI          --> DDS_STORE
   DDS_AI          --> DDS_AI_CONTEXT
   DDS_AI          --> DDS_ACTIONS
@@ -100,10 +131,10 @@ graph TD
 
 **Notes:**
 - `DDS_STORE` is the root dependency of all layers.
-- `DDS_MODEL` handles all cascade operations. Currently delegates some operations to `DDS_PRODUCTS` and `DDS_NODES` (SCRIPT 1600) during the deprecation transition.
-- `DDS_ACTIONS` is the single write entry point for UI and AI layers. Calls `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.
+- `DDS_MODEL` handles all cascade operations.
+- `DDS_ACTIONS` is the single write entry point — synchronous. Calls `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.
+- Helper layer modules translate semantic UI calls into action lists and delegate to `DDS_ACTIONS.execute()`.
 - `DDS_REMOVE` (render-dependent, not in this registry) calls `DDS_ACTIONS` for full deletes and `DDS_ELEMENTS` for map-only removals.
-- `DDS_PRODUCTS`, `DDS_BOMS`, `DDS_DEMANDS` are deprecated. Their logic migrates to `DDS_MODEL` and `DDS_ACTIONS`. UI modules must migrate to `DDS_ACTIONS.execute()` for all writes.
 - Render-dependent modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_LAYOUT`, `DDS_PANEL`, all `*_UI` modules) are not in this registry. Tested via Playwright only.
 
 ---
@@ -188,7 +219,7 @@ deps_declared:  no
 
 **Responsibility:** in-memory CRUD + serialization. No business rules — raw CRUD only.
 
-**Write access:** `DDS_STORE.insert/update/remove` on functional tables is called by `DDS_ACTIONS` (simple ops) and `DDS_MODEL` (cascade ops) only. UI and AI modules use `DDS_STORE.query` for reads only.
+**Write access:** `DDS_STORE.insert/update/remove` on functional tables is called by `DDS_ACTIONS` (simple ops) and `DDS_MODEL` (cascade ops) only. UI modules use helpers for writes and `DDS_STORE.query` for reads when no helper read method is available.
 
 **API:**
 ```
@@ -250,13 +281,13 @@ global:         DDS_MODEL
 block:          SCRIPT 1550
 file:           src/DDS_MODEL.js
 testability:    store-dependent
-contract:       partial  (cascade ops implemented; add/update ops not needed — handled by DDS_ACTIONS+DDS_STORE)
+contract:       partial
 dom_mixed:      no
 api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** authoritative runtime implementation of cascade delete rules (`DDScope_DataModel.md` §17.1). The only module that handles operations with cascade side-effects on the functional model. Called by `DDS_ACTIONS` for cascade operations only.
+**Responsibility:** authoritative runtime implementation of cascade delete rules (`DDScope_DataModel.md` §17.1). Called by `DDS_ACTIONS` for cascade operations only.
 
 **API (cascade operations):**
 ```
@@ -275,46 +306,9 @@ DDS_MODEL.removeProductFromFlow(flowId, productId)
 **Dependencies:**
 ```
 DDS_STORE    SCRIPT 150
-DDS_NODES    SCRIPT 1600  (transitional — product-node cascade; will be absorbed)
-DDS_PRODUCTS SCRIPT 1600  (transitional — product-node cascade; will be absorbed)
 ```
 
-**test_scope:**
-```
-deleteNode:
-  node with no flows, no SKUs, no BOMs, no demands → only nodes + map_nodes removed
-  node with connected flows → flows + map_flows removed across all maps
-  node with SKUs → skus removed
-  node with BOMs → boms + bom_components removed
-  node with demands → demands + map_demands removed
-  node on multiple maps → map_nodes removed from all maps
-deleteFlow:
-  flow removed + map_flows across all maps
-  no SKU modification
-deleteProduct:
-  product removed from flows[].product_ids on all flows
-  skus for this product removed
-  boms where output_product_id matches removed + bom_components
-  bom_components where product_id matches removed; parent bom removed if no components remain
-  demands for this product removed + map_demands
-deleteSwimLane:
-  each assigned node deleted with full deleteNode cascade
-  map_swim_lanes removed across all maps
-  default_swim_lane_id cleared on affected node_types
-removeSku:
-  demand for node x product removed if exists + map_demands
-  CTT geometry reset on map_nodes if no demands remain for node
-  sku record removed
-deleteDemand:
-  map_demands removed
-  CTT geometry reset on map_nodes if no demands remain for node
-  demand record removed
-deleteBom:
-  bom_components removed; bom record removed
-rerouteFlow / addProductToFlow / removeProductFromFlow:
-  flow record updated; no SKU modification
-coverage: none
-```
+**test_scope:** (see v0.5 entry — unchanged)
 
 ---
 
@@ -331,17 +325,19 @@ api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** single write entry point for UI and AI layers. Translates action lists into `DDS_STORE` calls (simple ops) or `DDS_MODEL` calls (cascade ops). Provides the action vocabulary and human-readable descriptions.
+**Responsibility:** single write entry point for helper and AI layers. Translates action lists into `DDS_STORE` calls (simple ops) or `DDS_MODEL` calls (cascade ops). Provides the action vocabulary and human-readable descriptions.
+
+**Synchronous:** `execute()` returns `{ applied, failed }` directly — no Promise.
 
 **Cascade actions** (routed to `DDS_MODEL`): `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`, `delete_demand`.
 
-**Simple actions** (routed to `DDS_STORE` directly): `add_node`, `update_node`, `add_flow`, `update_flow`, `add_product`, `update_product`, `add_sku`, `update_sku`, `add_swim_lane`, `update_swim_lane`, `add_bom`, `update_bom`, `add_bom_component`, `update_bom_component`, `remove_bom_component`, `add_demand`, `update_demand`, `reroute_flow`, `add_product_to_flow`, `remove_product_from_flow`.
+**Simple actions** (routed to `DDS_STORE` directly): all others.
 
 **Robustness:** normalises `action.action → action.type` at the start of `execute()` and `describe()`.
 
 **API:**
 ```
-DDS_ACTIONS.execute(actions)       // Promise<{ applied: action[], failed: action|null }>
+DDS_ACTIONS.execute(actions)       // { applied: action[], failed: action|null }  ← synchronous
 DDS_ACTIONS.describe(actions)      // { index: number, label: string }[]
 DDS_ACTIONS.getVocabularyText()    // string — injected into Claude system prompt
 DDS_ACTIONS.ACTIONS                // object — structured vocabulary definitions
@@ -351,6 +347,228 @@ DDS_ACTIONS.ACTIONS                // object — structured vocabulary definitio
 ```
 DDS_STORE   SCRIPT 150
 DDS_MODEL   SCRIPT 1550
+```
+
+---
+
+### DDS_NODES
+
+```
+global:         DDS_NODES
+block:          SCRIPT 1560
+file:           src/DDS_NODES.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** helper facade for node operations. Translates semantic calls into `DDS_ACTIONS` action lists. UI modules call this module — never `DDS_ACTIONS` or `DDS_STORE` directly for node writes.
+
+**API:**
+```
+// Writes — delegate to DDS_ACTIONS.execute()
+DDS_NODES.create(fields)                    // { name, type_code?, swim_lane_id?, tags?, notes? } → record
+DDS_NODES.update(nodeId, fields)            // → record
+DDS_NODES.delete(nodeId)                    // → void
+DDS_NODES.assignToLane(nodeId, laneId)      // → void
+
+// Reads — DDS_STORE.query wrappers
+DDS_NODES.getAll()                          // node[]
+DDS_NODES.getById(nodeId)                   // node | null
+```
+
+**Dependencies:**
+```
+DDS_ACTIONS   SCRIPT 1850
+DDS_STORE     SCRIPT 150
+```
+
+---
+
+### DDS_PRODUCTS
+
+```
+global:         DDS_PRODUCTS
+block:          SCRIPT 1610
+file:           src/DDS_PRODUCTS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** helper facade for product operations. Replaces the previous DDS_PRODUCTS (SCRIPT 1600) which called DDS_STORE directly. UI modules call this module for all product writes.
+
+**API:**
+```
+// Writes — delegate to DDS_ACTIONS.execute()
+DDS_PRODUCTS.create(fields)                 // { name, type_code?, tags?, notes? } → record
+DDS_PRODUCTS.update(productId, fields)      // → record
+DDS_PRODUCTS.delete(productId)              // → void
+
+// Reads — DDS_STORE.query wrappers
+DDS_PRODUCTS.getAll()                       // product[]
+DDS_PRODUCTS.getById(productId)             // product | null
+```
+
+**Dependencies:**
+```
+DDS_ACTIONS   SCRIPT 1850
+DDS_STORE     SCRIPT 150
+```
+
+---
+
+### DDS_FLOWS
+
+```
+global:         DDS_FLOWS
+block:          SCRIPT 1620
+file:           src/DDS_FLOWS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** helper facade for flow operations. UI modules call this module for all flow writes.
+
+**API:**
+```
+// Writes — delegate to DDS_ACTIONS.execute()
+DDS_FLOWS.create(fields)                              // { source_id, target_id, lead_time_value?, lead_time_unit?, tags?, notes? } → record
+DDS_FLOWS.update(flowId, fields)                      // → record
+DDS_FLOWS.delete(flowId)                              // → void
+DDS_FLOWS.reroute(flowId, newSourceId?, newTargetId?) // → void
+DDS_FLOWS.addProduct(flowId, productId)               // → void
+DDS_FLOWS.removeProduct(flowId, productId)            // → void
+
+// Reads — DDS_STORE.query wrappers
+DDS_FLOWS.getAll()                                    // flow[]
+DDS_FLOWS.getById(flowId)                             // flow | null
+DDS_FLOWS.getForNode(nodeId)                          // flow[] — flows where node is source or target
+```
+
+**Dependencies:**
+```
+DDS_ACTIONS   SCRIPT 1850
+DDS_STORE     SCRIPT 150
+```
+
+---
+
+### DDS_SKUS
+
+```
+global:         DDS_SKUS
+block:          SCRIPT 1630
+file:           src/DDS_SKUS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** helper facade for SKU operations. UI modules call this module for all SKU writes.
+
+**API:**
+```
+// Writes — delegate to DDS_ACTIONS.execute()
+DDS_SKUS.add(nodeId, productId, fields?)    // { tags?, notes? } → void
+DDS_SKUS.update(nodeId, productId, fields)  // → void
+DDS_SKUS.remove(nodeId, productId)          // → void
+
+// Reads — DDS_STORE.query wrappers
+DDS_SKUS.getAll()                           // sku[]
+DDS_SKUS.getForNode(nodeId)                 // sku[]
+DDS_SKUS.getForProduct(productId)           // sku[]
+DDS_SKUS.get(nodeId, productId)             // sku | null
+```
+
+**Dependencies:**
+```
+DDS_ACTIONS   SCRIPT 1850
+DDS_STORE     SCRIPT 150
+```
+
+---
+
+### DDS_BOMS
+
+```
+global:         DDS_BOMS
+block:          SCRIPT 1800
+file:           src/DDS_BOMS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** helper facade for BOM operations. Refactored from direct DDS_STORE calls to DDS_ACTIONS delegation. `updateComponents` performs an internal diff (remove / add / update) to produce the minimal action list.
+
+**API:**
+```
+// Writes — delegate to DDS_ACTIONS.execute()
+DDS_BOMS.create(nodeId, outputProductId, components)   // components: [{ product_id, quantity }] → void
+DDS_BOMS.updateComponents(bomId, components)           // diff against existing → void
+DDS_BOMS.delete(bomId)                                 // → void
+
+// Reads — DDS_STORE.query wrappers
+DDS_BOMS.getAll()                                      // bom[]
+DDS_BOMS.getComponents(bomId)                          // bom_component[]
+```
+
+**Dependencies:**
+```
+DDS_ACTIONS   SCRIPT 1850
+DDS_STORE     SCRIPT 150
+```
+
+---
+
+### DDS_DEMANDS
+
+```
+global:         DDS_DEMANDS
+block:          SCRIPT 1660
+file:           src/DDS_DEMANDS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** helper facade for demand operations. Refactored from direct DDS_STORE calls to DDS_ACTIONS delegation. Map visibility methods (`showOnMap`, `hideFromMap`) operate on the presentation layer (`map_demands`) and remain direct DDS_STORE calls — they are outside DDS_ACTIONS scope.
+
+**API:**
+```
+// Writes — delegate to DDS_ACTIONS.execute()
+DDS_DEMANDS.create(nodeId, productId, fields?)   // { ctt_value?, ctt_unit?, demand_value?, demand_period?, notes? } → void
+DDS_DEMANDS.update(nodeId, productId, fields)    // → void
+DDS_DEMANDS.delete(nodeId, productId)            // → void
+
+// Presentation layer — direct DDS_STORE (not via DDS_ACTIONS)
+DDS_DEMANDS.showOnMap(demandId, mapId)           // → void
+DDS_DEMANDS.hideFromMap(demandId, mapId)         // → void
+
+// Reads — DDS_STORE.query wrappers
+DDS_DEMANDS.getAll()                             // demand[]
+DDS_DEMANDS.getForNode(nodeId)                   // demand[]
+DDS_DEMANDS.get(nodeId, productId)               // demand | null
+```
+
+**Dependencies:**
+```
+DDS_ACTIONS   SCRIPT 1850
+DDS_STORE     SCRIPT 150
 ```
 
 ---
@@ -396,7 +614,7 @@ api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** system prompt assembly, Claude API call via CommWise secure proxy, response validation. Writes via `DDS_ACTIONS.execute()` only.
+**Responsibility:** system prompt assembly, Claude API call via CommWise secure proxy, response validation. Writes via `DDS_ACTIONS.execute()` directly (not via helpers).
 
 **Dependencies:**
 ```
@@ -421,7 +639,7 @@ api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** AI panel rendering, plan display, confirm/cancel. Writes via `DDS_ACTIONS.execute()` only.
+**Responsibility:** AI panel rendering, plan display, confirm/cancel. Writes via `DDS_ACTIONS.execute()` directly (not via helpers).
 
 **Dependencies:**
 ```
@@ -461,100 +679,22 @@ DDS         SCRIPT 400
 
 ---
 
-### DDS_PRODUCTS ⚠️ DEPRECATED
-
-```
-global:         DDS_PRODUCTS
-block:          SCRIPT 1600
-file:           src/DDS_PRODUCTS.js
-testability:    store-dependent
-contract:       unverified
-dom_mixed:      unverified
-api_documented: no
-deps_declared:  no
-status:         deprecated — cascade logic migrated to DDS_MODEL; CRUD callers must migrate to DDS_ACTIONS
-```
-
-**Note:** SCRIPT 1600 also contains `DDS_NODES` (non-exported `var`). Both will be superseded by `DDS_MODEL`.
-
-**Current callers to migrate:**
-- `DDS_NODES_UI` → `DDS_ACTIONS.execute([{ type: 'delete_node', ... }])`
-- Any direct `DDS_PRODUCTS.create/update/delete` call → `DDS_ACTIONS.execute([{ type: 'add_product', ... }])`
-
-**Dependencies:**
-```
-DDS_STORE   SCRIPT 150
-DDS         SCRIPT 400
-```
-
----
-
-### DDS_BOMS ⚠️ DEPRECATED
-
-```
-global:         DDS_BOMS
-block:          SCRIPT 1800
-file:           src/DDS_BOMS.js
-testability:    store-dependent
-contract:       unverified
-dom_mixed:      unverified
-api_documented: no
-deps_declared:  no
-status:         deprecated — cascade logic migrated to DDS_MODEL; UI callers must migrate to DDS_ACTIONS
-```
-
-**Current callers to migrate:**
-- `DDS_BOMS_UI.handleDelete` → `DDS_ACTIONS.execute([{ type: 'delete_bom', ... }])`
-- `DDS_BOMS_UI` create/update → `DDS_ACTIONS.execute([{ type: 'add_bom', ... }])`
-
-**Dependencies:**
-```
-DDS_STORE   SCRIPT 150
-DDS         SCRIPT 400
-```
-
----
-
-### DDS_DEMANDS ⚠️ DEPRECATED
-
-```
-global:         DDS_DEMANDS
-block:          SCRIPT 1660
-file:           src/DDS_DEMANDS.js
-testability:    store-dependent
-contract:       unverified
-dom_mixed:      unverified
-api_documented: no
-deps_declared:  no
-status:         deprecated — cascade logic migrated to DDS_MODEL; UI callers must migrate to DDS_ACTIONS
-```
-
-**Note:** map demand visibility (`showOnMap`, `hideFromMap`) is a presentation concern and remains valid outside `DDS_ACTIONS` — these methods operate on `map_demands` (presentation layer), not the functional model.
-
-**Current callers to migrate:**
-- `DDS_PANEL` demand create/update/delete → `DDS_ACTIONS.execute([{ type: 'add_demand', ... }])`
-- `DDS_DEMANDS_UI` update/delete → `DDS_ACTIONS.execute([{ type: 'update_demand', ... }])`
-- `DDS_DEMANDS.showOnMap / hideFromMap` — **keep as-is** (presentation layer, not covered by Rule 1)
-
-**Dependencies:**
-```
-DDS_STORE   SCRIPT 150
-DDS         SCRIPT 400
-```
-
----
-
 ## Backlog
 
-- [ ] **Migrate `DDS_BOMS_UI`** — replace all `DDS_BOMS.*` write calls with `DDS_ACTIONS.execute()`
-- [ ] **Migrate `DDS_PANEL` (demand section)** — replace `DDS_DEMANDS.ensureDemand/updateDemand/deleteForSku` with `DDS_ACTIONS.execute()`
-- [ ] **Migrate `DDS_DEMANDS_UI`** — replace `DDS_DEMANDS.updateDemand/deleteForSku` with `DDS_ACTIONS.execute()`
-- [ ] **Migrate `DDS_NODES_UI`** — verify and replace any direct delete calls with `DDS_ACTIONS.execute()`
-- [ ] **Migrate `DDS_PRODUCTS_UI`** — verify and replace any direct write calls with `DDS_ACTIONS.execute()`
-- [ ] **Migrate `DDS_FLOWS_UI`** — verify and replace any direct write calls with `DDS_ACTIONS.execute()`
-- [ ] **Absorb `DDS_NODES` + `DDS_PRODUCTS` into `DDS_MODEL`** — eliminate the transitional dependency; `deleteNode` and `deleteProduct` cascade fully inlined in `DDS_MODEL`
-- [ ] **Deprecate `DDS_BOMS`** — once `DDS_BOMS_UI` is migrated
-- [ ] **Deprecate `DDS_DEMANDS`** — once panel and table UI are migrated (keep `showOnMap`/`hideFromMap` as standalone helpers or inline in UI)
+- [ ] **Implement `DDS_NODES`** (SCRIPT 1560) — new helper
+- [ ] **Implement `DDS_PRODUCTS`** (SCRIPT 1610) — new helper, replaces SCRIPT 1600
+- [ ] **Implement `DDS_FLOWS`** (SCRIPT 1620) — new helper
+- [ ] **Implement `DDS_SKUS`** (SCRIPT 1630) — new helper
+- [ ] **Refactor `DDS_BOMS`** (SCRIPT 1800) — migrate to helper pattern
+- [ ] **Refactor `DDS_DEMANDS`** (SCRIPT 1660) — migrate to helper pattern
+- [ ] **Make `DDS_ACTIONS.execute()` synchronous** — remove Promise wrapper (SCRIPT 1850)
+- [ ] **Migrate `DDS_BOMS_UI`** — replace DDS_BOMS.* (old) with new helper API
+- [ ] **Migrate `DDS_PANEL` (demand section)** — replace DDS_DEMANDS.* (old) with new helper API
+- [ ] **Migrate `DDS_DEMANDS_UI`** — replace DDS_DEMANDS.* (old) with new helper API
+- [ ] **Migrate `DDS_NODES_UI`** — replace any direct store calls with DDS_NODES.*
+- [ ] **Migrate `DDS_PRODUCTS_UI`** — replace any direct store calls with DDS_PRODUCTS.*
+- [ ] **Migrate `DDS_FLOWS_UI`** — replace any direct store calls with DDS_FLOWS.*
+- [ ] **Remove SCRIPT 1600** (old DDS_PRODUCTS + DDS_NODES) — once new helpers are in place
 - [ ] **`DDS_STORE` DOM isolation refactor** — prerequisite for all store-dependent unit tests
 - [ ] **`DDS_MODEL.validateSkus()`** — non-destructive SKU coherence check (v2)
 
