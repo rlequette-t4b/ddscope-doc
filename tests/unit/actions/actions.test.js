@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DDS_ACTIONS from '../../../src/DDS_ACTIONS.js';
 import DDS_STORE from '../../../src/DDS_STORE.js';
 
@@ -102,11 +102,15 @@ describe('DDS_ACTIONS', () => {
 
   it('fails the first action when no project is loaded', async () => {
     DDS_STORE.setProject(null);
+    var consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(function () {});
+    try {
+      var action = { type: 'add_node', name: 'NoModelNode' };
+      var result = await DDS_ACTIONS.execute([action]);
 
-    var action = { type: 'add_node', name: 'NoModelNode' };
-    var result = await DDS_ACTIONS.execute([action]);
-
-    expect(result.applied).toEqual([]);
-    expect(result.failed).toEqual(action);
+      expect(result.applied).toEqual([]);
+      expect(result.failed).toEqual(action);
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 });

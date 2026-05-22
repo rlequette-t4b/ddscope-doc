@@ -1,81 +1,74 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import DDS_ACTIONS from '../../../src/DDS_ACTIONS.js';
+import DDS_BOMS from '../../../src/DDS_BOMS.js';
+import DDS_DEMANDS from '../../../src/DDS_DEMANDS.js';
+import DDS_FLOWS from '../../../src/DDS_FLOWS.js';
 import DDS_MODEL from '../../../src/DDS_MODEL.js';
+import DDS_NODES from '../../../src/DDS_NODES.js';
+import DDS_PRODUCTS from '../../../src/DDS_PRODUCTS.js';
+import DDS_SKUS from '../../../src/DDS_SKUS.js';
 import DDS_STORE from '../../../src/DDS_STORE.js';
 
 describe('DDS_MODEL integrity rules', () => {
-  async function runActions(actions) {
-    const result = await DDS_ACTIONS.execute(actions);
-    expect(result.failed).toBeNull();
-    return result;
-  }
-
   async function createNode(name, swimLaneId) {
-    const action = { type: 'add_node', name };
+    const result = await DDS_NODES.create({ name: name });
+    expect(result.failed).toBeNull();
+    const nodeId = result.applied[0]._created_id;
     if (swimLaneId !== undefined && swimLaneId !== null) {
-      action.swim_lane_id = String(swimLaneId);
+      const laneAssign = await DDS_NODES.assignToLane(nodeId, swimLaneId);
+      expect(laneAssign.failed).toBeNull();
     }
-    const result = await runActions([action]);
-    return result.applied[0]._created_id;
+    return nodeId;
   }
 
   async function createProduct(name) {
-    const result = await runActions([{ type: 'add_product', name }]);
+    const result = await DDS_PRODUCTS.create({ name: name });
+    expect(result.failed).toBeNull();
     return result.applied[0]._created_id;
   }
 
   async function createSwimLane(name, color) {
-    const result = await runActions([{ type: 'add_swim_lane', name, color }]);
-    return result.applied[0]._created_id;
+    // No helper/API exists yet for swim_lanes fixture rows.
+    return DDS_STORE.insert('swim_lanes', { name: name, color: color })[0].id;
   }
 
   async function createFlow(sourceId, targetId, productIds) {
-    const result = await runActions([
-      { type: 'add_flow', source_id: sourceId, target_id: targetId, product_ids: productIds || [] }
-    ]);
-    return result.applied[0]._created_id;
+    const result = await DDS_FLOWS.create({ source_id: sourceId, target_id: targetId });
+    expect(result.failed).toBeNull();
+    const flowId = result.applied[0]._created_id;
+    for (const productId of (productIds || [])) {
+      const addProductResult = await DDS_FLOWS.addProduct(flowId, productId);
+      expect(addProductResult.failed).toBeNull();
+    }
+    return flowId;
   }
 
   async function createSku(nodeId, productId) {
-    await runActions([{ type: 'add_sku', node_id: nodeId, product_id: productId }]);
+    const result = await DDS_SKUS.add(nodeId, productId);
+    expect(result.failed).toBeNull();
   }
 
   async function createDemand(nodeId, productId) {
-    await runActions([{ type: 'add_demand', node_id: nodeId, product_id: productId }]);
+    const result = await DDS_DEMANDS.create(nodeId, productId, {});
+    expect(result.failed).toBeNull();
   }
 
   async function createBom(nodeId, outputProductId, components) {
-    const actions = [
-      {
-        type: 'add_bom',
-        id: 'new_bom_1',
-        node_id: nodeId,
-        output_product_id: outputProductId
-      }
-    ];
-
-    (components || []).forEach((component) => {
-      actions.push({
-        type: 'add_bom_component',
-        bom_id: 'new_bom_1',
-        product_id: component.product_id,
-        quantity: component.quantity,
-        notes: component.notes || ''
-      });
-    });
-
-    const result = await runActions(actions);
-    return result.applied[0]._created_id;
+    const result = await DDS_BOMS.create(nodeId, outputProductId, components || []);
+    expect(result.failed).toBeNull();
+    return DDS_STORE.query('boms', { node_id: nodeId, output_product_id: outputProductId })[0].id;
   }
 
   beforeEach(() => {
     globalThis.DDS_STORE = DDS_STORE;
     globalThis.DDS_ACTIONS = DDS_ACTIONS;
+    globalThis.DDS_NODES = DDS_NODES;
+    globalThis.DDS_PRODUCTS = DDS_PRODUCTS;
+    globalThis.DDS_FLOWS = DDS_FLOWS;
+    globalThis.DDS_SKUS = DDS_SKUS;
+    globalThis.DDS_BOMS = DDS_BOMS;
+    globalThis.DDS_DEMANDS = DDS_DEMANDS;
     DDS_STORE.newProject('Unit test', 'DDS_MODEL baseline', 'vitest');
-
-    // Default stubs are intentionally failing until logic is migrated into DDS_MODEL.
-    globalThis.DDS_NODES = { deleteNode: vi.fn(() => { throw new Error('DDS_NODES stub not implemented'); }) };
-    globalThis.DDS_PRODUCTS = { delete: vi.fn(() => { throw new Error('DDS_PRODUCTS stub not implemented'); }) };
   });
 
   it('deleteFlow removes flow and map_flows only (no SKU deletion)', async () => {

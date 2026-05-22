@@ -6,8 +6,8 @@ This folder contains Vitest suites for DDScope core modules.
 
 Unit tests must respect module contracts.
 
-- Do not create business data by calling `DDS_STORE.insert` directly in test setup.
-- Use the public helper/API under test (or `DDS_ACTIONS.execute` when appropriate) to create domain entities.
+- Outside `actions/*.test.js` and `store/*.test.js`, do not create business data by calling `DDS_ACTIONS.execute` or `DDS_STORE.insert/update/remove` in test setup.
+- In helper-module tests, create entities through helper APIs (`DDS_NODES`, `DDS_PRODUCTS`, `DDS_FLOWS`, `DDS_SKUS`, `DDS_BOMS`, `DDS_DEMANDS`).
 - Keep `DDS_STORE` usage focused on:
   - project bootstrap (`DDS_STORE.newProject`, `DDS_STORE.setProject`),
   - read/assertions (`DDS_STORE.query`),
@@ -19,12 +19,17 @@ Using helpers/APIs in setup validates real integration paths and avoids tests th
 
 ## Exception Policy
 
-If a helper does not exist yet for a required setup path, document the temporary exception in the test with a short English comment and keep the direct store write minimal.
+If a helper does not exist yet for a required setup path (for example `map_*`, `swim_lanes`, or `node_types` fixtures), document the temporary exception in the test with a short English comment and keep the direct write minimal.
+
+When using an exception:
+- Prefer `DDS_STORE.insert` over `DDS_ACTIONS.execute` for fixture-only rows not covered by helpers.
+- Keep the exception local to a single test when possible.
+- Add a short `No helper/API exists yet ...` comment above the write.
 
 ## Target State
 
-Current migrations may use `DDS_ACTIONS.execute` as an interim setup path when no dedicated helper exists.
+Current and future unit tests should default to helper-based setup.
 
-Long term, unit tests should also phase out those action-level setup calls and use domain helpers directly as they are extracted.
+Action-level setup is reserved for `actions/*.test.js` only.
 
 Example: once `DDS_NODES` helper APIs are available and stable, tests should create/update/delete nodes through `DDS_NODES` instead of `DDS_ACTIONS.execute`.

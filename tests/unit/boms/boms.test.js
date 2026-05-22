@@ -2,21 +2,21 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import DDS_BOMS from '../../../src/DDS_BOMS.js';
 import DDS_ACTIONS from '../../../src/DDS_ACTIONS.js';
 import DDS_MODEL from '../../../src/DDS_MODEL.js';
+import DDS_NODES from '../../../src/DDS_NODES.js';
+import DDS_PRODUCTS from '../../../src/DDS_PRODUCTS.js';
 import DDS_STORE from '../../../src/DDS_STORE.js';
 
 describe('DDS_BOMS helper facade', () => {
   async function createNode(name) {
-    const result = await DDS_ACTIONS.execute([{ type: 'add_node', name }]);
+    const result = await DDS_NODES.create({ name: name });
     expect(result.failed).toBeNull();
-    const nodes = DDS_STORE.query('nodes');
-    return nodes[nodes.length - 1];
+    return DDS_NODES.getById(result.applied[0]._created_id);
   }
 
   async function createProduct(name) {
-    const result = await DDS_ACTIONS.execute([{ type: 'add_product', name }]);
+    const result = await DDS_PRODUCTS.create({ name: name });
     expect(result.failed).toBeNull();
-    const products = DDS_STORE.query('products');
-    return products[products.length - 1];
+    return DDS_PRODUCTS.getById(result.applied[0]._created_id);
   }
 
   async function createBom(nodeId, outputProductId, components) {
@@ -30,6 +30,8 @@ describe('DDS_BOMS helper facade', () => {
     globalThis.DDS_STORE = DDS_STORE;
     globalThis.DDS_ACTIONS = DDS_ACTIONS;
     globalThis.DDS_MODEL = DDS_MODEL;
+    globalThis.DDS_NODES = DDS_NODES;
+    globalThis.DDS_PRODUCTS = DDS_PRODUCTS;
     DDS_STORE.newProject('Unit test', 'DDS_BOMS baseline', 'vitest');
   });
 
