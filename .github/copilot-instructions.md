@@ -32,6 +32,7 @@
 - Keep test cases deterministic and fixture-driven where possible (`fixtures/`, `samples/`).
 - For Playwright tests that load project JSON from `fixtures/` or `samples/`, always use `tests/ui/helpers/open-project.js` and never automate the UI Open/filechooser flow directly.
 - Follow the policy documented in `tests/ui/README.md` (section: "Fixture and sample loading policy") for all new or modified UI fixture-loading tests.
+- Do not proactively explore the live app UI or CommWise blocks to discover HTML IDs/selectors unless the user explicitly asks for that investigation.
 - Playwright failure handling: when a UI test fails, do not start repeated automatic DOM inspection or probing loops. Stop after the first failure summary and discuss with the user to agree on the debugging strategy before running extra inspection commands.
 - Playwright visual debugging: prefer running the failing test in headed mode first so the user can inspect the UI state directly, then agree on next actions.
 

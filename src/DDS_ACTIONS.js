@@ -1,6 +1,6 @@
 ﻿// AUDITOR:LARGE_BLOCK_JUSTIFIED â€” single cohesive module: ACTIONS registry, execute(), describe(), getVocabularyText(). Cannot be split without breaking the internal references between the four exported members.
 
-window.DDS_ACTIONS = (function () {
+var DDS_ACTIONS = (function () {
 
   // ---------------------------------------------------------------------------
   // ACTIONS â€” structured vocabulary (source of truth for getVocabularyText)
@@ -291,7 +291,7 @@ window.DDS_ACTIONS = (function () {
               break;
 
             case 'delete_node':
-              DDS_STORE.remove('nodes', { id: parseInt(action.node_id, 10) });
+              DDS_MODEL.deleteNode(parseInt(action.node_id, 10));
               break;
 
             case 'assign_node_to_lane':
@@ -322,7 +322,7 @@ window.DDS_ACTIONS = (function () {
               break;
 
             case 'delete_flow':
-              DDS_STORE.remove('flows', { id: parseInt(action.flow_id, 10) });
+              DDS_MODEL.deleteFlow(parseInt(action.flow_id, 10));
               break;
 
             case 'reroute_flow':
@@ -373,7 +373,7 @@ window.DDS_ACTIONS = (function () {
               break;
 
             case 'delete_product':
-              DDS_STORE.remove('products', { id: parseInt(action.product_id, 10) });
+              DDS_MODEL.deleteProduct(parseInt(action.product_id, 10));
               break;
 
             // --- SKUs ---
@@ -394,7 +394,7 @@ window.DDS_ACTIONS = (function () {
               break;
 
             case 'remove_sku':
-              DDS_STORE.remove('skus', { node_id: parseInt(action.node_id, 10), product_id: parseInt(action.product_id, 10) });
+              DDS_MODEL.removeSku(parseInt(action.node_id, 10), parseInt(action.product_id, 10));
               break;
 
             // --- SWIM-LANES ---
@@ -431,8 +431,7 @@ window.DDS_ACTIONS = (function () {
               break;
 
             case 'delete_bom':
-              DDS_STORE.remove('bom_components', { bom_id: parseInt(action.bom_id, 10) });
-              DDS_STORE.remove('boms', { id: parseInt(action.bom_id, 10) });
+              DDS_MODEL.deleteBom(parseInt(action.bom_id, 10));
               break;
 
             case 'add_bom_component':
@@ -479,13 +478,8 @@ window.DDS_ACTIONS = (function () {
               break;
 
             case 'delete_demand':
-              DDS_STORE.remove('map_demands', {
-                demand_id: (function () {
-                  var dr = DDS_STORE.query('demands', { node_id: parseInt(action.node_id, 10), product_id: parseInt(action.product_id, 10) });
-                  return dr.length ? dr[0].id : -1;
-                })()
-              });
-              DDS_STORE.remove('demands', { node_id: parseInt(action.node_id, 10), product_id: parseInt(action.product_id, 10) });
+              DDS_MODEL.deleteDemand(parseInt(action.node_id, 10), parseInt(action.product_id, 10));
+              // cascade handled by DDS_MODEL.deleteDemand above
               break;
 
             default:
