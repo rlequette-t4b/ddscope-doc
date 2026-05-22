@@ -1,5 +1,5 @@
 # DDScope — Module Registry
-*v0.4 — Draft — May 2026*
+*v0.5 — Draft — May 2026*
 
 ---
 
@@ -9,39 +9,52 @@
 |---|---|---|
 | 0.1 | May 2026 | Initial registry |
 | 0.2 | May 2026 | Reframed as machine-readable database; format densified; prose sections removed |
-| 0.3 | May 2026 | DDS_ACTIONS added (SCRIPT 1850); DDS_AI_EXECUTOR removed (absorbed into DDS_ACTIONS + DDS_AI_UI); DDS_AI and DDS_AI_UI dependencies updated |
+| 0.3 | May 2026 | DDS_ACTIONS added (SCRIPT 1850); DDS_AI_EXECUTOR removed; DDS_AI and DDS_AI_UI dependencies updated |
 | 0.4 | May 2026 | Dependency graph added; DDS_MODEL introduced as functional integrity layer; DDS_PRODUCTS, DDS_BOMS, DDS_DEMANDS, DDS_NODES marked deprecated; DDS_ACTIONS and DDS_REMOVE dependencies updated |
+| 0.5 | May 2026 | Layered write architecture documented: UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted. Dependency graph updated. |
 
 ---
 
 ## Purpose and Usage
 
-**This file is a machine-readable database.** It is the authoritative source of truth for DDScope JavaScript module definitions. It is consumed by AI assistants (Claude in DEV and TEST contexts) and is not intended to be read as documentation prose.
+**This file is a machine-readable database.** Authoritative source of truth for DDScope JavaScript module definitions. Consumed by AI assistants (Claude in DEV and TEST contexts).
 
-Human-readable summaries (for onboarding, PR descriptions, etc.) are generated on demand from this file — they are not stored here.
+**What is recorded here:** module identity, CommWise block address, public API, runtime dependencies, testability classification, extraction readiness.
 
-**What is recorded here:**
-- The identity and CommWise address of every `DDS_*` module
-- Its public API surface
-- Its runtime dependencies
-- Its testability classification and extraction readiness
+**What is not recorded here:** implementation details, UI behaviour (see `DDScope_UI.md`), data model rules (see `DDScope_DataModel.md`).
 
-**What is not recorded here:**
-- Implementation details (those live in the CommWise blocks themselves)
-- UI interaction behaviour (see `DDScope_UI.md`)
-- Data model rules (see `DDScope_DataModel.md`)
+Both DEV and TEST contexts must keep their copy in sync (manual transfer — see `README.md`).
 
-**Who writes to this file:**
-- **DEV** (Claude project) — adds and updates entries when modules are created, refactored, renamed, or their API changes; updates `contract`, `dom_mixed`, `api_documented`, `deps_declared` fields after inspection.
-- **TEST** (this repository) — updates `testability` classification and contract fields discovered during extraction; updates `coverage` as tests are written; may also update `test_scope` when asked. The user is responsible for keeping both copies in sync.
+---
 
-Both contexts must keep their copy in sync (manual transfer — see `README.md`).
+## Layered Write Architecture
+
+```
+UI modules / AI modules
+        ↓  (all writes)
+   DDS_ACTIONS
+        ↓ simple ops          ↓ cascade ops
+   DDS_STORE              DDS_MODEL
+        ↓                      ↓
+              DDS_STORE (raw CRUD)
+```
+
+**Rule 1 — UI and AI write only via `DDS_ACTIONS`.**
+No UI module and no AI module may call `DDS_STORE.insert/update/remove` or `DDS_MODEL.*` directly on functional layer tables. All writes from these layers go through `DDS_ACTIONS.execute()`.
+
+**Rule 2 — `DDS_ACTIONS` uses `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.**
+- Simple mutations (add, update): `DDS_ACTIONS` calls `DDS_STORE` directly.
+- Cascade operations (delete_node, delete_flow, delete_product, delete_bom, remove_sku, delete_demand): `DDS_ACTIONS` delegates to `DDS_MODEL`.
+
+**Rule 3 — reads are unrestricted.**
+Any module may call `DDS_STORE.query` on any table at any time.
+
+**Exception — presentation layer:**
+`map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands` are managed directly by presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, etc.) and are outside `DDS_ACTIONS`' scope.
 
 ---
 
 ## Dependency Graph
-
-The graph below shows inter-module dependencies for all `DDS_*` modules currently in this registry. Arrow direction: A → B means A depends on B.
 
 ```mermaid
 graph TD
@@ -71,9 +84,6 @@ graph TD
   end
 
   DDS_MODEL       --> DDS_STORE
-  DDS_PRODUCTS    --> DDS_STORE
-  DDS_BOMS        --> DDS_STORE
-  DDS_DEMANDS     --> DDS_STORE
   DDS_ACTIONS     --> DDS_STORE
   DDS_ACTIONS     --> DDS_MODEL
   DDS_JSON        --> DDS_STORE
@@ -89,13 +99,12 @@ graph TD
 ```
 
 **Notes:**
-- `DDS_STORE` is the root dependency of all layers. It has no module-level dependency.
-- `DDS_MODEL` is the single authoritative layer for functional integrity rules and cascade operations. It is the only module that may perform cascade deletions on the functional model. Its rules are specified in `DDScope_DataModel.md` §17.
-- `DDS_ACTIONS` calls `DDS_MODEL` for all destructive operations (delete, remove). It calls `DDS_STORE` directly for simple operations without cascade (add, update).
-- `DDS_REMOVE` (render-dependent, not in this registry) calls `DDS_MODEL` for full deletes and `DDS_ELEMENTS` for map-only removals.
-- `DDS` (SCRIPT 400) is a CommWise runtime global referenced by several modules. It is not a `DDS_*` module and is not represented in this graph.
-- `DDS_PRODUCTS`, `DDS_BOMS`, `DDS_DEMANDS` are deprecated. Their cascade logic migrates to `DDS_MODEL`; their CRUD logic will be absorbed or stubbed. Existing callers (UI modules) should migrate to `DDS_MODEL` progressively.
-- Render-dependent modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_LAYOUT`, `DDS_PANEL`, `DDS_NODE_UI`, `DDS_FLOW_UI`, etc.) are not in this registry. They are tested via Playwright only.
+- `DDS_STORE` is the root dependency of all layers.
+- `DDS_MODEL` handles all cascade operations. Currently delegates some operations to `DDS_PRODUCTS` and `DDS_NODES` (SCRIPT 1600) during the deprecation transition.
+- `DDS_ACTIONS` is the single write entry point for UI and AI layers. Calls `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.
+- `DDS_REMOVE` (render-dependent, not in this registry) calls `DDS_ACTIONS` for full deletes and `DDS_ELEMENTS` for map-only removals.
+- `DDS_PRODUCTS`, `DDS_BOMS`, `DDS_DEMANDS` are deprecated. Their logic migrates to `DDS_MODEL` and `DDS_ACTIONS`. UI modules must migrate to `DDS_ACTIONS.execute()` for all writes.
+- Render-dependent modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_LAYOUT`, `DDS_PANEL`, all `*_UI` modules) are not in this registry. Tested via Playwright only.
 
 ---
 
@@ -115,26 +124,24 @@ graph TD
 | Field | Values | Meaning |
 |---|---|---|
 | `contract` | `met` / `partial` / `unverified` / `not-met` | Whether the block can be extracted without manual edits |
-| `dom_mixed` | `yes` / `no` | DOM calls present inside core logic (not isolated in a UI bindings section) |
-| `api_documented` | `yes` / `no` | Public API surface listed in the block header comment |
-| `deps_declared` | `yes` / `no` | Dependencies listed in the block header comment under `// Depends on:` |
+| `dom_mixed` | `yes` / `no` | DOM calls present inside core logic |
+| `api_documented` | `yes` / `no` | Public API surface listed in block header comment |
+| `deps_declared` | `yes` / `no` | Dependencies listed under `// Depends on:` in block header |
 
 ### Test scope fields
 
 | Field | Owner | Values / Meaning |
 |---|---|---|
-| `test_scope` | DEV | Free-text per-method scenario list. Written by DEV based on API knowledge. |
-| `coverage` | TEST | `none` / `partial` / `full` — updated by TEST as tests are written. |
+| `test_scope` | DEV | Free-text per-method scenario list |
+| `coverage` | TEST | `none` / `partial` / `full` |
 
 ### CommWise block title pattern
 
-All DDScope module blocks must follow: `JS: DDS_<MODULE> — <one-line description>`
-
-The `JS:` prefix is the selector used by `scripts/extract.js` to scope extraction to DDScope modules only.
+`JS: DDS_<MODULE> — <one-line description>`
 
 ### Extracted filename pattern
 
-`src/<module_name>.js` — mirrors the JS global name exactly (e.g. `src/DDS_STORE.js`).
+`src/<module_name>.js`
 
 ---
 
@@ -145,21 +152,21 @@ The `JS:` prefix is the selector used by `scripts/extract.js` to scope extractio
 ### DDS_COLORS
 
 ```
-global:       DDS_COLORS
-block:        SCRIPT 105
-file:         src/DDS_COLORS.js
-testability:  pure
-contract:     met
-dom_mixed:    no
+global:         DDS_COLORS
+block:          SCRIPT 105
+file:           src/DDS_COLORS.js
+testability:    pure
+contract:       met
+dom_mixed:      no
 api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** single source of truth for the 8-color hex palette used across swim-lanes, node types, product types, and tag colors.
+**Responsibility:** single source of truth for the 8-color hex palette.
 
 **API:**
 ```
-DDS_COLORS                          // string[] — 8 hex color strings (index = slot)
+DDS_COLORS   // string[] — 8 hex color strings
 ```
 
 **Dependencies:** none.
@@ -169,29 +176,31 @@ DDS_COLORS                          // string[] — 8 hex color strings (index =
 ### DDS_STORE
 
 ```
-global:       DDS_STORE
-block:        SCRIPT 150
-file:         src/DDS_STORE.js
-testability:  pure
-contract:     met
-dom_mixed:    no
+global:         DDS_STORE
+block:          SCRIPT 150
+file:           src/DDS_STORE.js
+testability:    pure
+contract:       met
+dom_mixed:      no
 api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** in-memory CRUD on private in-module state (`_state.project`, `_state.dirty`) + serialization helpers (`toJson` / `loadFromText`). Single data access layer for all DDScope modules. No business rules — raw CRUD only.
+**Responsibility:** in-memory CRUD + serialization. No business rules — raw CRUD only.
+
+**Write access:** `DDS_STORE.insert/update/remove` on functional tables is called by `DDS_ACTIONS` (simple ops) and `DDS_MODEL` (cascade ops) only. UI and AI modules use `DDS_STORE.query` for reads only.
 
 **API:**
 ```
 DDS_STORE.query(table, filters?, options?)   // record[]
-DDS_STORE.insert(table, records)             // record[]  — ids auto-assigned
+DDS_STORE.insert(table, records)             // record[] — ids auto-assigned
 DDS_STORE.update(table, filters, updates)    // record[]
 DDS_STORE.remove(table, filters)             // record[]
 DDS_STORE.markDirty()                        // void
 DDS_STORE.resetDirty()                       // void
 DDS_STORE.newProject(name, description, createdBy?)  // project
 DDS_STORE.toJson()                           // string
-DDS_STORE.loadFromText(text)                 // void (throws on invalid DDScope JSON)
+DDS_STORE.loadFromText(text)                 // void
 DDS_STORE.getProject()                       // project|null
 DDS_STORE.setProject(json)                   // void
 DDS_STORE.isDirty()                          // boolean
@@ -199,45 +208,35 @@ DDS_STORE.isDirty()                          // boolean
 
 **Dependencies:** none.
 
-**High-level test strategy (DDS_STORE):**
-- **Test ownership matrix:**
-
-| Area | Owner | Automation | Notes |
-|---|---|---|---|
-| Memory CRUD (`query/insert/update/remove`) | TEST | Unit (Vitest/Node) | No DDS shim required |
-| Counters and seed (`_nextId`, `_seedCounters`) | TEST | Unit (Vitest/Node) | Per-table counters, seeded from existing max IDs |
-| Dirty state and callback (`markDirty`, `resetDirty`, implicit dirty on writes) | TEST | Unit (Vitest/Node) | Validate callback contract and name resolution |
-| Project structure bootstrap (`_blankProject`, `newProject`, `loadFromText`) | TEST | Unit (Vitest/Node) | Validate required arrays and invalid JSON rejection |
-| Serialization and state access (`toJson`, `loadFromText`, `getProject`, `setProject`, `isDirty`) | TEST | Unit (Vitest/Node) | JSON round-trip, state replacement, and dirty-state reads |
+**Pending refactor:** DOM isolation — `_markDirty()` calls `document.getElementById` directly. Target: `DDS_STORE.onDirtyChange` callback. Prerequisite for all store-dependent unit tests.
 
 ---
 
 ### DDS_DURATION
 
 ```
-global:       DDS_DURATION
-block:        SCRIPT 1650
-file:         src/DDS_DURATION.js
-testability:  pure
-contract:     met
-dom_mixed:    no
+global:         DDS_DURATION
+block:          SCRIPT 1650
+file:           src/DDS_DURATION.js
+testability:    pure
+contract:       met
+dom_mixed:      no
 api_documented: yes
 deps_declared:  yes
 test_scope:
-  toHours:    all 5 units (hours/days/weeks/months/years); zero value; NaN value; unknown unit → 0
-  compare:    h1 > h2; h1 < h2; h1 == h2 (tie → first argument wins)
-  toDisplay:  singular (v=1, e.g. '1 day'); plural (v>1); zero; unknown unit → ''
-coverage:     full
+  toHours:   all 5 units; zero; NaN; unknown unit → 0
+  compare:   h1 > h2; h1 < h2; h1 == h2 (tie → first wins)
+  toDisplay: singular (v=1); plural (v>1); zero; unknown unit → ''
+coverage:       full
 ```
 
-**Responsibility:** duration arithmetic and human-readable formatting. Used by CTT line rendering and future cumulative lead time display.
+**Responsibility:** duration arithmetic and formatting.
 
 **API:**
 ```
-DDS_DURATION.toHours(value, unit)        // number — converts to hours (internal base)
-DDS_DURATION.compare(v1, u1, v2, u2)    // { value, unit } — returns the longer duration
-DDS_DURATION.toDisplay(value, unit)      // string — e.g. "5 days", "1 week"
-// DDS_DURATION.add(v1, u1, v2, u2)     // reserved — v2, not implemented
+DDS_DURATION.toHours(value, unit)        // number
+DDS_DURATION.compare(v1, u1, v2, u2)    // { value, unit }
+DDS_DURATION.toDisplay(value, unit)      // string
 ```
 
 **Dependencies:** none.
@@ -247,84 +246,37 @@ DDS_DURATION.toDisplay(value, unit)      // string — e.g. "5 days", "1 week"
 ### DDS_MODEL
 
 ```
-global:       DDS_MODEL
-block:        SCRIPT 1550   (to be created)
-file:         src/DDS_MODEL.js
-testability:  store-dependent
-contract:     not-met       (not yet implemented)
-dom_mixed:    no
+global:         DDS_MODEL
+block:          SCRIPT 1550
+file:           src/DDS_MODEL.js
+testability:    store-dependent
+contract:       partial  (cascade ops implemented; add/update ops not needed — handled by DDS_ACTIONS+DDS_STORE)
+dom_mixed:      no
 api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** authoritative runtime implementation of the DDScope functional integrity rules defined in `DDScope_DataModel.md` §17. The single module allowed to perform cascade deletions on the functional model. `DDS_STORE` is the data layer; `DDS_MODEL` is the business rules layer above it.
+**Responsibility:** authoritative runtime implementation of cascade delete rules (`DDScope_DataModel.md` §17.1). The only module that handles operations with cascade side-effects on the functional model. Called by `DDS_ACTIONS` for cascade operations only.
 
-`DDS_MODEL` operates exclusively on the functional layer. It also cleans up presentation-layer records (`map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`) as part of referential integrity during cascade deletes — but it does not manage canvas positions, visibility toggles, or any other presentation concern.
-
-**API:**
+**API (cascade operations):**
 ```
 DDS_MODEL.deleteNode(nodeId)
-  // Deletes the node and cascades:
-  // flows (source or target) + their map_flows across all maps
-  // skus for this node
-  // boms for this node + their bom_components
-  // demands for this node + their map_demands
-  // map_nodes across all maps
-  // The nodes record.
-
 DDS_MODEL.deleteFlow(flowId)
-  // Deletes the flow and its map_flows across all maps.
-  // No SKU modification.
-
 DDS_MODEL.deleteProduct(productId)
-  // Removes productId from all flows[].product_ids.
-  // Deletes all skus for this product.
-  // Deletes all boms where output_product_id matches + their bom_components.
-  // Deletes all bom_components where product_id matches
-  //   (+ parent bom if left with no components).
-  // Deletes all demands for this product + their map_demands.
-  // Deletes the products record.
-
 DDS_MODEL.deleteSwimLane(swimLaneId)
-  // Calls deleteNode for each node assigned to this swim-lane.
-  // Deletes map_swim_lanes across all maps.
-  // Clears default_swim_lane_id on any node_types record that referenced this lane.
-  // Deletes the swim_lanes record.
-
 DDS_MODEL.removeSku(nodeId, productId)
-  // Deletes the demand for this node x product pair if it exists + its map_demands.
-  // Deletes the skus record.
-
 DDS_MODEL.deleteDemand(nodeId, productId)
-  // Deletes all map_demands for this demand.
-  // Deletes the demands record.
-
 DDS_MODEL.deleteBom(bomId)
-  // Deletes all bom_components for this BOM.
-  // Deletes the boms record.
-
 DDS_MODEL.rerouteFlow(flowId, newSourceId?, newTargetId?)
-  // Updates source_node_id and/or target_node_id on the flows record.
-  // No SKU modification.
-
 DDS_MODEL.addProductToFlow(flowId, productId)
-  // Appends productId to flows[flowId].product_ids.
-  // No SKU creation.
-
 DDS_MODEL.removeProductFromFlow(flowId, productId)
-  // Removes productId from flows[flowId].product_ids.
-  // No SKU deletion.
-
-// Future — v2:
-// DDS_MODEL.validateSkus()
-//   Non-destructive. Detects missing SKUs (product on flow, no SKU on endpoint)
-//   and orphan SKUs (no connected flow, not a product-node). Returns a report
-//   with proposed add/remove actions for consultant confirmation.
 ```
 
 **Dependencies:**
 ```
-DDS_STORE   SCRIPT 150
+DDS_STORE    SCRIPT 150
+DDS_NODES    SCRIPT 1600  (transitional — product-node cascade; will be absorbed)
+DDS_PRODUCTS SCRIPT 1600  (transitional — product-node cascade; will be absorbed)
 ```
 
 **test_scope:**
@@ -338,32 +290,29 @@ deleteNode:
   node on multiple maps → map_nodes removed from all maps
 deleteFlow:
   flow removed + map_flows across all maps
-  no SKU modification (SKUs on endpoints unchanged)
+  no SKU modification
 deleteProduct:
   product removed from flows[].product_ids on all flows
   skus for this product removed
-  boms where output_product_id matches removed + their bom_components
+  boms where output_product_id matches removed + bom_components
   bom_components where product_id matches removed; parent bom removed if no components remain
   demands for this product removed + map_demands
 deleteSwimLane:
   each assigned node deleted with full deleteNode cascade
   map_swim_lanes removed across all maps
-  default_swim_lane_id cleared on node_types that referenced this lane
+  default_swim_lane_id cleared on affected node_types
 removeSku:
   demand for node x product removed if exists + map_demands
+  CTT geometry reset on map_nodes if no demands remain for node
   sku record removed
 deleteDemand:
   map_demands removed
+  CTT geometry reset on map_nodes if no demands remain for node
   demand record removed
 deleteBom:
-  bom_components removed
-  bom record removed
-rerouteFlow:
-  source_node_id and/or target_node_id updated
-  no SKU modification
-addProductToFlow / removeProductFromFlow:
-  product_ids updated on flow record
-  no SKU modification
+  bom_components removed; bom record removed
+rerouteFlow / addProductToFlow / removeProductFromFlow:
+  flow record updated; no SKU modification
 coverage: none
 ```
 
@@ -372,28 +321,30 @@ coverage: none
 ### DDS_ACTIONS
 
 ```
-global:       DDS_ACTIONS
-block:        SCRIPT 1850
-file:         src/DDS_ACTIONS.js
-testability:  store-dependent
-contract:     unverified
-dom_mixed:    no
+global:         DDS_ACTIONS
+block:          SCRIPT 1850
+file:           src/DDS_ACTIONS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no
 api_documented: yes
 deps_declared:  yes
 ```
 
-**Responsibility:** action execution engine for the DDScope functional model. Translates an ordered action list (from the AI assistant, the UI, or future automation) into `DDS_MODEL` and `DDS_STORE` calls. Provides the action vocabulary definition and human-readable action descriptions for the confirmation UI.
+**Responsibility:** single write entry point for UI and AI layers. Translates action lists into `DDS_STORE` calls (simple ops) or `DDS_MODEL` calls (cascade ops). Provides the action vocabulary and human-readable descriptions.
 
-`DDS_ACTIONS` is an orchestrator — it does not contain integrity rules. For destructive operations it delegates to `DDS_MODEL`; for simple add/update operations without cascade it calls `DDS_STORE` directly.
+**Cascade actions** (routed to `DDS_MODEL`): `delete_node`, `delete_flow`, `delete_product`, `delete_bom`, `remove_sku`, `delete_demand`.
 
-The action vocabulary is specified in `DDScope_Actions.md`. `DDS_ACTIONS` is its authoritative runtime implementation.
+**Simple actions** (routed to `DDS_STORE` directly): `add_node`, `update_node`, `add_flow`, `update_flow`, `add_product`, `update_product`, `add_sku`, `update_sku`, `add_swim_lane`, `update_swim_lane`, `add_bom`, `update_bom`, `add_bom_component`, `update_bom_component`, `remove_bom_component`, `add_demand`, `update_demand`, `reroute_flow`, `add_product_to_flow`, `remove_product_from_flow`.
+
+**Robustness:** normalises `action.action → action.type` at the start of `execute()` and `describe()`.
 
 **API:**
 ```
 DDS_ACTIONS.execute(actions)       // Promise<{ applied: action[], failed: action|null }>
 DDS_ACTIONS.describe(actions)      // { index: number, label: string }[]
 DDS_ACTIONS.getVocabularyText()    // string — injected into Claude system prompt
-DDS_ACTIONS.ACTIONS                // object — structured action definitions
+DDS_ACTIONS.ACTIONS                // object — structured vocabulary definitions
 ```
 
 **Dependencies:**
@@ -402,24 +353,22 @@ DDS_STORE   SCRIPT 150
 DDS_MODEL   SCRIPT 1550
 ```
 
-**Note:** current implementation calls `DDS_STORE` directly for all operations including destructive ones — `DDS_MODEL` is not yet implemented. Migration to `DDS_MODEL` calls is part of the `DDS_MODEL` implementation chantier.
-
 ---
 
 ### DDS_AI_CONTEXT
 
 ```
-global:       DDS_AI_CONTEXT
-block:        SCRIPT 2200
-file:         src/DDS_AI_CONTEXT.js
-testability:  store-dependent
-contract:     unverified
-dom_mixed:    no  (expected)
+global:         DDS_AI_CONTEXT
+block:          SCRIPT 2200
+file:           src/DDS_AI_CONTEXT.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no  (expected)
 api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** serialises the current in-memory project into the Claude context JSON format defined in `DDScope_AI_Assistant.md` §4. Called before every AI request.
+**Responsibility:** serialises the current project to Claude context JSON (`DDScope_AI_Assistant.md` §4). Read-only — uses `DDS_STORE.query` only.
 
 **API:**
 ```
@@ -437,17 +386,17 @@ DDS         SCRIPT 400
 ### DDS_AI
 
 ```
-global:       DDS_AI
-block:        SCRIPT 2400
-file:         src/DDS_AI.js
-testability:  out-of-scope
-contract:     unverified
-dom_mixed:    no  (expected)
+global:         DDS_AI
+block:          SCRIPT 2400
+file:           src/DDS_AI.js
+testability:    out-of-scope
+contract:       unverified
+dom_mixed:      no  (expected)
 api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** system prompt assembly via `DDS_ACTIONS.getVocabularyText()`, Claude API call via CommWise secure proxy, response validation.
+**Responsibility:** system prompt assembly, Claude API call via CommWise secure proxy, response validation. Writes via `DDS_ACTIONS.execute()` only.
 
 **Dependencies:**
 ```
@@ -462,17 +411,17 @@ DDS_ACTIONS      SCRIPT 1850
 ### DDS_AI_UI
 
 ```
-global:       DDS_AI_UI
-block:        SCRIPT 2500
-file:         src/DDS_AI_UI.js
-testability:  render-dependent
-contract:     unverified
-dom_mixed:    yes  (expected)
+global:         DDS_AI_UI
+block:          SCRIPT 2500
+file:           src/DDS_AI_UI.js
+testability:    render-dependent
+contract:       unverified
+dom_mixed:      yes  (expected)
 api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** AI panel rendering, message bubbles, plan display via `DDS_ACTIONS.describe()`, confirm/cancel interactions, error reporting.
+**Responsibility:** AI panel rendering, plan display, confirm/cancel. Writes via `DDS_ACTIONS.execute()` only.
 
 **Dependencies:**
 ```
@@ -487,17 +436,17 @@ DDS_ACTIONS      SCRIPT 1850
 ### DDS_JSON
 
 ```
-global:       DDS_JSON
-block:        SCRIPT 600
-file:         src/DDS_JSON.js
-testability:  store-dependent
-contract:     unverified
-dom_mixed:    no  (expected)
+global:         DDS_JSON
+block:          SCRIPT 600
+file:           src/DDS_JSON.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      no  (expected)
 api_documented: no
 deps_declared:  no
 ```
 
-**Responsibility:** imports a source project JSON into the current in-memory project with full ID remapping. Supports copy modes `full`, `lanes`, `types`.
+**Responsibility:** project import with full ID remapping. Supports copy modes `full`, `lanes`, `types`. Uses `DDS_STORE` directly for batch inserts during import (exception to Rule 1 — import is a bulk initialisation operation, not a functional mutation).
 
 **API:**
 ```
@@ -515,20 +464,22 @@ DDS         SCRIPT 400
 ### DDS_PRODUCTS ⚠️ DEPRECATED
 
 ```
-global:       DDS_PRODUCTS
-block:        SCRIPT 1600
-file:         src/DDS_PRODUCTS.js
-testability:  store-dependent
-contract:     unverified
-dom_mixed:    unverified
+global:         DDS_PRODUCTS
+block:          SCRIPT 1600
+file:           src/DDS_PRODUCTS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      unverified
 api_documented: no
 deps_declared:  no
-status:       deprecated — cascade logic migrates to DDS_MODEL; CRUD to be absorbed or stubbed
+status:         deprecated — cascade logic migrated to DDS_MODEL; CRUD callers must migrate to DDS_ACTIONS
 ```
 
-**Note:** SCRIPT 1600 also contains `DDS_NODES` (a non-exported `var`) whose `deleteNode` logic is the reference implementation currently used by `DDS_REMOVE`. Both will be superseded by `DDS_MODEL`.
+**Note:** SCRIPT 1600 also contains `DDS_NODES` (non-exported `var`). Both will be superseded by `DDS_MODEL`.
 
-**Responsibility (current):** product CRUD + SKU sync + node-product cascade. To be replaced by `DDS_MODEL` for cascade operations. Simple CRUD (`getAll`, `create`, `update`) will either migrate to `DDS_MODEL` or be called directly via `DDS_STORE` by UI modules.
+**Current callers to migrate:**
+- `DDS_NODES_UI` → `DDS_ACTIONS.execute([{ type: 'delete_node', ... }])`
+- Any direct `DDS_PRODUCTS.create/update/delete` call → `DDS_ACTIONS.execute([{ type: 'add_product', ... }])`
 
 **Dependencies:**
 ```
@@ -541,18 +492,20 @@ DDS         SCRIPT 400
 ### DDS_BOMS ⚠️ DEPRECATED
 
 ```
-global:       DDS_BOMS
-block:        SCRIPT 1800
-file:         src/DDS_BOMS.js
-testability:  store-dependent
-contract:     unverified
-dom_mixed:    unverified
+global:         DDS_BOMS
+block:          SCRIPT 1800
+file:           src/DDS_BOMS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      unverified
 api_documented: no
 deps_declared:  no
-status:       deprecated — cascade logic migrates to DDS_MODEL
+status:         deprecated — cascade logic migrated to DDS_MODEL; UI callers must migrate to DDS_ACTIONS
 ```
 
-**Responsibility (current):** BOM and BOM component CRUD with cascade. To be replaced by `DDS_MODEL.deleteBom()` for cascade; simple CRUD via `DDS_STORE` directly.
+**Current callers to migrate:**
+- `DDS_BOMS_UI.handleDelete` → `DDS_ACTIONS.execute([{ type: 'delete_bom', ... }])`
+- `DDS_BOMS_UI` create/update → `DDS_ACTIONS.execute([{ type: 'add_bom', ... }])`
 
 **Dependencies:**
 ```
@@ -565,18 +518,23 @@ DDS         SCRIPT 400
 ### DDS_DEMANDS ⚠️ DEPRECATED
 
 ```
-global:       DDS_DEMANDS
-block:        SCRIPT 1660
-file:         src/DDS_DEMANDS.js
-testability:  store-dependent
-contract:     unverified
-dom_mixed:    unverified
+global:         DDS_DEMANDS
+block:          SCRIPT 1660
+file:           src/DDS_DEMANDS.js
+testability:    store-dependent
+contract:       unverified
+dom_mixed:      unverified
 api_documented: no
 deps_declared:  no
-status:       deprecated — cascade logic migrates to DDS_MODEL
+status:         deprecated — cascade logic migrated to DDS_MODEL; UI callers must migrate to DDS_ACTIONS
 ```
 
-**Responsibility (current):** demand record CRUD and `map_demands` visibility toggling. Cascade from `delete_node`, `delete_product`, `remove_sku` will be absorbed into `DDS_MODEL`. Map demand visibility toggling (opt-in CTT line display) remains a UI concern and is not part of `DDS_MODEL`.
+**Note:** map demand visibility (`showOnMap`, `hideFromMap`) is a presentation concern and remains valid outside `DDS_ACTIONS` — these methods operate on `map_demands` (presentation layer), not the functional model.
+
+**Current callers to migrate:**
+- `DDS_PANEL` demand create/update/delete → `DDS_ACTIONS.execute([{ type: 'add_demand', ... }])`
+- `DDS_DEMANDS_UI` update/delete → `DDS_ACTIONS.execute([{ type: 'update_demand', ... }])`
+- `DDS_DEMANDS.showOnMap / hideFromMap` — **keep as-is** (presentation layer, not covered by Rule 1)
 
 **Dependencies:**
 ```
@@ -588,19 +546,37 @@ DDS         SCRIPT 400
 
 ## Backlog
 
-- [ ] **Implement `DDS_MODEL`** (SCRIPT 1550) — functional integrity layer as specified above. Migrate cascade logic from `DDS_PRODUCTS` / `DDS_NODES` / `DDS_REMOVE._execDeleteFlow` / `DDS_BOMS` / `DDS_DEMANDS`. Update `DDS_ACTIONS.execute()` to call `DDS_MODEL` for destructive operations. Update `DDS_REMOVE` to call `DDS_MODEL` instead of inline logic.
-- [ ] **Deprecate `DDS_PRODUCTS`** — once all callers (UI modules) have migrated to `DDS_MODEL` / `DDS_STORE` direct calls.
-- [ ] **Deprecate `DDS_BOMS`** — same condition.
-- [ ] **Deprecate `DDS_DEMANDS`** — same condition.
-- [ ] **`DDS_MODEL.validateSkus()`** — non-destructive SKU coherence check. Detects missing and orphan SKUs; returns proposed corrections for consultant confirmation. See `DDScope_DataModel.md` §17.4.
+- [ ] **Migrate `DDS_BOMS_UI`** — replace all `DDS_BOMS.*` write calls with `DDS_ACTIONS.execute()`
+- [ ] **Migrate `DDS_PANEL` (demand section)** — replace `DDS_DEMANDS.ensureDemand/updateDemand/deleteForSku` with `DDS_ACTIONS.execute()`
+- [ ] **Migrate `DDS_DEMANDS_UI`** — replace `DDS_DEMANDS.updateDemand/deleteForSku` with `DDS_ACTIONS.execute()`
+- [ ] **Migrate `DDS_NODES_UI`** — verify and replace any direct delete calls with `DDS_ACTIONS.execute()`
+- [ ] **Migrate `DDS_PRODUCTS_UI`** — verify and replace any direct write calls with `DDS_ACTIONS.execute()`
+- [ ] **Migrate `DDS_FLOWS_UI`** — verify and replace any direct write calls with `DDS_ACTIONS.execute()`
+- [ ] **Absorb `DDS_NODES` + `DDS_PRODUCTS` into `DDS_MODEL`** — eliminate the transitional dependency; `deleteNode` and `deleteProduct` cascade fully inlined in `DDS_MODEL`
+- [ ] **Deprecate `DDS_BOMS`** — once `DDS_BOMS_UI` is migrated
+- [ ] **Deprecate `DDS_DEMANDS`** — once panel and table UI are migrated (keep `showOnMap`/`hideFromMap` as standalone helpers or inline in UI)
+- [ ] **`DDS_STORE` DOM isolation refactor** — prerequisite for all store-dependent unit tests
+- [ ] **`DDS_MODEL.validateSkus()`** — non-destructive SKU coherence check (v2)
 
 ---
 
 ## Refactor Notes
 
-### DDS_AI_EXECUTOR — supprimé
+### DDS_STORE — DOM isolation (prerequisite for store-dependent tests)
 
-Logique absorbée dans `DDS_ACTIONS` et `DDS_AI_UI`. Le bloc CommWise correspondant peut être archivé ou supprimé lors du prochain chantier AI.
+**Problem:** `_markDirty()` calls `document.getElementById` inside core CRUD logic.
+
+**Target:** expose `DDS_STORE.onDirtyChange = null` callback:
+
+```javascript
+if (typeof DDS_STORE.onDirtyChange === 'function') {
+  DDS_STORE.onDirtyChange(dirty, projectName);
+}
+```
+
+DOM wiring moves to boot module. In tests: `onDirtyChange` left `null` — no DOM, no error.
+
+**Unblocks:** `DDS_STORE`, `DDS_MODEL`, `DDS_ACTIONS`, `DDS_AI_CONTEXT`, `DDS_JSON`.
 
 ---
 

@@ -15,8 +15,8 @@
 // Depends on: DDS_STORE    (SCRIPT 150)
 //             DDS_NODES    (in SCRIPT 1600, loaded before this block)
 //             DDS_PRODUCTS (SCRIPT 1600)
-//             DDS_BOMS     (SCRIPT 1800)
-//             DDS_DEMANDS  (SCRIPT 1660)
+// Note: DDS_BOMS and DDS_DEMANDS are no longer dependencies -
+//       cascade logic inlined directly via DDS_STORE calls.
 // ============================================================
 
 var DDS_MODEL = (function () {
@@ -89,7 +89,16 @@ var DDS_MODEL = (function () {
 	// then deletes the sku record.
 	// ------------------------------------------------------------------
 	api.removeSku = function (nodeId, productId) {
-		DDS_DEMANDS.deleteForSku(nodeId, productId);
+		// cascade: delete demand + map_demands for this SKU
+		var demand = DDS_STORE.query('demands', { node_id: nodeId, product_id: productId })[0];
+		if (demand) {
+			DDS_STORE.remove('map_demands', { demand_id: demand.id });
+			DDS_STORE.remove('demands', { node_id: nodeId, product_id: productId });
+			// Reset CTT geometry on map_nodes if no demands remain for this node
+			if (DDS_STORE.query('demands', { node_id: nodeId }).length === 0) {
+				DDS_STORE.update('map_nodes', { node_id: nodeId }, { demand_x: null, demand_y: null, demand_length: null });
+			}
+		}
 		DDS_STORE.remove('skus', { node_id: nodeId, product_id: productId });
 	};
 
@@ -98,7 +107,14 @@ var DDS_MODEL = (function () {
 	// Deletes map_demands for this demand, then the demand record.
 	// ------------------------------------------------------------------
 	api.deleteDemand = function (nodeId, productId) {
-		DDS_DEMANDS.deleteForSku(nodeId, productId);
+		var demand = DDS_STORE.query('demands', { node_id: nodeId, product_id: productId })[0];
+		if (!demand) return;
+		DDS_STORE.remove('map_demands', { demand_id: demand.id });
+		DDS_STORE.remove('demands', { node_id: nodeId, product_id: productId });
+		// Reset CTT geometry if no demands remain for this node
+		if (DDS_STORE.query('demands', { node_id: nodeId }).length === 0) {
+			DDS_STORE.update('map_nodes', { node_id: nodeId }, { demand_x: null, demand_y: null, demand_length: null });
+		}
 	};
 
 	// ------------------------------------------------------------------
@@ -106,7 +122,8 @@ var DDS_MODEL = (function () {
 	// Deletes all bom_components for this BOM, then the bom record.
 	// ------------------------------------------------------------------
 	api.deleteBom = function (bomId) {
-		DDS_BOMS.delete(bomId);
+		DDS_STORE.remove('bom_components', { bom_id: bomId });
+		DDS_STORE.remove('boms',           { id: bomId });
 	};
 
 	// ------------------------------------------------------------------

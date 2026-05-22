@@ -28,6 +28,8 @@
 - Every behavior change should include or update unit tests.
 - For pure/store-dependent modules, write Vitest tests first.
 - Do not run tests unless the user explicitly asks to run them in the current conversation.
+- User preference: do not run tests from the assistant. The user runs tests manually via the VS Code Test UI.
+- For generated tests, stubs/mocks must throw explicit "not implemented" errors by default unless the user explicitly requests a non-throwing fake.
 - Use Playwright only for rendering/interaction paths that cannot be validated in Node.
 - Keep test cases deterministic and fixture-driven where possible (`fixtures/`, `samples/`).
 - For Playwright tests that load project JSON from `fixtures/` or `samples/`, always use `tests/ui/helpers/open-project.js` and never automate the UI Open/filechooser flow directly.

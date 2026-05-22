@@ -1,31 +1,7 @@
-- [DDScope — Data Model](#ddscope--data-model)
-  - [Version History](#version-history)
-  - [Design Principles](#design-principles)
-  - [1. Node](#1-node)
-  - [2. Product](#2-product)
-  - [3. Flow](#3-flow)
-  - [4. SKU](#4-sku)
-  - [5. Demand](#5-demand)
-  - [6. BOM (Bill of Material)](#6-bom-bill-of-material)
-  - [7. Swim-lane](#7-swim-lane)
-  - [8. Node Types and Product Types](#8-node-types-and-product-types)
-  - [9. Tags](#9-tags)
-  - [10. Tag Colors](#10-tag-colors)
-  - [11. Map](#11-map)
-  - [12. Map Node](#12-map-node)
-  - [13. Map Flow](#13-map-flow)
-  - [14. Map Swim-lane](#14-map-swim-lane)
-  - [15. Map Demand](#15-map-demand)
-  - [16. Project](#16-project)
-  - [17. Integrity Rules](#17-integrity-rules)
-    - [17.1 Delete operations and cascades](#171-delete-operations-and-cascades)
-    - [17.2 SKU lifecycle](#172-sku-lifecycle)
-    - [17.3 UI](#173-ui)
-    - [17.4 Future — SKU validation](#174-future--sku-validation)
 # DDScope — Data Model
-*v2.1 — Draft — May 2026*
+*v2.2 — Draft — May 2026*
 
-*See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of these rules.*
+*See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
 ---
 
@@ -51,6 +27,7 @@
 | 1.9 | May 2026 | skip_in_layout added to map_flows; excluded from BFS rank computation in auto-layout |
 | 2.0 | May 2026 | demands and map_demands added; demand_x, demand_y, demand_length added to map_nodes |
 | 2.1 | May 2026 | §17 rewritten: integrity rules simplified — no automatic SKU sync on flow or product operations; reroute_flow added; DDS_MODEL introduced as authoritative runtime; validateSkus deferred to future scope |
+| 2.2 | May 2026 | §17.0 added: layered write architecture — UI/AI write only via DDS_ACTIONS; DDS_ACTIONS uses DDS_STORE for simple ops and DDS_MODEL for cascades; reads unrestricted via DDS_STORE.query |
 
 ---
 
@@ -115,7 +92,7 @@ A flow is a directed link between two nodes, representing the movement of one or
 | lead_time_unit | text \| null | Unit of the lead time — one of `hours`, `days`, `weeks`, `months`, `years` |
 | notes | text | Free-form observations |
 
-**No automatic SKU synchronisation.** Adding or removing a product from a flow (`add_product_to_flow`, `remove_product_from_flow`) does not create or delete any SKU. Rerouting a flow (`reroute_flow`) does not modify any SKU. SKU coherence is managed separately — see §17.4.
+**No automatic SKU synchronisation.** Adding or removing a product from a flow does not create or delete any SKU. Rerouting a flow does not modify any SKU. SKU coherence is managed separately — see §17.4.
 
 ---
 
@@ -132,7 +109,7 @@ A SKU is the association between a node and a product. The nature of the associa
 | tags | array | Free labels (e.g. `["buffer", "stock", "transit"]`) |
 | notes | text | Free-form observations |
 
-**SKU lifecycle.** SKUs are created explicitly — via the "Add product on map" shortcut, via `add_sku` in the action vocabulary, or manually in the UI. They are deleted only by the cascade rules in §17.1. There is no automatic creation or deletion of SKUs when products are added to or removed from flows.
+**SKU lifecycle.** SKUs are created explicitly — via the "Add product on map" shortcut, via `add_sku` in the action vocabulary, or manually in the UI. They are deleted only by the cascade rules in §17.1.
 
 ---
 
@@ -201,9 +178,9 @@ Each project maintains its own list of node types and product types, seeded at p
 | code | text | Internal identifier (e.g. `SUPPLIER`, `PROD`) |
 | label | text | Display name |
 | shape | text | Cytoscape shape |
-| is_default | boolean | Pre-selected when adding a node. Only one record may be default at a time — setting a new default clears the previous one. |
-| is_product_node_default | boolean | When `true`, this type is used automatically by the "Add product on map" shortcut and by the AI assistant's product-node pattern. Only one record may have this flag at a time — the same single-default rule as `is_default`. If no record has this flag, the shortcut falls back to `is_default`, then to the first available type. |
-| default_swim_lane_id | integer \| null | Swim-lane pre-selected in Add node modal and in the "Add product on map" modal. Cleared if the swim-lane is deleted. |
+| is_default | boolean | Pre-selected when adding a node. Only one record may be default at a time. |
+| is_product_node_default | boolean | Used by the "Add product on map" shortcut and the AI assistant product-node pattern. Only one record may have this flag at a time. Falls back to `is_default` then first type if absent. |
+| default_swim_lane_id | integer \| null | Swim-lane pre-selected in Add node and Add product on map modals. Cleared if the swim-lane is deleted. |
 
 **JSON array:** `product_types`
 
@@ -225,19 +202,16 @@ Free-text labels stored as arrays. Not hierarchical. Applied to nodes, products,
 
 ## 10. Tag Colors
 
-Associates a tag label with a display color. Used to color node backgrounds on the map canvas: for each node, the first tag in the `tag_colors` table (by insertion order) that matches one of the node's tags determines the node's background color. Nodes with no matching tag use the default canvas color.
+Associates a tag label with a display color. Used to color node backgrounds on the map canvas.
 
 **JSON array:** `tag_colors`
 
 | Field | Type | Description |
 |---|---|---|
-| tag | text | Tag label — free text, may or may not already exist in the project |
+| tag | text | Tag label — free text |
 | color | text | Hex color string — 8-colour palette |
 
-**Behavior:**
-- Priority: first match in `tag_colors` order wins when a node has multiple matching tags.
-- Copying: included in all three project copy modes (full project, swim-lanes & types, types only).
-- Autocomplete: the tag field in the Settings modal and the tag color table are populated with suggestions from all tags used in the project (nodes, flows, products, SKUs) union `tag_colors[].tag`.
+Priority: first match in `tag_colors` insertion order wins when a node has multiple matching tags.
 
 ---
 
@@ -252,7 +226,7 @@ A named view of a subset of the project's supply chain elements. Each project ha
 | name | text | Display label shown in the map tab |
 | position | integer | Tab order |
 | direction | text | Flow display direction — `right-left` (default) or `left-right` |
-| legend_visible | boolean | Whether the legend overlay is visible on this map. Defaults to `true`. Toggled via the Legend button in the map toolbar; persisted per map. |
+| legend_visible | boolean | Whether the legend overlay is visible on this map. Defaults to `true`. |
 
 ---
 
@@ -269,11 +243,11 @@ A node is visible on a map if and only if a `map_node` record exists.
 | map_id | integer | Reference to `maps[].id` |
 | node_id | integer | Reference to `nodes[].id` |
 | x, y | numeric | Canvas position |
-| note_visible | boolean | Whether `nodes.notes` is displayed as an overlay on this map. Defaults to `false`. Ignored if `nodes.notes` is empty. |
-| note_dx | numeric | Horizontal offset of the note overlay relative to the node centre, in canvas units. Defaults to `0`. |
-| note_dy | numeric | Vertical offset of the note overlay relative to the node centre, in canvas units. Defaults to `30`. |
-| demand_x | numeric \| null | Horizontal offset of the CTT line centre relative to the node centre, in canvas units. Defaults to `0`. |
-| demand_y | numeric \| null | Vertical offset of the CTT line centre relative to the node centre, in canvas units. Defaults to `60`. |
+| note_visible | boolean | Whether `nodes.notes` is displayed as an overlay on this map. Defaults to `false`. |
+| note_dx | numeric | Horizontal offset of the note overlay relative to node centre. Defaults to `0`. |
+| note_dy | numeric | Vertical offset of the note overlay relative to node centre. Defaults to `30`. |
+| demand_x | numeric \| null | Horizontal offset of CTT line centre relative to node centre. Defaults to `0`. |
+| demand_y | numeric \| null | Vertical offset of CTT line centre relative to node centre. Defaults to `60`. |
 | demand_length | numeric \| null | Length of the CTT line in canvas units. Defaults to node width when first placed. |
 
 ---
@@ -288,8 +262,8 @@ Records that a flow is visible on a specific map, and stores per-map presentatio
 |---|---|---|
 | map_id | integer | Reference to `maps[].id` |
 | flow_id | integer | Reference to `flows[].id` |
-| waypoint_pct | float \| null | Taxi edge bend position — fraction of the horizontal distance between source and target (0–1). `null` or absent defaults to `0.5` (midpoint). Edited via the waypoint handle on the canvas. |
-| skip_in_layout | boolean | When `true`, this flow is excluded from the BFS rank computation in `DDS_MAP.runLayout`. The edge is still rendered on the canvas. Defaults to `false`. |
+| waypoint_pct | float \| null | Taxi edge bend position (0–1). Defaults to `0.5`. |
+| skip_in_layout | boolean | When `true`, excluded from BFS rank computation. Defaults to `false`. |
 
 **Visibility rules:** a flow can only be on a map if both endpoint nodes are present. Removing a node from a map removes all its flows automatically.
 
@@ -313,9 +287,9 @@ Canvas geometry of a swim-lane on a specific map.
 
 ## 15. Map Demand
 
-Records that the CTT line for a given node is visible on a specific map, and which demand (SKU) drives the displayed value. Presence of a record means the line is shown; absence means it is hidden.
+Records that the CTT line for a given node is visible on a specific map. Presence = line shown; absence = hidden.
 
-The rendered line represents the **maximum CTT** among all `map_demands` records for a given node on a given map, computed via `DDS_DURATION.compare`.
+The rendered line represents the **maximum CTT** among all `map_demands` for a given node on a given map, computed via `DDS_DURATION.compare`.
 
 **JSON array:** `map_demands`
 
@@ -337,43 +311,70 @@ Project metadata, stored under the `project` key (object, not array) in the JSON
 | name | text | Project name — editable via the nav bar edit button |
 | description | text | Free-text context (client, scope boundaries, purpose) |
 | created_by | text | Email or identifier of the creator |
-| ai_instructions | text \| null | Project-specific instructions for the AI assistant — free-text, persisted with the project. Injected into Claude's context before each request when non-empty. Typical content: naming conventions, geographic scope, preferred node types, client terminology, known constraints. Editable via a dedicated button in the AI assistant panel. |
+| ai_instructions | text \| null | Project-specific instructions for the AI assistant. Injected into Claude's context before each request when non-empty. |
 
 ---
 
 ## 17. Integrity Rules
 
-`DDS_MODEL` (see [DDScope_Modules.md](DDScope_Modules.md)) is the authoritative runtime implementation of all rules in this section. No other module may apply cascade deletions directly — all destructive operations on the functional model must go through `DDS_MODEL`.
+### 17.0 Layered write architecture
+
+DDScope enforces a layered write architecture for all mutations to the functional model:
+
+```
+UI modules / AI modules
+        ↓  (all writes)
+   DDS_ACTIONS
+        ↓ simple ops          ↓ cascade ops
+   DDS_STORE              DDS_MODEL
+        ↓                      ↓
+              DDS_STORE (raw CRUD)
+```
+
+**Rule 1 — UI and AI write only via `DDS_ACTIONS`.**
+No UI module (`DDS_BOMS_UI`, `DDS_PANEL`, `DDS_DEMANDS_UI`, `DDS_NODES_UI`, `DDS_PRODUCTS_UI`, `DDS_FLOWS_UI`, `DDS_SETTINGS_UI`, etc.) and no AI module (`DDS_AI`, `DDS_AI_UI`) may call `DDS_STORE.insert/update/remove` or `DDS_MODEL.*` directly. All writes from these layers go through `DDS_ACTIONS.execute()`.
+
+This rule enables cross-cutting concerns — tracing, macros, undo, audit — to be implemented once in `DDS_ACTIONS`.
+
+**Rule 2 — `DDS_ACTIONS` uses `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.**
+- Simple mutations (add, update, non-cascade remove): `DDS_ACTIONS` calls `DDS_STORE.insert/update/remove` directly.
+- Operations with cascade (delete_node, delete_flow, delete_product, delete_bom, remove_sku, delete_demand): `DDS_ACTIONS` delegates to `DDS_MODEL`.
+
+**Rule 3 — reads are unrestricted.**
+Any module may call `DDS_STORE.query` on any table at any time. There is no restriction on reads.
+
+**Exceptions — presentation layer:**
+Presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, `DDS_PANEL` for canvas state, etc.) manage `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands` directly via `DDS_STORE`. These tables are outside `DDS_ACTIONS`' scope.
 
 ### 17.1 Delete operations and cascades
 
-The table below defines what is deleted when each operation is performed. All listed deletions are applied by `DDS_MODEL` in a single synchronous operation. Presentation-layer records (`map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`) are cleaned up as part of referential integrity, not as a functional concern.
+The table below defines what is deleted when each destructive operation is performed. All cascade deletions are applied by `DDS_MODEL` in a single synchronous operation.
 
 | Operation | What is deleted |
 |---|---|
-| `delete_node(nodeId)` | All `flows` where this node is source or target. All `map_flows` for those flows across all maps. All `skus` where `node_id` matches. All `boms` for this node and their `bom_components`. All `demands` for this node and their `map_demands`. All `map_nodes` for this node across all maps. The `nodes` record. |
-| `delete_flow(flowId)` | All `map_flows` for this flow across all maps. The `flows` record. **No SKU deletion.** |
-| `delete_product(productId)` | Removes `productId` from `flows[].product_ids` on all flows. All `skus` where `product_id` matches. All `boms` where `output_product_id` matches and their `bom_components`. All `bom_components` where `product_id` matches (and their parent `boms` if left with no components). All `demands` where `product_id` matches and their `map_demands`. The `products` record. |
-| `delete_swim_lane(swimLaneId)` | All nodes assigned to this swim-lane — each with its full `delete_node` cascade. All `map_swim_lanes` for this lane across all maps. Clears `default_swim_lane_id` on any `node_types` record that referenced this lane. The `swim_lanes` record. |
-| `remove_sku(nodeId, productId)` | The `demands` record for this node × product pair if it exists, and its `map_demands`. The `skus` record. |
-| `delete_demand(nodeId, productId)` | All `map_demands` where `demand_id` matches. The `demands` record. |
-| `delete_bom(bomId)` | All `bom_components` where `bom_id` matches. The `boms` record. |
-| `reroute_flow(flowId, newSourceId?, newTargetId?)` | Updates `source_node_id` and/or `target_node_id` on the `flows` record. **No SKU modification.** |
-| `add_product_to_flow(flowId, productId)` | Appends `productId` to `flows[flowId].product_ids`. **No SKU creation.** |
-| `remove_product_from_flow(flowId, productId)` | Removes `productId` from `flows[flowId].product_ids`. **No SKU deletion.** |
+| `deleteNode(nodeId)` | All `flows` where this node is source or target. All `map_flows` for those flows across all maps. All `skus` where `node_id` matches. All `boms` for this node and their `bom_components`. All `demands` for this node and their `map_demands`. All `map_nodes` for this node across all maps. The `nodes` record. |
+| `deleteFlow(flowId)` | All `map_flows` for this flow across all maps. The `flows` record. **No SKU deletion.** |
+| `deleteProduct(productId)` | Removes `productId` from `flows[].product_ids` on all flows. All `skus` where `product_id` matches. All `boms` where `output_product_id` matches and their `bom_components`. All `bom_components` where `product_id` matches (and their parent `boms` if left with no components). All `demands` where `product_id` matches and their `map_demands`. The `products` record. |
+| `deleteSwimLane(swimLaneId)` | All nodes assigned to this swim-lane — each with its full `deleteNode` cascade. All `map_swim_lanes` for this lane across all maps. Clears `default_swim_lane_id` on any `node_types` record that referenced this lane. The `swim_lanes` record. |
+| `removeSku(nodeId, productId)` | The `demands` record for this node × product pair if it exists, and its `map_demands`. The `skus` record. |
+| `deleteDemand(nodeId, productId)` | All `map_demands` where `demand_id` matches. The `demands` record. |
+| `deleteBom(bomId)` | All `bom_components` where `bom_id` matches. The `boms` record. |
+| `rerouteFlow(flowId, newSourceId?, newTargetId?)` | Updates `source_node_id` and/or `target_node_id`. **No SKU modification.** |
+| `addProductToFlow(flowId, productId)` | Appends `productId` to `flows[flowId].product_ids`. **No SKU creation.** |
+| `removeProductFromFlow(flowId, productId)` | Removes `productId` from `flows[flowId].product_ids`. **No SKU deletion.** |
 
 ### 17.2 SKU lifecycle
 
-SKUs are **not automatically synchronised** with flow product lists. The presence of a product on a flow does not guarantee the existence of a SKU on the endpoint nodes, and vice versa.
+SKUs are **not automatically synchronised** with flow product lists.
 
 SKUs are created:
-- Explicitly via `add_sku` (action vocabulary, UI)
-- Via the "Add product on map" shortcut
+- Explicitly via `add_sku` action (routed through `DDS_ACTIONS`)
+- Via the "Add product on map" shortcut (routed through `DDS_ACTIONS`)
 
 SKUs are deleted only by:
-- `delete_node` — removes all SKUs for that node
-- `delete_product` — removes all SKUs for that product
-- `remove_sku` — removes one specific SKU
+- `deleteNode` — removes all SKUs for that node
+- `deleteProduct` — removes all SKUs for that product
+- `removeSku` — removes one specific SKU
 
 ### 17.3 UI
 
@@ -381,19 +382,19 @@ The **Remove** button in the map toolbar opens a confirmation modal. A **Remove 
 
 | Checkbox state | Behaviour |
 |---|---|
-| **Unchecked** (default) | Full delete via `DDS_MODEL` — cascades as defined in §17.1 |
+| **Unchecked** (default) | Full delete via `DDS_ACTIONS` → `DDS_MODEL` cascade |
 | **Checked** | Remove from active map only — presentation layer only, functional model unchanged |
 
-Map-only removal is handled by `DDS_ELEMENTS`, not `DDS_MODEL`.
+Map-only removal is handled by `DDS_ELEMENTS`, not `DDS_ACTIONS`.
 
 ### 17.4 Future — SKU validation
 
-A future `DDS_MODEL.validateSkus()` function will detect SKU inconsistencies and propose corrections. Typical cases:
+A future `DDS_MODEL.validateSkus()` function will detect SKU inconsistencies and propose corrections:
 
 - **Missing SKU** — a product appears on a flow but no SKU exists on one or both endpoint nodes
 - **Orphan SKU** — a SKU exists on a node for a product that does not appear on any connected flow and the node is not of type `is_product_node_default`
 
-This function will be non-destructive: it reports inconsistencies and proposes additions or deletions, which the consultant confirms before any write.
+This function will be non-destructive: it reports inconsistencies and proposes additions or deletions for consultant confirmation before any write.
 
 ---
 

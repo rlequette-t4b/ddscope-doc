@@ -10,8 +10,6 @@ describe('DDS_MODEL integrity rules', () => {
     // Default stubs are intentionally failing until logic is migrated into DDS_MODEL.
     globalThis.DDS_NODES = { deleteNode: vi.fn(() => { throw new Error('DDS_NODES stub not implemented'); }) };
     globalThis.DDS_PRODUCTS = { delete: vi.fn(() => { throw new Error('DDS_PRODUCTS stub not implemented'); }) };
-    globalThis.DDS_BOMS = { delete: vi.fn(() => { throw new Error('DDS_BOMS stub not implemented'); }) };
-    globalThis.DDS_DEMANDS = { deleteForSku: vi.fn(() => { throw new Error('DDS_DEMANDS stub not implemented'); }) };
   });
 
   it('deleteFlow removes flow and map_flows only (no SKU deletion)', () => {
@@ -35,7 +33,7 @@ describe('DDS_MODEL integrity rules', () => {
     expect(DDS_STORE.query('skus', { node_id: n1.id, product_id: p1.id })).toHaveLength(1);
   });
 
-  it('deleteSwimLane cascades node deletions, cleans map_swim_lanes, clears defaults, and removes lane', () => {
+  it('deleteSwimLane applies full cascade integrity rules', () => {
     const lane = DDS_STORE.insert('swim_lanes', { name: 'L1', color: '#111111' })[0];
     const lane2 = DDS_STORE.insert('swim_lanes', { name: 'L2', color: '#222222' })[0];
 
@@ -57,43 +55,54 @@ describe('DDS_MODEL integrity rules', () => {
       default_swim_lane_id: lane2.id
     })[0];
 
-    globalThis.DDS_NODES.deleteNode.mockImplementation((nodeId) => {
-      DDS_STORE.remove('nodes', { id: nodeId });
-    });
-
     DDS_MODEL.deleteSwimLane(lane.id);
-
-    expect(globalThis.DDS_NODES.deleteNode).toHaveBeenCalledTimes(2);
-    expect(globalThis.DDS_NODES.deleteNode).toHaveBeenCalledWith(n1.id);
-    expect(globalThis.DDS_NODES.deleteNode).toHaveBeenCalledWith(n2.id);
 
     expect(DDS_STORE.query('swim_lanes', { id: lane.id })).toEqual([]);
     expect(DDS_STORE.query('map_swim_lanes', { swim_lane_id: lane.id })).toEqual([]);
     expect(DDS_STORE.query('nodes', { swim_lane_id: lane.id })).toEqual([]);
-
     expect(DDS_STORE.query('node_types', { id: nt1.id })[0].default_swim_lane_id).toBeNull();
     expect(DDS_STORE.query('node_types', { id: nt2.id })[0].default_swim_lane_id).toBe(lane2.id);
   });
 
-  it('removeSku removes SKU and delegates demand cleanup for same pair', () => {
+  it('removeSku deletes sku, demand, and map_demands for a node-product pair', () => {
+    const map = DDS_STORE.query('maps')[0];
     const n1 = DDS_STORE.insert('nodes', { name: 'A' })[0];
     const p1 = DDS_STORE.insert('products', { name: 'P1' })[0];
     DDS_STORE.insert('skus', { node_id: n1.id, product_id: p1.id });
+    const demand = DDS_STORE.insert('demands', { node_id: n1.id, product_id: p1.id })[0];
+    DDS_STORE.insert('map_demands', { map_id: map.id, demand_id: demand.id });
 
     DDS_MODEL.removeSku(n1.id, p1.id);
 
-    expect(globalThis.DDS_DEMANDS.deleteForSku).toHaveBeenCalledWith(n1.id, p1.id);
     expect(DDS_STORE.query('skus', { node_id: n1.id, product_id: p1.id })).toEqual([]);
+    expect(DDS_STORE.query('demands', { node_id: n1.id, product_id: p1.id })).toEqual([]);
+    expect(DDS_STORE.query('map_demands', { demand_id: demand.id })).toEqual([]);
   });
 
-  it('deleteDemand delegates demand deletion by node/product pair', () => {
-    DDS_MODEL.deleteDemand(10, 20);
-    expect(globalThis.DDS_DEMANDS.deleteForSku).toHaveBeenCalledWith(10, 20);
+  it('deleteDemand deletes demand and related map_demands', () => {
+    const map = DDS_STORE.query('maps')[0];
+    const n1 = DDS_STORE.insert('nodes', { name: 'A' })[0];
+    const p1 = DDS_STORE.insert('products', { name: 'P1' })[0];
+    const demand = DDS_STORE.insert('demands', { node_id: n1.id, product_id: p1.id })[0];
+    DDS_STORE.insert('map_demands', { map_id: map.id, demand_id: demand.id });
+
+    DDS_MODEL.deleteDemand(n1.id, p1.id);
+
+    expect(DDS_STORE.query('demands', { node_id: n1.id, product_id: p1.id })).toEqual([]);
+    expect(DDS_STORE.query('map_demands', { demand_id: demand.id })).toEqual([]);
   });
 
-  it('deleteBom delegates to DDS_BOMS.delete', () => {
-    DDS_MODEL.deleteBom(42);
-    expect(globalThis.DDS_BOMS.delete).toHaveBeenCalledWith(42);
+  it('deleteBom deletes bom and all bom_components', () => {
+    const n1 = DDS_STORE.insert('nodes', { name: 'A' })[0];
+    const p1 = DDS_STORE.insert('products', { name: 'P1' })[0];
+    const p2 = DDS_STORE.insert('products', { name: 'P2' })[0];
+    const bom = DDS_STORE.insert('boms', { node_id: n1.id, output_product_id: p1.id })[0];
+    DDS_STORE.insert('bom_components', { bom_id: bom.id, product_id: p2.id, quantity: 2 });
+
+    DDS_MODEL.deleteBom(bom.id);
+
+    expect(DDS_STORE.query('boms', { id: bom.id })).toEqual([]);
+    expect(DDS_STORE.query('bom_components', { bom_id: bom.id })).toEqual([]);
   });
 
   it('rerouteFlow updates only provided endpoints', () => {
@@ -150,13 +159,63 @@ describe('DDS_MODEL integrity rules', () => {
     expect(updated.product_ids).toEqual([p2.id]);
   });
 
-  it('deleteNode delegates to DDS_NODES.deleteNode', () => {
-    DDS_MODEL.deleteNode(77);
-    expect(globalThis.DDS_NODES.deleteNode).toHaveBeenCalledWith(77);
+  it('deleteNode applies full cascade across functional and map records', () => {
+    const map = DDS_STORE.query('maps')[0];
+    const n1 = DDS_STORE.insert('nodes', { name: 'A' })[0];
+    const n2 = DDS_STORE.insert('nodes', { name: 'B' })[0];
+    const p1 = DDS_STORE.insert('products', { name: 'P1' })[0];
+    const flow = DDS_STORE.insert('flows', {
+      source_node_id: n1.id,
+      target_node_id: n2.id,
+      product_ids: [p1.id]
+    })[0];
+    DDS_STORE.insert('map_flows', { map_id: map.id, flow_id: flow.id });
+    DDS_STORE.insert('map_nodes', { map_id: map.id, node_id: n1.id, x: 10, y: 10 });
+    DDS_STORE.insert('skus', { node_id: n1.id, product_id: p1.id });
+    const bom = DDS_STORE.insert('boms', { node_id: n1.id, output_product_id: p1.id })[0];
+    DDS_STORE.insert('bom_components', { bom_id: bom.id, product_id: p1.id, quantity: 1 });
+    const demand = DDS_STORE.insert('demands', { node_id: n1.id, product_id: p1.id })[0];
+    DDS_STORE.insert('map_demands', { map_id: map.id, demand_id: demand.id });
+
+    DDS_MODEL.deleteNode(n1.id);
+
+    expect(DDS_STORE.query('nodes', { id: n1.id })).toEqual([]);
+    expect(DDS_STORE.query('flows', { id: flow.id })).toEqual([]);
+    expect(DDS_STORE.query('map_flows', { flow_id: flow.id })).toEqual([]);
+    expect(DDS_STORE.query('map_nodes', { node_id: n1.id })).toEqual([]);
+    expect(DDS_STORE.query('skus', { node_id: n1.id, product_id: p1.id })).toEqual([]);
+    expect(DDS_STORE.query('boms', { id: bom.id })).toEqual([]);
+    expect(DDS_STORE.query('bom_components', { bom_id: bom.id })).toEqual([]);
+    expect(DDS_STORE.query('demands', { node_id: n1.id, product_id: p1.id })).toEqual([]);
+    expect(DDS_STORE.query('map_demands', { demand_id: demand.id })).toEqual([]);
   });
 
-  it('deleteProduct delegates to DDS_PRODUCTS.delete', () => {
-    DDS_MODEL.deleteProduct(88);
-    expect(globalThis.DDS_PRODUCTS.delete).toHaveBeenCalledWith(88);
+  it('deleteProduct applies full cascade and strips product from flows', () => {
+    const map = DDS_STORE.query('maps')[0];
+    const n1 = DDS_STORE.insert('nodes', { name: 'A' })[0];
+    const n2 = DDS_STORE.insert('nodes', { name: 'B' })[0];
+    const p1 = DDS_STORE.insert('products', { name: 'P1' })[0];
+    const p2 = DDS_STORE.insert('products', { name: 'P2' })[0];
+    const flow = DDS_STORE.insert('flows', {
+      source_node_id: n1.id,
+      target_node_id: n2.id,
+      product_ids: [p1.id, p2.id]
+    })[0];
+    DDS_STORE.insert('skus', { node_id: n1.id, product_id: p1.id });
+    const bom = DDS_STORE.insert('boms', { node_id: n1.id, output_product_id: p1.id })[0];
+    DDS_STORE.insert('bom_components', { bom_id: bom.id, product_id: p1.id, quantity: 2 });
+    const demand = DDS_STORE.insert('demands', { node_id: n1.id, product_id: p1.id })[0];
+    DDS_STORE.insert('map_demands', { map_id: map.id, demand_id: demand.id });
+
+    DDS_MODEL.deleteProduct(p1.id);
+
+    expect(DDS_STORE.query('products', { id: p1.id })).toEqual([]);
+    expect(DDS_STORE.query('skus', { product_id: p1.id })).toEqual([]);
+    expect(DDS_STORE.query('demands', { product_id: p1.id })).toEqual([]);
+    expect(DDS_STORE.query('map_demands', { demand_id: demand.id })).toEqual([]);
+    expect(DDS_STORE.query('boms', { id: bom.id })).toEqual([]);
+
+    const updatedFlow = DDS_STORE.query('flows', { id: flow.id })[0];
+    expect(updatedFlow.product_ids).toEqual([p2.id]);
   });
 });
