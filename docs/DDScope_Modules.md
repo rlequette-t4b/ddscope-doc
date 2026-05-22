@@ -681,21 +681,21 @@ DDS         SCRIPT 400
 
 ## Backlog
 
-- [ ] **Implement `DDS_NODES`** (SCRIPT 1560) — new helper
-- [ ] **Implement `DDS_PRODUCTS`** (SCRIPT 1610) — new helper, replaces SCRIPT 1600
-- [ ] **Implement `DDS_FLOWS`** (SCRIPT 1620) — new helper
-- [ ] **Implement `DDS_SKUS`** (SCRIPT 1630) — new helper
-- [ ] **Refactor `DDS_BOMS`** (SCRIPT 1800) — migrate to helper pattern
-- [ ] **Refactor `DDS_DEMANDS`** (SCRIPT 1660) — migrate to helper pattern
+- [X] **Implement `DDS_NODES`** (SCRIPT 1560) — new helper
+- [X] **Implement `DDS_PRODUCTS`** (SCRIPT 1610) — new helper, replaces SCRIPT 1600
+- [X] **Implement `DDS_FLOWS`** (SCRIPT 1620) — new helper
+- [X] **Implement `DDS_SKUS`** (SCRIPT 1630) — new helper
+- [X] **Refactor `DDS_BOMS`** (SCRIPT 1800) — migrate to helper pattern
+- [X] **Refactor `DDS_DEMANDS`** (SCRIPT 1660) — migrate to helper pattern
 - [X] **Make `DDS_ACTIONS.execute()` synchronous** — remove Promise wrapper (SCRIPT 1850)
-- [ ] **Migrate `DDS_BOMS_UI`** — replace DDS_BOMS.* (old) with new helper API
-- [ ] **Migrate `DDS_PANEL` (demand section)** — replace DDS_DEMANDS.* (old) with new helper API
-- [ ] **Migrate `DDS_DEMANDS_UI`** — replace DDS_DEMANDS.* (old) with new helper API
-- [ ] **Migrate `DDS_NODES_UI`** — replace any direct store calls with DDS_NODES.*
-- [ ] **Migrate `DDS_PRODUCTS_UI`** — replace any direct store calls with DDS_PRODUCTS.*
-- [ ] **Migrate `DDS_FLOWS_UI`** — replace any direct store calls with DDS_FLOWS.*
-- [ ] **Remove SCRIPT 1600** (old DDS_PRODUCTS + DDS_NODES) — once new helpers are in place
-- [ ] **`DDS_STORE` DOM isolation refactor** — prerequisite for all store-dependent unit tests
+- [X] **Migrate `DDS_BOMS_UI`** — replace DDS_BOMS.* (old) with new helper API
+- [X] **Migrate `DDS_PANEL` (demand section)** — replace DDS_DEMANDS.* (old) with new helper API
+- [X] **Migrate `DDS_DEMANDS_UI`** — replace DDS_DEMANDS.* (old) with new helper API
+- [X] **Migrate `DDS_NODES_UI`** — replace any direct store calls with DDS_NODES.*
+- [X] **Migrate `DDS_PRODUCTS_UI`** — replace any direct store calls with DDS_PRODUCTS.*
+- [X] **Migrate `DDS_FLOWS_UI`** — replace any direct store calls with DDS_FLOWS.*
+- [X] **Remove SCRIPT 1600** (old DDS_PRODUCTS + DDS_NODES) — replaced by empty superseded stub
+- [X] **`DDS_STORE` DOM isolation refactor** — prerequisite for all store-dependent unit tests
 - [ ] **`DDS_MODEL.validateSkus()`** — non-destructive SKU coherence check (v2)
 
 ---
