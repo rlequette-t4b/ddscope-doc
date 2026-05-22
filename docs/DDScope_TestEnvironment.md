@@ -9,39 +9,9 @@
 |---|---|---|
 | 0.1 | May 2026 | Initial bootstrap reference |
 | 0.2 | May 2026 | DDScope_Modules.md introduced as module registry; module table and testability classification moved there; this doc references it |
-| 0.3 | May 202- [DDScope — Test Environment](#ddscope--test-environment)
-- [DDScope — Test Environment](#ddscope--test-environment)
-  - [Version History](#version-history)
-  - [Purpose](#purpose)
-  - [Repository Structure](#repository-structure)
-  - [Documentation (`docs/`)](#documentation-docs)
-  - [Module Registry](#module-registry)
-    - [Testability classification](#testability-classification)
-    - [Store-dependent test setup](#store-dependent-test-setup)
-  - [Axe 1 — Functional Tests (Vitest + Node.js)](#axe-1--functional-tests-vitest--nodejs)
-    - [Principle](#principle)
-    - [Module extraction](#module-extraction)
-    - [What to test](#what-to-test)
-    - [Fixture files](#fixture-files)
-    - [Sample projects](#sample-projects)
-    - [Running tests](#running-tests)
-  - [Axe 2 — UI Tests (Playwright)](#axe-2--ui-tests-playwright)
-    - [Principle](#principle-1)
-    - [Configuration](#configuration)
-    - [Test mode and loading backdoor](#test-mode-and-loading-backdoor)
-    - [What to test](#what-to-test-1)
-    - [Replaying tests in VS Code](#replaying-tests-in-vs-code)
-    - [Auth setup (one-time)](#auth-setup-one-time)
-  - [Axe 3 — Ticket Integration (Future)](#axe-3--ticket-integration-future)
-  - [Module Extraction Workflow](#module-extraction-workflow)
-    - [Extracting a module](#extracting-a-module)
-    - [Pushing a fix back to CommWise](#pushing-a-fix-back-to-commwise)
-  - [Module Organisation Principles](#module-organisation-principles)
-    - [Naming conventions](#naming-conventions)
-    - [Module boundaries](#module-boundaries)
-    - [Testability classification](#testability-classification-1)
-  - [Environment Variables](#environment-variables)
-  - [VS Code Setup](#vs-code-setup)
+| 0.3 | May 2026 | Module extraction moved to AI-assisted workflow (Claude + CommWise MCP); scripts/ folder removed |
+| 0.4 | May 2026 | Test mode and Playwright loading backdoor documented (Axe 2) |
+| 0.5 | May 2026 | DDS_ACTIONS added to module boundaries; DDS_AI_EXECUTOR removed |
 
 ---
 
@@ -294,7 +264,33 @@ await page.evaluate((j) => window.__playwright_load_project__(j), json);
 // The app is now in the same state as after a manual Open
 ```
 
-**Security:** the backdoor is only instantiated when `?dds_test=1` is present in the URL at load time. In normal production use, `window.__playwright_load_project__` does not exist.
+**Security:** the backdoor is only instantiated when `?dds_test=1` is present in the URL at load time. In normal production use, neither function exists.
+
+### Actions backdoor — `__playwright_run_actions__`
+
+A second function is exposed in test mode to exercise `DDS_ACTIONS.execute()` directly without going through the AI assistant flow.
+
+```javascript
+// Execute an action plan and return { applied, failed }
+const result = await page.evaluate(
+  actions => window.__playwright_run_actions__(actions),
+  [
+    { type: 'add_node', id: 'new_node_1', name: 'Fournisseur A' },
+    { type: 'add_swim_lane', id: 'new_lane_1', name: 'Sourcing' },
+    { type: 'assign_node_to_lane', node_id: 'new_node_1', swim_lane_id: 'new_lane_1' }
+  ]
+);
+// result.applied → array of applied actions (each has _created_id if an insert)
+// result.failed  → null on success, or the action that failed
+```
+
+**Accepts:** a JSON array or a JSON string. **Returns:** `{ applied: action[], failed: action|null }`. Applied actions that created a record have `_created_id` set to the real ID assigned by `DDS_STORE`.
+
+**Typical test scenarios:**
+- Single action: `add_node`, `add_flow`, `add_product` — verify `applied[0]._created_id` is set and the record exists in the store
+- `new_*` reference resolution: chain `add_node` + `add_flow` using `new_node_1` — verify the flow was created with the correct real IDs
+- Unknown action type: verify `failed` is set and `applied` is empty
+- Mid-plan failure: trigger a store error on action N — verify `applied` lists actions 0..N-1 and `failed` is action N
 
 ### What to test
 
