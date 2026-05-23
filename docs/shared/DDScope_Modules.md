@@ -249,14 +249,6 @@ dom_mixed: no
 api_documented: yes
 deps_declared: yes
 ```
-DDS_TOOLS.log.setLevel(level) // 'debug'|'info'|'warn'|'error'|'off' — persists to localStorage
-DDS_TOOLS.log.getLevel() // returns current level string
-DDS_TOOLS.log.debug(...) // logs if level <= debug
-DDS_TOOLS.log.info(...) // logs if level <= info
-DDS_TOOLS.log.warn(...) // logs if level <= warn
-DDS_TOOLS.log.error(...) // logs if level <= error
-
-```
 
 **Responsibility:** transversal utility module — loaded first so all subsequent modules can use it. Currently exposes `DDS_TOOLS.log`, a levelled logger wrapping `console`. Additional utilities will be added here over time.
 
