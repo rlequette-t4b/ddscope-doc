@@ -145,15 +145,15 @@ var DDS_STORE = (function () {
     }
     var revchanges = [];
     delta.forEach(function(s) {
-      var current = s[0], backup = s[1];
+      var current = s[0], backup = s[1], table = s[2];
       if (!backup) {
         // object was created after the snapshot began
         table.pop(); // it was the last when inserted
-        revchanges.unshift([null, current, s[2]]); // redo will delete
+        revchanges.unshift([null, current, table]); // redo will delete
       } else if (!current) {
         // object was deleted after the snapshot began
         table.push(backup); // add back in the table
-        revchanges.unshift([backup, null, s[2]]);
+        revchanges.unshift([backup, null, table]);
       } else {
         // object was updated after the snapshot began
         // properties should be exchanged between current and backup
@@ -209,7 +209,7 @@ var DDS_STORE = (function () {
         updated_at: now
       });
       _table(table).push(row);
-     _addChange(row, null, _table(table)); // record creation in snapshot for potential rollback
+     _addChange(row, 0, _table(table)); // record creation in snapshot for potential rollback
       return row;
     });
     _markDirty();
@@ -223,7 +223,7 @@ var DDS_STORE = (function () {
     var updated = [];
     _table(table).forEach(function(r) {
       if (_match(r, filters)) {
-       _addChange(r, Object.assign({}, r), _table(table)); // record update in snapshot for potential rollback
+       _addChange(r, 1); // record update in snapshot for potential rollback
         Object.assign(r, updates, { updated_at: now });
         updated.push(r);
       }
@@ -243,7 +243,7 @@ var DDS_STORE = (function () {
     tbl.forEach(function(r) {
       if (_match(r, filters)) { 
         removed.push(r); 
-       _addChange(null, r, tbl); // record deletion in snapshot for potential rollback
+       _addChange(r, 2, tbl); // record deletion in snapshot for potential rollback
       }
       else { kept.push(r); }
     });

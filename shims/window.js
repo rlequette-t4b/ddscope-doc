@@ -1,6 +1,5 @@
-if (!globalThis.window) {
-  globalThis.window = globalThis;
-}
+
+globalThis.window = globalThis;
 
 if (!globalThis.document) {
   globalThis.document = {

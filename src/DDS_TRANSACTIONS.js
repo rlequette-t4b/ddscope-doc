@@ -25,39 +25,49 @@ var DDS_TRANSACTIONS = (function () {
   // --- API ---
   function begin(label) {
     DDS_TOOLS.log.info('begin transaction: ' + label);
-    // start a snapshot
-    DDS_STORE.beginSnapshot();
-    currentTransaction = { label: label, snapshot: null, id: Date.now() };
+
+    if (currentTransaction) {
+      throw new Error('Transaction already in progress: ' + currentTransaction.label);
+    }
+
+    // clear the redo, a new future
+    redoStack.length = 0;
+    
+    DDS_STORE.beginDelta();
+    currentTransaction = { label: label, id: Date.now() };
     return currentTransaction.id;
   }
 
   function commit(transactionId) {
     DDS_TOOLS.log.info('commit transaction: ' + transactionId);
     
-    // get snapshot in transaction
-    currentTransaction.snapshot = DDS_STORE.endSnapshot();
-    if (currentTransaction && currentTransaction.id === transactionId) {
-      undoStack.push(currentTransaction);
-      currentTransaction = null;
-      redoStack.length = 0;
-      _fireChange();
+    if (!currentTransaction || currentTransaction.id !== transactionId) {
+      throw new Error('No transaction in progress with id: ' + transactionId);
     }
-  }
+
+    currentTransaction.delta = DDS_STORE.endDelta();
+    undoStack.push(currentTransaction);
+    currentTransaction = null;
+    redoStack.length = 0;
+    _fireChange();
+}
 
   function rollback(transactionId) {
     DDS_TOOLS.log.info('rollback transaction: ' + transactionId);
-    // Restore DDS_STORE snapshot (stub)
-    if (currentTransaction && currentTransaction.id === transactionId) {
-      // TODO: DDS_STORE.loadFromText(currentTransaction.snapshot)
-      currentTransaction = null;
+
+    if (!currentTransaction || currentTransaction.id !== transactionId) {
+      throw new Error('No transaction in progress with id: ' + transactionId);
     }
+
+    DDS_STORE.cancelDelta();
+    currentTransaction = null;
   }
 
   function undo() {
-    // Pop from undo, push to redo, restore snapshot (stub)
+    // Pop from undo, push to redo, restore delta
     if (undoStack.length > 0) {
       var tx = undoStack.pop();
-      // TODO: DDS_STORE.loadFromText(tx.snapshot)
+      tx.delta = DDS_STORE.revertDelta(tx.delta);
       redoStack.push(tx);
       _fireChange();
       return true;
@@ -66,10 +76,10 @@ var DDS_TRANSACTIONS = (function () {
   }
 
   function redo() {
-    // Pop from redo, push to undo, restore snapshot (stub)
+    // Pop from redo, push to undo, restore delta
     if (redoStack.length > 0) {
       var tx = redoStack.pop();
-      // TODO: DDS_STORE.loadFromText(tx.snapshot)
+      tx.delta = DDS_STORE.revertDelta(tx.delta);
       undoStack.push(tx);
       _fireChange();
       return true;
