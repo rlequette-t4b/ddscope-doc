@@ -24,6 +24,7 @@ var DDS_TRANSACTIONS = (function () {
 
   // --- API ---
   function begin(label) {
+    DDS_TOOLS.log.info('begin transaction: ' + label);
     // Capture DDS_STORE snapshot (stub)
     currentTransaction = { label: label, snapshot: null, id: Date.now() };
     // TODO: snapshot = DDS_STORE.toJson()
@@ -31,6 +32,7 @@ var DDS_TRANSACTIONS = (function () {
   }
 
   function commit(transactionId) {
+    DDS_TOOLS.log.info('commit transaction: ' + transactionId);
     // Push snapshot to undo stack (stub)
     if (currentTransaction && currentTransaction.id === transactionId) {
       undoStack.push(currentTransaction);
@@ -41,6 +43,7 @@ var DDS_TRANSACTIONS = (function () {
   }
 
   function rollback(transactionId) {
+    DDS_TOOLS.log.info('rollback transaction: ' + transactionId);
     // Restore DDS_STORE snapshot (stub)
     if (currentTransaction && currentTransaction.id === transactionId) {
       // TODO: DDS_STORE.loadFromText(currentTransaction.snapshot)

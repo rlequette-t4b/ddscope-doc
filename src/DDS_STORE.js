@@ -99,7 +99,7 @@ var DDS_STORE = (function () {
   //  backup  = null -> object was created after the snapshot began, so should be deleted on restore
   //  current = null -> object was deleted after the snapshot began, so should be restored on restore
   //  current and backup are both non-null -> object was updated after the snapshot began, so should be restored to backup on restore
-  _addSnapshot = function(current, backup) {
+  var _addSnapshot = function(current, backup) {
     // check if snapshot in progress
     if (_snapshots !== null) {
       // if object is created record it

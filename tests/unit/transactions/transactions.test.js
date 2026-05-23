@@ -2,10 +2,17 @@
 // See: docs/shared/DDScope_Modules.md for module contract
 
 
-import { describe, it, expect, vi } from 'vitest';
+import {beforeEach, describe, it, expect, vi } from 'vitest';
 import DDS_TRANSACTIONS from '../../../src/DDS_TRANSACTIONS';
+import DDS_STORE from '../../../src/DDS_STORE.js';
 
 describe('DDS_TRANSACTIONS', () => {
+
+    beforeEach(() => {
+    globalThis.DDS_STORE = DDS_STORE;
+    DDS_STORE.newProject('Unit test', 'DDS_TRANSACTIONS baseline', 'vitest');
+  });
+
 
   it('begin() should return a transaction id', () => {
     const id = DDS_TRANSACTIONS.begin('test');

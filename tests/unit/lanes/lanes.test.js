@@ -26,11 +26,7 @@ describeLanes('DDS_LANES helper facade', () => {
 
   it('getAll throws an error when no project is loaded', () => {
     DDS_STORE.setProject(null);
-    if (DDS_LANES) {
-      expect(DDS_LANES.getAll()).toThrow();
-    } else {
-      expect(true).toBe(true); // skip if DDS_LANES is not available
-    }
+    expect(() => DDS_LANES.getAll()).toThrow();
   });
 
   it('create/getById/create-update persist lane records', async () => {
