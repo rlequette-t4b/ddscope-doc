@@ -24,10 +24,10 @@ describeLanes('DDS_LANES helper facade', () => {
     DDS_STORE.newProject('Unit test', 'DDS_LANES baseline', 'vitest');
   });
 
-  it('getAll returns empty array when no project is loaded', () => {
+  it('getAll throws an error when no project is loaded', () => {
     DDS_STORE.setProject(null);
     if (DDS_LANES) {
-      expect(DDS_LANES.getAll()).toEqual([]);
+      expect(DDS_LANES.getAll()).toThrow();
     } else {
       expect(true).toBe(true); // skip if DDS_LANES is not available
     }

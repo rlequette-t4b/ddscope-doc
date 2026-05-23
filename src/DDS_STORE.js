@@ -68,6 +68,110 @@ var DDS_STORE = (function () {
   // ------------------------------------------------------------------
 
   var api = {};
+  // ------------------------------------------------------------------
+  // Snapshot for transactions API 
+  // a snapshot is a record of the initial state of objects before a transaction, allowing to restore them if needed.
+  // ------------------------------------------------------------------
+
+ 
+  var _snapshots = null; // Internal list to hold snapshots during a transaction
+
+  // Initialize the snapshot list at the beginning of a transaction 
+  api.beginSnapshot = function() {
+    // throws an error if a transaction is already in progress
+    if (_snapshots !== null) {
+      throw new Error('A snapshot is already in progress');
+    }
+    _snapshots = [];
+  }
+
+  // finish the current transaction and returns the snapshot list
+  api.endSnapshots = function() {
+    var snapshots = _snapshots;
+    _snapshots = null;
+    return snapshots;
+  }
+
+
+  // Add a snapshot record to the current transaction
+  // each record is an array [current, backup, table]
+  // where backup is a copy of the object at begining of the snapshot
+  //  backup  = null -> object was created after the snapshot began, so should be deleted on restore
+  //  current = null -> object was deleted after the snapshot began, so should be restored on restore
+  //  current and backup are both non-null -> object was updated after the snapshot began, so should be restored to backup on restore
+  _addSnapshot = function(current, backup) {
+    // check if snapshot in progress
+    if (_snapshots !== null) {
+      // if object is created record it
+      if (!backup) {
+        _snapshots.push([current, null, table]);
+        return;
+      }    
+      // if object is already in the snaphot it's ok
+      if (_snapshots.find(function(s) {
+            s[1] === current;
+      })) {
+        return
+      }  
+      // if object is deleted check is was not created in the snaphot
+      // then just remove the creation
+      // updated then deleted already taken care of previously
+      if (!current) {
+        var index = _snapshots.findIndex(function(s) {
+          return s[0] === backup;
+        });
+        if (index !== -1) {
+          _snapshots.splice(index, 1);
+        }
+      } 
+      // first update record
+      _snapshots.push([current, backup, table]);
+    }
+  };
+
+  // restore a snaphot
+  // returns a snapshot for the current state , allowing redo
+  api.restoreSnapshot = function(snapshots) {
+    // throws an error if a transaction is in progress
+    if (_snapshots !== null) {
+      throw new Error('Cannot restore snapshots during an active transaction');
+    }
+    var redoSnapshots = [];
+    snapshots.forEach(function(s) {
+      var current = s[0], backup = s[1], table = s[2];
+      if (!backup) {
+        // object was created after the snapshot began
+        table.pop(); // it was the last when inserted
+        redoSnapshots.unshift([null, current, table]); // redo will delete
+      } else if (!current) {
+        // object was deleted after the snapshot began
+        table.push(backup); // add back in the table
+        redoSnapshots.unshift([backup, null, table]);
+      } else {
+        // object was updated after the snapshot began
+        // properties should be exchanged between current and backup
+        Object.keys(backup).forEach(function(k) {
+          var temp = current[k];
+          current[k] = backup[k];
+          backup[k] = temp;
+        });
+        redoSnapshots.unshift([backup, current, table]);
+      }
+    });
+    return redoSnapshots;
+  };
+
+  // rollback the current transaction
+  // restore the state before beginSnapshots was called, and clear the snapshot list
+  // does nothing if no transaction is in progress
+  api.rollbackSnapshot= function() {
+    if (_snapshots != null) {
+      var snapshots = _snapshots;
+      _snapshots = null;
+      api.restoreSnapshots(snapshots);
+    }
+  }
+
 
   // query(table, filters?, options?)
   // options: { order: 'field.asc|desc' }
@@ -98,6 +202,7 @@ var DDS_STORE = (function () {
         updated_at: now
       });
       _table(table).push(row);
+      _addSnapshot(row, null); // record creation in snapshot for potential rollback
       return row;
     });
     _markDirty();
@@ -111,11 +216,14 @@ var DDS_STORE = (function () {
     var updated = [];
     _table(table).forEach(function(r) {
       if (_match(r, filters)) {
+        _addSnapshot(r, Object.assign({}, r), _table(table)); // record update in snapshot for potential rollback
         Object.assign(r, updates, { updated_at: now });
         updated.push(r);
       }
     });
-    if (updated.length) _markDirty();
+    if (updated.length) {
+      _markDirty();
+    }
     return updated;
   };
 
@@ -126,11 +234,16 @@ var DDS_STORE = (function () {
     var removed = [];
     var kept = [];
     tbl.forEach(function(r) {
-      if (_match(r, filters)) { removed.push(r); }
+      if (_match(r, filters)) { 
+        removed.push(r); 
+        _addSnapshot(null, r, tbl); // record deletion in snapshot for potential rollback
+      }
       else { kept.push(r); }
     });
     _state.project[table] = kept;
-    if (removed.length) _markDirty();
+    if (removed.length) {
+      _markDirty();
+    }
     return removed;
   };
 
@@ -229,6 +342,7 @@ var DDS_STORE = (function () {
     _markDirty();
   };
 
+
   // ------------------------------------------------------------------
   // Public state accessors
   // ------------------------------------------------------------------
@@ -252,9 +366,11 @@ var DDS_STORE = (function () {
   // Signature: onDirtyChange(dirty: boolean, name: string)  void
   api.onDirtyChange = null;
 
+
   return api;
 
 }());
+
 
 export default DDS_STORE;
 

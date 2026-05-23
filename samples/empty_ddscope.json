@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "project": {
+    "name": "empty",
+    "description": "",
+    "created_by": "r.lequette@tech4best.com"
+  },
+  "swim_lanes": [],
+  "node_types": [],
+  "product_types": [],
+  "nodes": [
+    {
+      "name": "NN",
+      "type_code": null,
+      "swim_lane_id": null,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-23T13:54:44.005Z",
+      "updated_at": "2026-05-23T13:54:44.005Z"
+    }
+  ],
+  "products": [],
+  "flows": [],
+  "skus": [],
+  "boms": [],
+  "bom_components": [],
+  "tag_styles": [],
+  "demands": [],
+  "maps": [
+    {
+      "name": "Map 1",
+      "position": 1,
+      "legend_visible": true,
+      "id": 1,
+      "created_at": "2026-05-23T13:54:24.867Z",
+      "updated_at": "2026-05-23T13:54:24.867Z"
+    }
+  ],
+  "map_nodes": [
+    {
+      "map_id": 1,
+      "node_id": 1,
+      "x": 1270,
+      "y": 607,
+      "id": 1,
+      "created_at": "2026-05-23T13:54:44.006Z",
+      "updated_at": "2026-05-23T13:54:44.006Z"
+    }
+  ],
+  "map_flows": [],
+  "map_swim_lanes": [],
+  "map_demands": [],
+  "annotations": [],
+  "map_annotations": []
+}

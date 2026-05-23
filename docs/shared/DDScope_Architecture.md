@@ -28,6 +28,7 @@
 | 2.0 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library; icon_key, label_position, transparent_bg on node_types; applyNodeColors extended to applyAllNodeStyles. |
 | 2.1 | May 2026 | DDS_ANNOTATIONS helper and DDS_ANNOTATIONS_UI table view added to module registry |
 | 2.2 | May 2026 | DDS_TRANSACTIONS (SCRIPT 1860) added - stub undo/redo + transaction ownership documented |
+| 2.3 | May 2026 | DDS_TOOLS (SCRIPT 40) added — transversal utility module (DDS_TOOLS.log levelled logger). TX (SCRIPT 1865) et DDS_TX_HELPER (SCRIPT 1870) ajoutés — catalogue de labels de transaction et wrapper UI transaction. |
 
 ---
 
@@ -64,6 +65,7 @@ Block addresses (`SCRIPT NNN`) are shown here only for modules absent from the r
 
 | Module | Responsibility |
 |---|---|
+| `DDS_TOOLS` | Transversal utilities — `DDS_TOOLS.log` levelled logger (debug/info/warn/error/off), localStorage-persisted level |
 | `DDS_COLORS` | 8-color palette constant |
 | `DDS_ICONS` | SVG icon library — keyed dictionary, `toDataUrl()` with color injection |
 | `DDS_STORE` | In-memory CRUD + file persistence |
@@ -71,6 +73,8 @@ Block addresses (`SCRIPT NNN`) are shown here only for modules absent from the r
 | `DDS_MODEL` | Cascade delete rules — authoritative runtime |
 | `DDS_ACTIONS` | Action execution engine — synchronous; apply action lists on DDS_STORE/DDS_MODEL, resolve new_* references, action vocabulary |
 | `DDS_TRANSACTIONS` | Snapshot-based undo/redo transaction manager — wraps DDS_STORE state capture and restore |
+| `TX` | Transaction label catalogue — centralised constants for `DDS_TRANSACTIONS.begin()` |
+| `DDS_TX_HELPER` | UI transaction wrapper — `DDS_TX_HELPER.run(label, fn, onSuccess?)` encapsulates begin/commit/rollback; temporary, pending presentation layer refactor |
 | `DDS_JSON` | Project import with copy modes + ID remapping |
 
 
