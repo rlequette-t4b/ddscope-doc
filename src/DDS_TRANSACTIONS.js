@@ -4,6 +4,119 @@
 // Depends on: DDS_STORE (SCRIPT 150)
 // API documented: yes
 
+// DDS_TRANSACTION — Undo/Redo transaction manager
+// Depends on: DDS_STORE (SCRIPT 150)
+// Status: STUB — API surface only, no implementation
+//
+// Transaction ownership: called by UI layer modules only.
+// DDS_ACTIONS is not transaction-aware.
+// A single user interaction may chain multiple DDS_ACTIONS.execute() calls;
+// the UI module starts, commits, or rolls back the wrapping transaction.
+
+window.DDS_TRANSACTION = (() => {
+
+  // --- Private state ---
+  let _onChangeFn = null;
+
+  // --- Public API ---
+
+  /**
+   * Begin a named transaction. Captures a snapshot of DDS_STORE state.
+   * @param {string} label - Human-readable description (used in undo UI)
+   * @returns {string} transactionId
+   */
+  function begin(label) {
+    // TODO: snapshot DDS_STORE.toJson(), push to undo stack
+    console.warn('[DDS_TRANSACTION] begin() not implemented', label);
+    return 'tx_stub';
+  }
+
+  /**
+   * Commit the current transaction. Marks it as a stable undo point.
+   * @param {string} transactionId
+   */
+  function commit(transactionId) {
+    // TODO: seal transaction in undo stack
+    console.warn('[DDS_TRANSACTION] commit() not implemented', transactionId);
+    _fireChange();
+  }
+
+  /**
+   * Rollback the current transaction. Restores DDS_STORE to pre-begin snapshot.
+   * @param {string} transactionId
+   */
+  function rollback(transactionId) {
+    // TODO: restore snapshot via DDS_STORE.loadFromText()
+    console.warn('[DDS_TRANSACTION] rollback() not implemented', transactionId);
+  }
+
+  /**
+   * Undo the last committed transaction.
+   * @returns {boolean} true if an undo was available
+   */
+  function undo() {
+    // TODO: pop undo stack, push to redo stack, restore snapshot
+    console.warn('[DDS_TRANSACTION] undo() not implemented');
+    _fireChange();
+    return false;
+  }
+
+  /**
+   * Redo the last undone transaction.
+   * @returns {boolean} true if a redo was available
+   */
+  function redo() {
+    // TODO: pop redo stack, push to undo stack, restore snapshot
+    console.warn('[DDS_TRANSACTION] redo() not implemented');
+    _fireChange();
+    return false;
+  }
+
+  /**
+   * Returns true if undo is available.
+   * @returns {boolean}
+   */
+  function canUndo() {
+    return false; // TODO
+  }
+
+  /**
+   * Returns true if redo is available.
+   * @returns {boolean}
+   */
+  function canRedo() {
+    return false; // TODO
+  }
+
+  /**
+   * Clear all undo/redo history (e.g. on project open).
+   */
+  function clear() {
+    // TODO: reset both stacks
+    console.warn('[DDS_TRANSACTION] clear() not implemented');
+    _fireChange();
+  }
+
+  /**
+   * Register a callback fired after any undo/redo/clear/commit.
+   * Called with no arguments.
+   * @param {function} fn
+   */
+  function onChange(fn) {
+    _onChangeFn = (typeof fn === 'function') ? fn : null;
+  }
+
+  // Internal helper — fires the registered onChange callback if any.
+  function _fireChange() {
+    if (typeof _onChangeFn === 'function') _onChangeFn();
+  }
+
+  return { begin, commit, rollback, undo, redo, canUndo, canRedo, clear, onChange };
+
+})();
+
+export default window.DDS_TRANSACTION;
+
 var DDS_TRANSACTIONS = (function () {
   // --- Internal state ---
   var undoStack = [];
