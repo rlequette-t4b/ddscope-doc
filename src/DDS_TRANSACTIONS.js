@@ -55,10 +55,6 @@ var DDS_TRANSACTIONS = (function () {
   function rollback(transactionId) {
     DDS_TOOLS.log.info('rollback transaction: ' + transactionId);
 
-    if (!currentTransaction || currentTransaction.id !== transactionId) {
-      throw new Error('No transaction in progress with id: ' + transactionId);
-    }
-
     DDS_STORE.cancelDelta();
     currentTransaction = null;
   }

@@ -239,15 +239,13 @@ var DDS_STORE = (function () {
   api.remove = function(table, filters) {
     var tbl = _table(table);
     var removed = [];
-    var kept = [];
     tbl.forEach(function(r) {
-      if (_match(r, filters)) { 
-        removed.push(r); 
-       _addChange(r, 2, tbl); // record deletion in snapshot for potential rollback
+      if (_match(r, filters)) {
+        removed.push(r);
+        _addChange(r, 2, tbl);
       }
-      else { kept.push(r); }
     });
-    _state.project[table] = kept;
+
     if (removed.length) {
       _markDirty();
     }
