@@ -50,39 +50,45 @@ DDScope runs entirely within the CommWise platform as a single-page CommWise Web
 
 ## 3. JavaScript Modules
 
+
 DDScope logic is split across named JavaScript modules, each living in a dedicated CommWise SCRIPT block. All modules are exposed as globals on `window` under the `DDS_` prefix.
 
 **[DDScope_Modules.md](DDScope_Modules.md) is the authoritative registry** for all `DDS_*` modules. It records for each module: CommWise block address (`code_type` + `position`), public API, runtime dependencies, testability classification, and extraction readiness. Consult it before working on any module.
 
-The table below is a structural overview only — it does not duplicate the detail in the registry.
+The tables below are a structural overview only — patterns, responsibilities, and layer boundaries.
+They do not duplicate the API contracts, block addresses, or dependency declarations found in the registry.
+Block addresses (`SCRIPT NNN`) are shown here only for modules absent from the registry (AI layer and Presentation layer).
+
 
 ### Functional layer modules
 
-| Module | Block | Responsibility |
-|---|---|---|
-| `DDS_COLORS` | SCRIPT 105 | 8-color palette constant |
-| `DDS_ICONS` | SCRIPT 110 | SVG icon library — keyed dictionary, `toDataUrl()` with color injection |
-| `DDS_STORE` | SCRIPT 150 | In-memory CRUD + file persistence |
-| `DDS_DURATION` | SCRIPT 1650 | Duration arithmetic and formatting |
-| `DDS_MODEL` | SCRIPT 1550 | Cascade delete rules — authoritative runtime |
-| `DDS_ACTIONS` | SCRIPT 1850 | Action execution engine — synchronous; apply action lists on DDS_STORE/DDS_MODEL, resolve new_* references, action vocabulary |
-| `DDS_TRANSACTION` | SCRIPT 1900 | Snapshot-based undo/redo transaction manager — wraps DDS_STORE state capture and restore |
-| `DDS_JSON` | SCRIPT 600 | Project import with copy modes + ID remapping |
+| Module | Responsibility |
+|---|---|
+| `DDS_COLORS` | 8-color palette constant |
+| `DDS_ICONS` | SVG icon library — keyed dictionary, `toDataUrl()` with color injection |
+| `DDS_STORE` | In-memory CRUD + file persistence |
+| `DDS_DURATION` | Duration arithmetic and formatting |
+| `DDS_MODEL` | Cascade delete rules — authoritative runtime |
+| `DDS_ACTIONS` | Action execution engine — synchronous; apply action lists on DDS_STORE/DDS_MODEL, resolve new_* references, action vocabulary |
+| `DDS_TRANSACTION` | Snapshot-based undo/redo transaction manager — wraps DDS_STORE state capture and restore |
+| `DDS_JSON` | Project import with copy modes + ID remapping |
+
 
 
 ### Helper layer modules
 
 UI modules call helpers for all functional writes and reads. Helpers translate semantic calls into `DDS_ACTIONS` action lists. They never call `DDS_STORE.insert/update/remove` directly except for presentation-layer operations explicitly noted.
 
-| Module | Block | Responsibility |
-|---|---|---|
-| `DDS_NODES` | SCRIPT 1560 | Node CRUD helper — wraps add_node, update_node, delete_node, assign_node_to_lane |
-| `DDS_PRODUCTS` | SCRIPT 1610 | Product CRUD helper — wraps add_product, update_product, delete_product |
-| `DDS_FLOWS` | SCRIPT 1620 | Flow CRUD helper — wraps add_flow, update_flow, delete_flow, reroute_flow, add/remove_product_to/from_flow |
-| `DDS_SKUS` | SCRIPT 1630 | SKU CRUD helper — wraps add_sku, update_sku, remove_sku |
-| `DDS_BOMS` | SCRIPT 1800 | BOM CRUD helper — wraps add_bom, delete_bom, add/update/remove_bom_component; updateComponents performs internal diff |
-| `DDS_DEMANDS` | SCRIPT 1660 | Demand CRUD helper — wraps add_demand, update_demand, delete_demand; showOnMap/hideFromMap operate on presentation layer directly |
-| `DDS_ANNOTATIONS` | SCRIPT 1670 | Annotation CRUD helper — wraps add_annotation, update_annotation, delete_annotation |
+| Module | Responsibility |
+|---|---|
+| `DDS_NODES` | Node CRUD helper — wraps add_node, update_node, delete_node, assign_node_to_lane |
+| `DDS_PRODUCTS` | Product CRUD helper — wraps add_product, update_product, delete_product |
+| `DDS_FLOWS` | Flow CRUD helper — wraps add_flow, update_flow, delete_flow, reroute_flow, add/remove_product_to/from_flow |
+| `DDS_SKUS` | SKU CRUD helper — wraps add_sku, update_sku, remove_sku |
+| `DDS_BOMS` | BOM CRUD helper — wraps add_bom, delete_bom, add/update/remove_bom_component; updateComponents performs internal diff |
+| `DDS_DEMANDS` | Demand CRUD helper — wraps add_demand, update_demand, delete_demand; showOnMap/hideFromMap operate on presentation layer directly |
+| `DDS_ANNOTATIONS` | Annotation CRUD helper — wraps add_annotation, update_annotation, delete_annotation |
+
 
 
 ### AI layer modules
@@ -92,6 +98,7 @@ UI modules call helpers for all functional writes and reads. Helpers translate s
 | `DDS_AI_CONTEXT` | SCRIPT 2200 | Serialises project to Claude context JSON |
 | `DDS_AI` | SCRIPT 2400 | System prompt assembly via `DDS_ACTIONS.getVocabularyText()`, Claude API call, response validation |
 | `DDS_AI_UI` | SCRIPT 2500 | AI panel, message bubbles, plan display via `DDS_ACTIONS.describe()`, confirm/cancel, error reporting |
+
 
 ### Presentation layer modules (render-dependent)
 
@@ -160,6 +167,7 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 
 ## 5. Persistence
 
+
 ### 5.1 In-memory store — DDS_STORE
 
 `DDS_STORE` is the raw data access layer. It exposes a synchronous CRUD API operating on `DDS.state.project`.
@@ -172,32 +180,9 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 - Presentation layer modules manage `map_*` tables directly via `DDS_STORE` — this is the only exception.
 - `DDS_STORE.query` is unrestricted — any module may read any table.
 
-### Transaction ownership
+---
+**Note:** Transaction ownership, begin/commit/rollback/undo/redo/clear, and related API details are now documented in [DDScope_Modules.md](DDScope_Modules.md). This section only summarizes the architectural pattern.
 
-`DDS_TRANSACTION` sits above the write stack and is called by UI layer modules only.
-`DDS_ACTIONS` is not transaction-aware.
-
-A single user interaction may chain multiple `DDS_ACTIONS.execute()` calls. The UI module
-is responsible for wrapping those calls in a transaction:
-
-- `DDS_TRANSACTION.begin(label)` - before the first `execute()` call; captures a DDS_STORE snapshot
-- `DDS_TRANSACTION.commit(transactionId)` - after the last successful `execute()` call
-- `DDS_TRANSACTION.rollback(transactionId)` - if any `execute()` call fails or the interaction
-   is cancelled; restores DDS_STORE to the pre-begin snapshot
-
-Undo/redo history (`undo()` / `redo()`) navigates committed transaction snapshots.
-`clear()` must be called on project open to reset both stacks.
-
-```javascript
-DDS_STORE.query(table, filters, options)   // → array
-DDS_STORE.insert(table, records)           // → array with generated ids
-DDS_STORE.update(table, filters, updates)  // → array of updated records
-DDS_STORE.remove(table, filters)           // → array of removed records
-DDS_STORE.markDirty()                      // mark project as modified
-DDS_STORE.resetDirty()                     // clear dirty flag (used after project open)
-```
-
-IDs are integers auto-incremented per table, managed in `DDS_STORE._counters`. Counters are seeded from the maximum existing ID when a file is loaded.
 
 ### 5.2 File persistence
 

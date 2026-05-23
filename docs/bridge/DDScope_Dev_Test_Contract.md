@@ -48,7 +48,7 @@ All DDScope documentation is kept by TEST under four categories:
 | `test-local` | TEST only | Local TEST procedures and implementation notes |
 | `dev-local` | DEV only | Local DEV procedures and implementation notes |
 
-When DEV needs to update a document in `bridge`, `shared`, or `dev-local`, it may emit a Markdown patch describing the intended changes clearly.
+When DEV needs to update a document in `bridge`, `shared`, or `dev-local`, it may emit a Markdown patch in english describing the intended changes clearly.
 
 The developer then performs the update manually:
 
