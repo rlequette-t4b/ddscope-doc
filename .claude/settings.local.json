@@ -3,7 +3,8 @@
     "allow": [
       "mcp__claude_ai_CommWise__commwise_get_block",
       "mcp__claude_ai_CommWise__commwise_start_session",
-      "mcp__claude_ai_CommWise__commwise_update_block"
+      "mcp__claude_ai_CommWise__commwise_update_block",
+      "mcp__claude_ai_CommWise__commwise_inspect_webapp"
     ]
   }
 }
