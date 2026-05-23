@@ -102,17 +102,17 @@ How to check if a local module is up to date:
 
 | File | CommWise block | Testability | Dirty | Last operation | Date | App version | Revision |
 |---|---|---|---|---|---|---|---|
-| `DDS_DURATION.js` | SCRIPT 1650 | pure | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_COLORS.js` | SCRIPT 105 | pure | NO | PUSH | 2026-05-23 08:56:02 | v100 | #23898 |
-| `DDS_STORE.js` | SCRIPT 150 | store-dependent | NO | PULL | 2026-05-23 07:16:12 | v100 | #23897 |
-| `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_NODES.js` | SCRIPT 1560 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_PRODUCTS.js` | SCRIPT 1610 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_FLOWS.js` | SCRIPT 1620 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_LANES.js` | SCRIPT 1640 | store-dependent | NO | PULL | 2026-05-22 18:20:18 | v100 | #23859 |
+| `DDS_DURATION.js` | SCRIPT 1650 | pure | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_COLORS.js` | SCRIPT 105 | pure | NO | PULL | 2026-05-23 10:45:08 | v100 | #23900 |
+| `DDS_STORE.js` | SCRIPT 150 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_NODES.js` | SCRIPT 1560 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_PRODUCTS.js` | SCRIPT 1610 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_FLOWS.js` | SCRIPT 1620 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_LANES.js` | SCRIPT 1640 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 
 *b2wise — Confidential*

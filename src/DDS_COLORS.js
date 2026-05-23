@@ -4,8 +4,6 @@
 // To extend the palette, add entries here only.
 // ============================================================
 
-// Test change by Remi from TEST
-
 var DDS_COLORS = [
   '#e53935',
   '#f57c00',
