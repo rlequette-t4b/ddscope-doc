@@ -88,7 +88,7 @@ How to check if a local module is up to date:
 |---|---|---|---|---|---|
 | `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-22 15:48:08 | v100 | #23832 |
 | `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-23 07:16:12 | v100 | #23897 |
 | `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
 | `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
 | `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |

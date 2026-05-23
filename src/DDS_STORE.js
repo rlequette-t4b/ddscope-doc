@@ -158,7 +158,9 @@ var DDS_STORE = (function () {
       map_nodes:      [],
       map_flows:      [],
       map_swim_lanes: [],
-      map_demands:    []
+      map_demands:    [],
+      annotations:    [],
+      map_annotations: []
     };
   }
 
@@ -167,7 +169,7 @@ var DDS_STORE = (function () {
     _counters = {};
     var tables = ['swim_lanes','node_types','product_types','nodes','products',
       'flows','skus','boms','bom_components','tag_styles','demands',
-      'maps','map_nodes','map_flows','map_swim_lanes','map_demands'];
+      'annotations','maps','map_nodes','map_flows','map_swim_lanes','map_demands','map_annotations'];
     tables.forEach(function(t) {
       var rows = project[t];
       _counters[t] = (rows && rows.length)
@@ -193,7 +195,7 @@ var DDS_STORE = (function () {
     // Ensure all table arrays exist
     var tables = ['swim_lanes','node_types','product_types','nodes','products',
       'flows','skus','boms','bom_components','tag_styles','demands',
-      'maps','map_nodes','map_flows','map_swim_lanes','map_demands'];
+      'annotations','maps','map_nodes','map_flows','map_swim_lanes','map_demands','map_annotations'];
     tables.forEach(function(t) { if (!json[t]) json[t] = []; });
     _state.project = json;
     _seedCounters(json);
