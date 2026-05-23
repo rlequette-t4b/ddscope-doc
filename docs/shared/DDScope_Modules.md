@@ -355,9 +355,12 @@ DDS_STORE.getProject()                       // project|null
 DDS_STORE.setProject(json)                   // void
 DDS_STORE.isDirty()                          // boolean
 
-// Transaction/Delta API
-DDS_STORE.onChange(fn)                       // void — Registers a listener called after each change, receives the generated delta
-DDS_STORE.restore(delta)                     // void — Restores the model to the state before the given delta
+// Delta API for transactions
+DDS_STORE.beginDelta()                     // void - defines start state of a delta, must be outside a delta
+DDS_STORE.endDelta()                     // delta — defines end state and retuns delta, msut be inside a delta
+DDS_STORE.cancelDelta()      // void, cancel current delta, restore start state
+DDS_STORE.revertDelta(delta) // delta - moves form the end state to the start state and return the reverse delta
+
 ```
 
 **Dependencies:** none.

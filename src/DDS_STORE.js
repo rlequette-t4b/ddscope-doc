@@ -69,84 +69,91 @@ var DDS_STORE = (function () {
 
   var api = {};
   // ------------------------------------------------------------------
-  // Snapshot for transactions API 
-  // a snapshot is a record of the initial state of objects before a transaction, allowing to restore them if needed.
+  // Deltas for transactions API 
+  // a delta is a record of changes to move from one state to an other
   // ------------------------------------------------------------------
 
+  // list of changes in the current delta
+  var _changes = null;
+  // each change is an array [current, backup, table]
+  // 
+  // backup  = null -> object was created after the delta began, it's at the end of the table
+  // current = null -> object was deleted after the delta began, backup is the original object
+  // current and backup non-null -> object was updated, backup is a copy of original state, table not used
  
-  var _snapshots = null; // Internal list to hold snapshots during a transaction
-
-  // Initialize the snapshot list at the beginning of a transaction 
-  api.beginSnapshot = function() {
-    // throws an error if a transaction is already in progress
-    if (_snapshots !== null) {
-      throw new Error('A snapshot is already in progress');
+  // define start of a delta, throws an error if a delta is already in progress
+  api.beginDelta = function() {  
+    if (_changes !== null) {
+      throw new Error('A delta is already in progress');
     }
-    _snapshots = [];
+    _changes = [];
   }
 
-  // finish the current transaction and returns the snapshot list
-  api.endSnapshot = function() {
-    var snapshots = _snapshots;
-    _snapshots = null;
-    return snapshots;
+  // define end of a delta and returns it, throws an error if no delta is in progress
+  api.endDelta = function() {
+    if (_changes === null) {
+      throw new Error('No delta in progress');
+    }
+    var delta = _changes;
+    _changes = null;
+    return delta;
   }
 
 
-  // Add a snapshot record to the current transaction
-  // each record is an array [current, backup, table]
-  // where backup is a copy of the object at begining of the snapshot
-  //  backup  = null -> object was created after the snapshot began, so should be deleted on restore
-  //  current = null -> object was deleted after the snapshot began, so should be restored on restore
-  //  current and backup are both non-null -> object was updated after the snapshot began, so should be restored to backup on restore
-  var _addSnapshot = function(current, backup, table) {
-    // check if snapshot in progress
-    if (_snapshots !== null) {
-      // if object is created record it
-      if (!backup) {
-        _snapshots.push([current, null, table]);
+  // Add a change record to the current delta
+  // - object
+  // - operation: 0 = creation, 1 = update, 2 = deletion
+  // - table: only used for creation and deletion, to know where to add/remove the object during restore
+  var _addChange = function(object, operation, table) {
+
+    if (_changes !== null) { // if no delta in progrss do not record changes
+       
+      if (operation === 0) { // objet is created during the delta, record it with null backup
+        _changes.push([object, null, table]); // record creation
         return;
-      }    
-      // if object is already in the snaphot it's ok
-      if (_snapshots.find(function(s) {
-            s[1] === current;
+      } 
+
+      if (operation === 2) { // object is deleted during the delta
+        var index = _changes.findIndex(function(s) { // check it was created during the delta
+          return s[1] === null && s[0] === object;
+        });
+        if (index !== -1) { // just cancel the creation change
+          _changes.splice(index, 1);
+          return;
+        }
+        _changes.push([null, object, table]); // record deletion
+        return;
+      } 
+
+      // if object is already in the delta stick to original change
+      if (_changes.find(function(s) {
+            s[0] === object;
       })) {
         return
       }  
-      // if object is deleted check is was not created in the snaphot
-      // then just remove the creation
-      // updated then deleted already taken care of previously
-      if (!current) {
-        var index = _snapshots.findIndex(function(s) {
-          return s[0] === backup;
-        });
-        if (index !== -1) {
-          _snapshots.splice(index, 1);
-        }
-      } 
-      // first update record
-      _snapshots.push([current, backup, table]);
+
+      // record the backup for an update
+      _changes.push([object, Object.assign({}, object)]);
     }
   };
 
-  // restore a snaphot
-  // returns a snapshot for the current state , allowing redo
-  api.restoreSnapshot = function(snapshots) {
+  // restore a delta, returns a new delta to reverse the restore
+  api.revertDelta = function(delta) {
     // throws an error if a transaction is in progress
-    if (_snapshots !== null) {
-      throw new Error('Cannot restore snapshots during an active transaction');
+    if (_changes !== null) {
+      throw new Error('Cannot restore, a delta is in progress');
     }
-    var redoSnapshots = [];
-    snapshots.forEach(function(s) {
-      var current = s[0], backup = s[1], table = s[2];
+    var revchanges = [];
+    delta.forEach(function(s) {
+      var current = s[0], backup = s[1];
       if (!backup) {
         // object was created after the snapshot began
         table.pop(); // it was the last when inserted
-        redoSnapshots.unshift([null, current, table]); // redo will delete
+        revchanges.unshift([null, current, s[2]]); // redo will delete
       } else if (!current) {
         // object was deleted after the snapshot began
         table.push(backup); // add back in the table
-        redoSnapshots.unshift([backup, null, table]);
+        revchanges.unshift([backup, null, s[2]]);
       } else {
         // object was updated after the snapshot began
         // properties should be exchanged between current and backup
@@ -155,20 +162,20 @@ var DDS_STORE = (function () {
           current[k] = backup[k];
           backup[k] = temp;
         });
-        redoSnapshots.unshift([backup, current, table]);
+        revchanges.unshift([backup, current]);
       }
     });
-    return redoSnapshots;
+    return revchanges;
   };
 
   // rollback the current transaction
   // restore the state before beginSnapshots was called, and clear the snapshot list
-  // does nothing if no transaction is in progress
-  api.rollbackSnapshot= function() {
-    if (_snapshots != null) {
-      var snapshots = _snapshots;
-      _snapshots = null;
-      api.restoreSnapshot(snapshots);
+  // does nothing if no delta in progress
+  api.cancelDelta = function() {
+    if (_changes != null) {
+      var delta = _changes;
+      _changes = null;
+      api.revertDelta(delta);
     }
   }
 
@@ -202,7 +209,7 @@ var DDS_STORE = (function () {
         updated_at: now
       });
       _table(table).push(row);
-      _addSnapshot(row, null, _table(table)); // record creation in snapshot for potential rollback
+     _addChange(row, null, _table(table)); // record creation in snapshot for potential rollback
       return row;
     });
     _markDirty();
@@ -216,7 +223,7 @@ var DDS_STORE = (function () {
     var updated = [];
     _table(table).forEach(function(r) {
       if (_match(r, filters)) {
-        _addSnapshot(r, Object.assign({}, r), _table(table)); // record update in snapshot for potential rollback
+       _addChange(r, Object.assign({}, r), _table(table)); // record update in snapshot for potential rollback
         Object.assign(r, updates, { updated_at: now });
         updated.push(r);
       }
@@ -236,7 +243,7 @@ var DDS_STORE = (function () {
     tbl.forEach(function(r) {
       if (_match(r, filters)) { 
         removed.push(r); 
-        _addSnapshot(null, r, tbl); // record deletion in snapshot for potential rollback
+       _addChange(null, r, tbl); // record deletion in snapshot for potential rollback
       }
       else { kept.push(r); }
     });

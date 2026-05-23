@@ -25,15 +25,17 @@ var DDS_TRANSACTIONS = (function () {
   // --- API ---
   function begin(label) {
     DDS_TOOLS.log.info('begin transaction: ' + label);
-    // Capture DDS_STORE snapshot (stub)
+    // start a snapshot
+    DDS_STORE.beginSnapshot();
     currentTransaction = { label: label, snapshot: null, id: Date.now() };
-    // TODO: snapshot = DDS_STORE.toJson()
     return currentTransaction.id;
   }
 
   function commit(transactionId) {
     DDS_TOOLS.log.info('commit transaction: ' + transactionId);
-    // Push snapshot to undo stack (stub)
+    
+    // get snapshot in transaction
+    currentTransaction.snapshot = DDS_STORE.endSnapshot();
     if (currentTransaction && currentTransaction.id === transactionId) {
       undoStack.push(currentTransaction);
       currentTransaction = null;
