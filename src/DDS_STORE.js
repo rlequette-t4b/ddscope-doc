@@ -1,3 +1,17 @@
+  // ------------------------------------------------------------------
+  // Transaction/Delta API
+  // ------------------------------------------------------------------
+
+  // Adds a listener called after each change, receiving the generated delta
+  api.onChange = function(fn) {
+    if (!this._changeListeners) this._changeListeners = [];
+    this._changeListeners.push(fn);
+  };
+
+  // Restores the model to the state before the given delta
+  api.restore = function(delta) {
+    throw new Error('DDS_STORE.restore is not implemented yet');
+  };
 // AUDITOR:LARGE_BLOCK_JUSTIFIED - Single-responsibility store: memory CRUD + file persistence, must be complete.
 // ============================================================
 // DDS_STORE  In-memory project store + file persistence

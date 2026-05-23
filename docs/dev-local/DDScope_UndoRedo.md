@@ -10,38 +10,35 @@
 |---|---|---|
 | 0.1 | May 2026 | Initial draft — pattern + call site inventory |
 | 0.2 | May 2026 | Clarified map_* scope; added all presentation-layer call sites, drag interactions, AI layer |
+| 0.3 | May 2026 | DDS_TX_HELPER (SCRIPT 1870) added — wraps begin/commit/rollback; pattern updated at all call sites |
 
 ---
 
 ## 1. Pattern
 
+
 ### 1.1 Transaction lifecycle
 
-Every user interaction that mutates the store must be wrapped in a `DDS_TRANSACTION` transaction. The cycle is always: **begin → (helper or store calls) → commit or rollback**.
+Every user interaction that mutates the store must be wrapped in a transaction.
+Use `DDS_TX_HELPER.run(label, fn)` — it handles the begin/commit/rollback cycle internally.
 
-```
 ┌─────────────────────────────────────────────────────────────┐
 │  UI module (submit handler)                                 │
 │                                                             │
-│  const txId = DDS_TRANSACTION.begin(TX.NODE_CREATE);        │
-│  try {                                                      │
+│  DDS_TX_HELPER.run(TX.NODE_CREATE, () => {                  │
 │    DDS_NODES.create(fields);   // one or more helper calls  │
 │    DDS_FLOWS.update(...);      // each translates to actions │
-│    DDS_TRANSACTION.commit(txId);                            │
-│  } catch (err) {                                            │
-│    DDS_TRANSACTION.rollback(txId);                          │
-│    // surface error to user if needed                       │
-│  }                                                          │
+│  });                                                        │
 └─────────────────────────────────────────────────────────────┘
-```
+
+`DDS_TX_HELPER` is defined in SCRIPT 1870. It is a temporary utility placed
+between DDS_TRANSACTIONS (SCRIPT 1860) and the UI modules, pending the
+presentation layer refactor.
 
 **Rules:**
 
-1. `begin()` is called **before** the first store mutation.
-2. `commit()` is called **after** the last successful mutation.
-3. `rollback()` is called in the `catch` block — and only there.
-4. The `try/catch` wraps **all** mutations for the interaction, not just the first one.
-5. A single `begin()` per user interaction, even when multiple helpers are chained.
+1. Pass all mutations for the interaction inside the `fn` callback.
+2. `fn` must be synchronous — no async/await inside.
 
 ### 1.2 Scope: functional and presentation tables
 

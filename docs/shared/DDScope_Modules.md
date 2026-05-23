@@ -309,6 +309,7 @@ deps_declared:  no
 
 **Write access:** `DDS_STORE.insert/update/remove` on functional tables is called by `DDS_ACTIONS` (simple ops) and `DDS_MODEL` (cascade ops) only. UI modules use helpers for writes and `DDS_STORE.query` for reads when no helper read method is available.
 
+
 **API:**
 ```
 DDS_STORE.query(table, filters?, options?)   // record[]
@@ -323,6 +324,10 @@ DDS_STORE.loadFromText(text)                 // void
 DDS_STORE.getProject()                       // project|null
 DDS_STORE.setProject(json)                   // void
 DDS_STORE.isDirty()                          // boolean
+
+// Transaction/Delta API
+DDS_STORE.onChange(fn)                       // void — Registers a listener called after each change, receives the generated delta
+DDS_STORE.restore(delta)                     // void — Restores the model to the state before the given delta
 ```
 
 **Dependencies:** none.

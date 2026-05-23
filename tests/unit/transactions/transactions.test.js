@@ -1,54 +1,60 @@
 // Unit tests for DDS_TRANSACTIONS.js
 // See: docs/shared/DDScope_Modules.md for module contract
 
-import { describe, it, expect } from 'vitest';
-import * as DDS_TRANSACTIONS from '../../../src/DDS_TRANSACTIONS';
 
-// Fixtures (à adapter selon structure réelle)
-const validTransactions = [
-  { id: 'T1', type: 'sale', date: '2024-01-01', quantity: 10, sku: 'SKU1' },
-  { id: 'T2', type: 'purchase', date: '2024-01-02', quantity: 5, sku: 'SKU2' },
-];
-const invalidTransactions = [
-  { id: 'T3', type: null, date: '', quantity: null, sku: null },
-];
+import { describe, it, expect, vi } from 'vitest';
+import DDS_TRANSACTIONS from '../../../src/DDS_TRANSACTIONS';
 
 describe('DDS_TRANSACTIONS', () => {
-  it('should load and parse valid transactions', () => {
-    // TODO: Adapter selon API réelle
-    const result = DDS_TRANSACTIONS.loadTransactions(validTransactions);
-    expect(result).toBeDefined();
-    expect(result.length).toBe(2);
+
+  it('begin() should return a transaction id', () => {
+    const id = DDS_TRANSACTIONS.begin('test');
+    expect(typeof id).toBe('number');
   });
 
-  it('should handle empty or malformed input', () => {
-    expect(() => DDS_TRANSACTIONS.loadTransactions([])).not.toThrow();
-    expect(() => DDS_TRANSACTIONS.loadTransactions(null)).toThrow();
+  it('commit() should push to undo stack and clear redo stack', () => {
+    const id = DDS_TRANSACTIONS.begin('commit');
+    DDS_TRANSACTIONS.commit(id);
+    expect(DDS_TRANSACTIONS.canUndo()).toBe(true);
+    expect(DDS_TRANSACTIONS.canRedo()).toBe(false);
   });
 
-  it('should validate required fields', () => {
-    const result = DDS_TRANSACTIONS.validateTransactions(validTransactions);
-    expect(result.valid).toBe(true);
-    const invalid = DDS_TRANSACTIONS.validateTransactions(invalidTransactions);
-    expect(invalid.valid).toBe(false);
+  it('undo() should move transaction from undo to redo stack', () => {
+    const id = DDS_TRANSACTIONS.begin('undo');
+    DDS_TRANSACTIONS.commit(id);
+    const result = DDS_TRANSACTIONS.undo();
+    expect(result).toBe(true);
+    expect(DDS_TRANSACTIONS.canUndo()).toBe(false);
+    expect(DDS_TRANSACTIONS.canRedo()).toBe(true);
   });
 
-  it('should filter transactions by type', () => {
-    const filtered = DDS_TRANSACTIONS.filterByType(validTransactions, 'sale');
-    expect(filtered.length).toBe(1);
-    expect(filtered[0].type).toBe('sale');
+  it('redo() should move transaction from redo to undo stack', () => {
+    const id = DDS_TRANSACTIONS.begin('redo');
+    DDS_TRANSACTIONS.commit(id);
+    DDS_TRANSACTIONS.undo();
+    const result = DDS_TRANSACTIONS.redo();
+    expect(result).toBe(true);
+    expect(DDS_TRANSACTIONS.canUndo()).toBe(true);
+    expect(DDS_TRANSACTIONS.canRedo()).toBe(false);
   });
 
-  it('should aggregate quantities', () => {
-    const total = DDS_TRANSACTIONS.sumQuantities(validTransactions);
-    expect(total).toBe(15);
+  it('clear() should reset all stacks and state', () => {
+    const id = DDS_TRANSACTIONS.begin('clear');
+    DDS_TRANSACTIONS.commit(id);
+    DDS_TRANSACTIONS.clear();
+    expect(DDS_TRANSACTIONS.canUndo()).toBe(false);
+    expect(DDS_TRANSACTIONS.canRedo()).toBe(false);
   });
 
-  it('should handle duplicate and edge cases', () => {
-    const dupe = [...validTransactions, validTransactions[0]];
-    const unique = DDS_TRANSACTIONS.removeDuplicates(dupe);
-    expect(unique.length).toBe(2);
+  it('onChange() should register a callback fired on commit/undo/redo/clear', () => {
+    const spy = vi.fn();
+    DDS_TRANSACTIONS.onChange(spy);
+    const id = DDS_TRANSACTIONS.begin('cb');
+    DDS_TRANSACTIONS.commit(id);
+    DDS_TRANSACTIONS.undo();
+    DDS_TRANSACTIONS.redo();
+    DDS_TRANSACTIONS.clear();
+    expect(spy).toHaveBeenCalled();
+    DDS_TRANSACTIONS.onChange(null); // cleanup
   });
-
-  // TODO: Ajouter des tests d’intégration avec DDS_PRODUCTS, DDS_SKUS, etc.
 });
