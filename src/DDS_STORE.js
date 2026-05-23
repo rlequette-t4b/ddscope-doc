@@ -86,7 +86,7 @@ var DDS_STORE = (function () {
   }
 
   // finish the current transaction and returns the snapshot list
-  api.endSnapshots = function() {
+  api.endSnapshot = function() {
     var snapshots = _snapshots;
     _snapshots = null;
     return snapshots;
@@ -99,7 +99,7 @@ var DDS_STORE = (function () {
   //  backup  = null -> object was created after the snapshot began, so should be deleted on restore
   //  current = null -> object was deleted after the snapshot began, so should be restored on restore
   //  current and backup are both non-null -> object was updated after the snapshot began, so should be restored to backup on restore
-  var _addSnapshot = function(current, backup) {
+  var _addSnapshot = function(current, backup, table) {
     // check if snapshot in progress
     if (_snapshots !== null) {
       // if object is created record it
@@ -168,7 +168,7 @@ var DDS_STORE = (function () {
     if (_snapshots != null) {
       var snapshots = _snapshots;
       _snapshots = null;
-      api.restoreSnapshots(snapshots);
+      api.restoreSnapshot(snapshots);
     }
   }
 
@@ -202,7 +202,7 @@ var DDS_STORE = (function () {
         updated_at: now
       });
       _table(table).push(row);
-      _addSnapshot(row, null); // record creation in snapshot for potential rollback
+      _addSnapshot(row, null, _table(table)); // record creation in snapshot for potential rollback
       return row;
     });
     _markDirty();
