@@ -64,6 +64,8 @@ var DDS_TRANSACTIONS = (function () {
   }
 
   function undo() {
+    DDS_TOOLS.log.info('undo transaction');
+
     // Pop from undo, push to redo, restore delta
     if (undoStack.length > 0) {
       var tx = undoStack.pop();
@@ -76,6 +78,8 @@ var DDS_TRANSACTIONS = (function () {
   }
 
   function redo() {
+    DDS_TOOLS.log.info('redo transaction');
+
     // Pop from redo, push to undo, restore delta
     if (redoStack.length > 0) {
       var tx = redoStack.pop();
@@ -88,14 +92,17 @@ var DDS_TRANSACTIONS = (function () {
   }
 
   function canUndo() {
+    DDS_TOOLS.log.info('canUndo: ' + (undoStack.length > 0));
     return undoStack.length > 0;
   }
 
   function canRedo() {
+    DDS_TOOLS.log.info('canRedo: ' + (redoStack.length > 0));
     return redoStack.length > 0;
   }
 
   function clear() {
+    DDS_TOOLS.log.info('clear transactions');
     undoStack.length = 0;
     redoStack.length = 0;
     currentTransaction = null;
@@ -107,7 +114,10 @@ var DDS_TRANSACTIONS = (function () {
   }
 
   function _fireChange() {
-    if (typeof _onChangeFn === 'function') _onChangeFn();
+    if (typeof _onChangeFn === 'function') {
+      DDS_TOOLS.log.info('transaction change, firing onChange');
+      _onChangeFn();
+    }
   }
 
   // --- Public API ---
