@@ -1,4 +1,4 @@
-# DDScope — Architecture
+{REPLACE_ALL}
 *v2.1 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour. [DDScope_Modules.md](DDScope_Modules.md) for the JavaScript module registry.*
@@ -27,7 +27,7 @@
 | 1.9 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS, DDS_BOMS, DDS_DEMANDS. DDS_ACTIONS.execute() made synchronous. UI modules call helpers only. |
 | 2.0 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library; icon_key, label_position, transparent_bg on node_types; applyNodeColors extended to applyAllNodeStyles. |
 | 2.1 | May 2026 | DDS_ANNOTATIONS helper and DDS_ANNOTATIONS_UI table view added to module registry |
-| 2.2 | May 2026 | DDS_TRANSACTION (SCRIPT 1900) added - stub undo/redo + transaction ownership documented |
+| 2.2 | May 2026 | DDS_TRANSACTIONS (SCRIPT 1900) added - stub undo/redo + transaction ownership documented |
 
 ---
 
@@ -70,7 +70,7 @@ Block addresses (`SCRIPT NNN`) are shown here only for modules absent from the r
 | `DDS_DURATION` | Duration arithmetic and formatting |
 | `DDS_MODEL` | Cascade delete rules — authoritative runtime |
 | `DDS_ACTIONS` | Action execution engine — synchronous; apply action lists on DDS_STORE/DDS_MODEL, resolve new_* references, action vocabulary |
-| `DDS_TRANSACTION` | Snapshot-based undo/redo transaction manager — wraps DDS_STORE state capture and restore |
+| `DDS_TRANSACTIONS` | Snapshot-based undo/redo transaction manager — wraps DDS_STORE state capture and restore |
 | `DDS_JSON` | Project import with copy modes + ID remapping |
 
 
