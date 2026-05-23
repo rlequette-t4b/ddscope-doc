@@ -1,8 +1,10 @@
 // ============================================================
-// DDS_COLORS  centralized color palette (8 colors)
+// DDS_COLORS — centralized color palette (8 colors)
 // Used by: swim-lane panel, settings modal (all entity types)
 // To extend the palette, add entries here only.
 // ============================================================
+
+// Test change by Remi from TEST
 
 var DDS_COLORS = [
   '#e53935',
@@ -16,5 +18,3 @@ var DDS_COLORS = [
 ];
 
 export default DDS_COLORS;
-
-

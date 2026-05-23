@@ -43,6 +43,7 @@
   - `docs/DDScope_Modules.md` for API/module responsibility or testability updates.
   - `docs/DDScope_DataModel.md` for schema/relationship changes.
   - `README.md` when developer workflows/scripts change.
+- If any module file under `src/` is modified, update `src/README.md` operation table in the same change and set `Dirty = YES` for each modified module.
 - Write all comments and documentation in English.
 - When drafting module specifications, do not propose or assign CommWise block IDs/positions; use the placeholder `to be defined` and leave block allocation to DEV.
 
@@ -71,6 +72,11 @@
   - Do not modify production modules in `src/**` unless the user explicitly requests it.
   - Do not perform spec/code alignment work as part of normal test tasks in this repo.
   - Do not introduce feature development changes under the guise of test maintenance.
+
+## CommWise push delegation
+- If the user asks to push/export modules to CommWise, explicitly remind that push execution must be done with the Claude extension in this workflow.
+- Copilot responsibility in push requests is limited to preparing payloads, updating docs/trackers, and validating readiness.
+- Do not attempt to execute CommWise push writes directly from Copilot in this repository workflow.
 
 ## Upstream refresh intent
 - Interpret refresh requests with flexible natural language.

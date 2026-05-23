@@ -29,6 +29,7 @@ The environment covers three concerns:
 ## Repository Structure
 
 ```
+
 ddscope-tests/
 │
 ├── src/                        ← DDScope modules extracted from CommWise
@@ -115,13 +116,14 @@ When a spec document is updated, it should be committed to `docs/` and re-import
 | `DDScope_Backlog.md` | Pre-backlog ideas by theme |
 | `DDScope_Actions.md` | **Action vocabulary** — all supported actions, fields, new_* convention, cross-cutting rules, v1 exclusions |
 | `DDScope_Modules.md` | **JavaScript module registry** — CommWise addresses, APIs, dependencies, testability, extraction status |
+| `DDScope_Dev_Test_Contract.md` | **Shared DEV/TEST contract** — manual sync rules and module round-trip workflow |
 | `DDScope_TestEnvironment.md` | This file |
 
 ---
 
 ## Module Registry
 
-**[DDScope_Modules.md](DDScope_Modules.md) is the authoritative source** for all `DDS_*` module definitions. It records:
+**[DDScope_Modules.md](../shared/DDScope_Modules.md) is the authoritative source** for all `DDS_*` module definitions. It records:
 
 - CommWise block address (`code_type` + `position`) for extraction
 - Public API surface
@@ -130,6 +132,8 @@ When a spec document is updated, it should be committed to `docs/` and re-import
 - Extraction contract status (`met` / `partial` / `unverified` / `not-met`)
 
 The TEST context is a co-owner of this file: after extracting and testing a module, update its entry to reflect actual dependencies found and current test coverage status.
+
+For the shared DEV/TEST contract, see [DDScope_Dev_Test_Contract.md](../bridge/DDScope_Dev_Test_Contract.md).
 
 ### Testability classification
 
@@ -357,18 +361,6 @@ Claude will:
 4. Verify the block title starts with `JS: DDS_` — skip if not.
 5. Append `export default <GLOBAL>;` for ESM compatibility.
 6. Write the result to `src/<MODULE>.js`.
-
-### Pushing a fix back to CommWise
-
-Fixes identified in TEST should flow back via the DEV workflow:
-1. Correct the `src/` file locally.
-2. Paste the corrected content into the DEV Claude project.
-3. DEV applies the fix to the CommWise block via MCP session.
-4. Re-extract to confirm.
-
-Claude in VS Code must not write directly to CommWise production blocks.
-
----
 
 ## Module Organisation Principles
 

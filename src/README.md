@@ -1,6 +1,6 @@
 # src/
 
-DDScope JavaScript modules extracted from CommWise SCRIPT blocks. These files are the inputs for Vitest unit tests.
+DDScope JavaScript modules synchronized with CommWise SCRIPT blocks. These files are the inputs for Vitest unit tests and local development of the modules. They are also naintained from an other place. Commwise is the source of truth so care must be taken to coordinate update.
 
 ---
 
@@ -19,9 +19,16 @@ The authoritative list of all modules, their block addresses, and their testabil
 
 ---
 
-## How files get here — AI-assisted extraction
+## How files move — AI-assisted pull and push
 
-Files in this folder are extracted by the AI assistant in VS Code directly from CommWise via the CommWise MCP connection. **No manual copy-paste or script is needed.**
+Files in this folder are synchronized by the AI assistants in VS Code through the CommWise MCP connection.
+
+- `PULL` means extracting a module from CommWise into `src/`.
+- `PUSH` means exporting a corrected module from this repository back to CommWise.
+
+For push operations, always follow the dedicated workflow in [`docs/DDScope_CommWise_Push_Workflow.md`](../docs/DDScope_CommWise_Push_Workflow.md).
+
+**No manual copy-paste or script is needed.**
 
 ### To extract a module, just ask:
 
@@ -33,7 +40,7 @@ Files in this folder are extracted by the AI assistant in VS Code directly from 
 > *"Refresh DDS_DURATION from CommWise"*
 > *"Re-extract DDS_COLORS from CommWise and overwrite src"*
 
-The AI assistant will:
+For pull operations, the AI assistant will:
 1. Look up the module in `docs/DDScope_Modules.md` (block position, global name, file path, testability).
 2. Skip modules with `testability: render-dependent` or `out-of-scope`.
 3. Fetch the block from CommWise (`commwise_get_block`, appID `22645`, code_type `script`).
@@ -41,7 +48,9 @@ The AI assistant will:
 5. Read current app metadata/version from CommWise for traceability.
 6. Append `export default <GLOBAL>;` for ESM compatibility with Vitest.
 7. Write (or overwrite) the file in `src/`.
-8. Update the **Currently extracted** table in this file, including extraction date/time, CommWise app version, and CommWise revision id (`#xxxxx`).
+8. Update the tracking table in this file with `Last operation = PULL`, operation date/time, CommWise app version, and CommWise revision id (`#xxxxx`).
+
+For push operations, follow the push workflow document and then update the same table with `Last operation = PUSH` using the verified push metadata.
 
 ### Prerequisite
 
@@ -64,39 +73,46 @@ var DDS_DURATION = (function () {
 export default DDS_DURATION;
 ```
 
-Do not edit the body of these files for production fixes. If a fix is needed:
-1. Correct the file locally for test purposes.
-2. Paste the fix into the DEV AI project.
-3. DEV applies it to the CommWise block via MCP session.
-4. Re-extract here to confirm.
+Do not edit the body of these files for production fixes without a controlled sync workflow. If a fix is needed:
+1. Correct the file locally.
+2. Use the push workflow in `docs/DDScope_CommWise_Push_Workflow.md` to export safely to CommWise.
+3. Re-extract here to confirm parity.
 
 ---
 
-## Currently extracted
+## Operation Tracking
 
-After **every extraction or refresh**, this table must be updated immediately with:
-- extraction timestamp
-- CommWise app version used for extraction
-- CommWise revision id used for extraction
+After **every pull or push**, this table must be updated immediately with:
+- dirty status (`YES` if local changes are pending push, `NO` if synced)
+- last operation (`PULL` or `PUSH`)
+- operation timestamp
+- CommWise app version used for that operation
+- CommWise revision id used for that operation
+
+Dirty status workflow:
+1. Set `Dirty = YES` when a module is modified locally and not yet exported to CommWise.
+2. Keep `Dirty = YES` until push is completed and verified.
+3. Set `Dirty = NO` immediately after a successful and verified push.
+4. A generic "push" request should target only rows where `Dirty = YES`.
 
 How to check if a local module is up to date:
-1. Compare module row value in **Extracted from revision** with current revision id in CommWise.
-2. If revision differs, refresh extraction for the module.
-3. **Extracted from app version** is informational only and must not be used as the freshness gate.
+1. Compare module row value in **Revision** with current revision id in CommWise.
+2. If revision differs, run a new synchronization operation for the module.
+3. **App version** is informational only and must not be used as the freshness gate.
 
-| File | CommWise block | Testability | Last extracted (local) | Extracted from app version | Extracted from revision |
-|---|---|---|---|---|---|
-| `DDS_DURATION.js` | SCRIPT 1650 | pure | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_COLORS.js` | SCRIPT 105 | pure | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_STORE.js` | SCRIPT 150 | store-dependent | 2026-05-23 07:16:12 | v100 | #23897 |
-| `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_NODES.js` | SCRIPT 1560 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_PRODUCTS.js` | SCRIPT 1610 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_FLOWS.js` | SCRIPT 1620 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | 2026-05-22 15:48:08 | v100 | #23832 |
-| `DDS_LANES.js` | SCRIPT 1640 | store-dependent | 2026-05-22 18:20:18 | v100 | #23859 |
+| File | CommWise block | Testability | Dirty | Last operation | Date | App version | Revision |
+|---|---|---|---|---|---|---|---|
+| `DDS_DURATION.js` | SCRIPT 1650 | pure | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_COLORS.js` | SCRIPT 105 | pure | NO | PUSH | 2026-05-23 08:56:02 | v100 | #23898 |
+| `DDS_STORE.js` | SCRIPT 150 | store-dependent | NO | PULL | 2026-05-23 07:16:12 | v100 | #23897 |
+| `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_NODES.js` | SCRIPT 1560 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_PRODUCTS.js` | SCRIPT 1610 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_FLOWS.js` | SCRIPT 1620 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | NO | PULL | 2026-05-22 15:48:08 | v100 | #23832 |
+| `DDS_LANES.js` | SCRIPT 1640 | store-dependent | NO | PULL | 2026-05-22 18:20:18 | v100 | #23859 |
 
 *b2wise — Confidential*
