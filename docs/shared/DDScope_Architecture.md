@@ -69,6 +69,7 @@ The table below is a structural overview only — it does not duplicate the deta
 | `DDS_TRANSACTION` | SCRIPT 1900 | Snapshot-based undo/redo transaction manager — wraps DDS_STORE state capture and restore |
 | `DDS_JSON` | SCRIPT 600 | Project import with copy modes + ID remapping |
 
+
 ### Helper layer modules
 
 UI modules call helpers for all functional writes and reads. Helpers translate semantic calls into `DDS_ACTIONS` action lists. They never call `DDS_STORE.insert/update/remove` directly except for presentation-layer operations explicitly noted.
@@ -82,6 +83,7 @@ UI modules call helpers for all functional writes and reads. Helpers translate s
 | `DDS_BOMS` | SCRIPT 1800 | BOM CRUD helper — wraps add_bom, delete_bom, add/update/remove_bom_component; updateComponents performs internal diff |
 | `DDS_DEMANDS` | SCRIPT 1660 | Demand CRUD helper — wraps add_demand, update_demand, delete_demand; showOnMap/hideFromMap operate on presentation layer directly |
 | `DDS_ANNOTATIONS` | SCRIPT 1670 | Annotation CRUD helper — wraps add_annotation, update_annotation, delete_annotation |
+
 
 ### AI layer modules
 

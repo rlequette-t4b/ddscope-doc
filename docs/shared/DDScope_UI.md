@@ -35,7 +35,7 @@
   - [7. Settings Tab](#7-settings-tab)
 # DDScope — User Interface
 
-*v1.11 — Draft — May 2026*
+*v1.12 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -63,6 +63,7 @@
 | 1.9     | May 2026 | Demand feature: SKU demand sub-section in node panel, Demand tab, CTT line overlay interactions |
 | 1.10    | May 2026 | Label position override per map: select in node panel, stored in `map_nodes.label_position` |
 | 1.11    | May 2026 | Annotations feature: toolbar button, canvas interactions, side panel, table view, Elements panel, Remove modal |
+| 1.12    | May 2026 | Undo/Redo buttons in nav bar: placement, keyboard shortcuts, state sync via DDS_TRANSACTION.onChange, view refresh after undo/redo |
 
 ---
 
@@ -146,6 +147,31 @@ The tab order is: **Map — Nodes — Flows — Products — BOMs — Demand —
 When a project is open, the project name is displayed in bold at the centre of the nav bar. An unsaved indicator (`•`) is appended when the project has unsaved changes.
 
 A pencil button (✎) appears on hover to the right of the project name. Clicking it opens a modal to edit the project name and description. Saving the modal marks the project as dirty.
+
+### Undo / Redo buttons
+
+Two buttons — **Undo (↩)** and **Redo (↪)** — sont placés dans la zone droite de la barre de navigation, à gauche du bouton Save.
+
+**State :** chaque bouton est activé ou désactivé selon `DDS_TRANSACTION.canUndo()` et `DDS_TRANSACTION.canRedo()`. L’état n’est pas pollé : la nav bar enregistre un unique callback via `DDS_TRANSACTION.onChange(fn)` à l’initialisation. Ce callback appelle `canUndo()` / `canRedo()` et met à jour l’état des boutons immédiatement. Les deux boutons sont désactivés si aucun projet n’est ouvert.
+
+**Raccourcis clavier :**
+- Undo : `Ctrl+Z`
+- Redo : `Ctrl+Y`
+
+Les raccourcis sont actifs globalement (pas limités à une vue) quand un projet est ouvert. Ils n’ont aucun effet si un modal ou un champ texte a le focus.
+
+**Comportement lors de l’activation (clic ou raccourci) :**
+1. Appelle `DDS_TRANSACTION.undo()` ou `DDS_TRANSACTION.redo()`.
+2. Si le retour est `false` (pile vide), ne rien faire.
+3. Si `true` : rafraîchir la vue active —
+  - Si la vue active est la **Map** : appeler `DDS_MAP.loadMap()` puis `DDS_SWIMLANES.render()`. Ne pas appeler `runLayout()` : les positions sont restaurées depuis le snapshot et ne doivent pas être recalculées.
+  - Si la vue active est une **table** (Nodes, Flows, Products, BOMs, Demand, Annotations) : recharger le contenu depuis `DDS_STORE`.
+  - Si la vue active est **Settings** : recharger les données depuis `DDS_STORE`.
+4. Le callback `onChange` est déclenché automatiquement après `undo()` / `redo()`, mettant à jour l’état des boutons.
+
+**Initialisation :** au boot, la nav bar appelle `DDS_TRANSACTION.onChange(updateUndoRedoButtons)` une fois. À l’ouverture ou création de projet, `DDS_TRANSACTION.clear()` est appelé (par `DDS_STORE`), ce qui déclenche le callback et désactive les deux boutons.
+
+**Pas de liste d’historique :** aucun menu déroulant ou compteur n’est affiché. Seul l’état activé/désactivé est visible.
 
 ### Save button
 

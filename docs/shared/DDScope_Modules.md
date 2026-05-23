@@ -1,5 +1,5 @@
 # DDScope — Module Registry
-*v0.9 — Draft — May 2026*
+*v1.1 — Draft — May 2026*
 
 ---
 
@@ -17,6 +17,7 @@
 | 0.8 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library for node types; icon_key, label_position, transparent_bg documented. |
 | 0.9 | May 2026 | DDS_ANNOTATIONS (SCRIPT 1670) and DDS_ANNOTATIONS_UI (SCRIPT 1780) added. DDS_MODEL.deleteAnnotation added. |
 | 1.0 | May 2026 | DDS_TRANSACTION (SCRIPT 1860) added - stub undo/redo transaction manager |
+| 1.1 | May 2026 | Undo/Redo API: onChange callback, canUndo/canRedo, nav bar doc; block address fix; version bump |
 
 ---
 
@@ -27,6 +28,9 @@
 **What is recorded here:** module identity, CommWise block address, public API, runtime dependencies, testability classification, extraction readiness.
 
 **What is not recorded here:** implementation details, UI behaviour (see `DDScope_UI.md`), data model rules (see `DDScope_DataModel.md`).
+
+**About DDS_TRANSACTION:**
+The module `DDS_TRANSACTION` (Functional layer) is the transaction manager for undo/redo. It is called only by UI modules to wrap user interactions that may chain multiple `DDS_ACTIONS.execute()` calls. It captures DDS_STORE state snapshots on `begin`, restores them on `rollback`/`undo`, and manages the undo/redo stacks. Helpers and AI modules do not call it directly.
 
 Both DEV and TEST contexts must keep their copy in sync (manual transfer — see `README.md`).
 
@@ -100,6 +104,7 @@ graph TD
   subgraph Functional["Functional layer"]
     DDS_MODEL
     DDS_ACTIONS
+    DDS_TRANSACTION
     DDS_JSON
     DDS_AI_CONTEXT
   end
@@ -115,30 +120,33 @@ graph TD
     DDS_LANES
   end
 
-  subgraph AI["AI layer"]
-    DDS_AI
+    block:          SCRIPT 1900
+    file:           src/DDS_TRANSACTION.js
     DDS_AI_UI
   end
 
   DDS_MODEL       --> DDS_STORE
   DDS_ACTIONS     --> DDS_STORE
   DDS_ACTIONS     --> DDS_MODEL
+  DDS_TRANSACTION --> DDS_STORE
   DDS_JSON        --> DDS_STORE
   DDS_AI_CONTEXT  --> DDS_STORE
 
   DDS_NODES    --> DDS_ACTIONS
   DDS_NODES    --> DDS_STORE
-  DDS_PRODUCTS --> DDS_ACTIONS
-  DDS_PRODUCTS --> DDS_STORE
-  DDS_FLOWS    --> DDS_ACTIONS
-  DDS_FLOWS    --> DDS_STORE
-  DDS_SKUS     --> DDS_ACTIONS
-  DDS_SKUS     --> DDS_STORE
-  DDS_BOMS     --> DDS_ACTIONS
-  DDS_BOMS     --> DDS_STORE
-  DDS_DEMANDS  --> DDS_ACTIONS
-  DDS_DEMANDS  --> DDS_STORE
-  DDS_ANNOTATIONS --> DDS_ACTIONS
+
+    **API:**
+    ```
+    DDS_TRANSACTION.begin(label)              // string — transactionId; captures DDS_STORE snapshot
+    DDS_TRANSACTION.commit(transactionId)     // void — seals transaction as undo point
+    DDS_TRANSACTION.rollback(transactionId)   // void — restores pre-begin snapshot
+    DDS_TRANSACTION.undo()                    // boolean — true if undo was available
+    DDS_TRANSACTION.redo()                    // boolean — true if redo was available
+    DDS_TRANSACTION.canUndo()                 // boolean
+    DDS_TRANSACTION.canRedo()                 // boolean
+    DDS_TRANSACTION.clear()                   // void — resets both stacks (call on project open)
+    DDS_TRANSACTION.onChange(fn)              // void — registers a callback fired after any undo/redo/clear/commit; fn() is called with no arguments
+    ```
   DDS_ANNOTATIONS --> DDS_STORE
   DDS_LANES    --> DDS_ACTIONS
   DDS_LANES    --> DDS_STORE
@@ -150,6 +158,9 @@ graph TD
   DDS_AI_UI       --> DDS_STORE
   DDS_AI_UI       --> DDS_AI
   DDS_AI_UI       --> DDS_ACTIONS
+
+  %% Transaction manager is called only by UI modules (not shown in this registry)
+  %% UI --> DDS_TRANSACTION
 ```
 
 **Notes:**
