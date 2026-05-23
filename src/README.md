@@ -104,7 +104,7 @@ How to check if a local module is up to date:
 |---|---|---|---|---|---|---|---|
 | `DDS_DURATION.js` | SCRIPT 1650 | pure | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 | `DDS_COLORS.js` | SCRIPT 105 | pure | NO | PULL | 2026-05-23 10:45:08 | v100 | #23900 |
-| `DDS_STORE.js` | SCRIPT 150 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_STORE.js` | SCRIPT 150 | store-dependent | YES | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 | `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 | `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 | `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
@@ -114,6 +114,6 @@ How to check if a local module is up to date:
 | `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 | `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 | `DDS_LANES.js` | SCRIPT 1640 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_TRANSACTIONS.js` | SCRIPT 1860 | store-dependent | YES | PULL | 2026-05-23  | v101 | #local-stub |
+| `DDS_TRANSACTIONS.js` | SCRIPT 1860 | store-dependent | NO | PUSH | 2026-05-23 | v102 | #23905 |
 
 *b2wise — Confidential*

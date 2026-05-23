@@ -11,6 +11,7 @@
 | 0.1 | May 2026 | Initial draft — pattern + call site inventory |
 | 0.2 | May 2026 | Clarified map_* scope; added all presentation-layer call sites, drag interactions, AI layer |
 | 0.3 | May 2026 | DDS_TX_HELPER (SCRIPT 1870) added — wraps begin/commit/rollback; pattern updated at all call sites |
+| 0.4 | May 2026 | DDS_TX_HELPER.run() extended with onSuccess callback — presentation-layer side effects separated from store mutations; DDS_NODE_UI._doSave() patched as first call site |
 
 ---
 
@@ -19,26 +20,40 @@
 
 ### 1.1 Transaction lifecycle
 
-Every user interaction that mutates the store must be wrapped in a transaction.
-Use `DDS_TX_HELPER.run(label, fn)` — it handles the begin/commit/rollback cycle internally.
+DDS_TX_HELPER.run(label, fn, onSuccess?)` — wraps `begin`/`commit`/`rollback`.
 
-┌─────────────────────────────────────────────────────────────┐
-│  UI module (submit handler)                                 │
-│                                                             │
-│  DDS_TX_HELPER.run(TX.NODE_CREATE, () => {                  │
-│    DDS_NODES.create(fields);   // one or more helper calls  │
-│    DDS_FLOWS.update(...);      // each translates to actions │
-│  });                                                        │
-└─────────────────────────────────────────────────────────────┘
-
-`DDS_TX_HELPER` is defined in SCRIPT 1870. It is a temporary utility placed
-between DDS_TRANSACTIONS (SCRIPT 1860) and the UI modules, pending the
-presentation layer refactor.
+- `fn(ctx)` — synchronous store mutations only. Populate `ctx` with any data
+  needed by the presentation layer (IDs, positions, etc.).
+- `onSuccess(ctx)` — optional. Called after `commit()`, never on rollback.
+  Intended for Cytoscape / DOM side effects that must not be inside the
+  transaction snapshot.
 
 **Rules:**
 
-1. Pass all mutations for the interaction inside the `fn` callback.
-2. `fn` must be synchronous — no async/await inside.
+1. Pass all store mutations inside `fn`. Do not mix Cytoscape calls in `fn`.
+2. `fn` and `onSuccess` must be synchronous — no async/await.
+3. A single `run()` per user interaction, even when multiple helpers are chained.
+4. If `fn` throws, rollback is automatic and `onSuccess` is never called.
+5. Do not call `DDS_TRANSACTIONS.begin/commit/rollback` directly in UI modules.
+
+// Simple case — no presentation side effects needed
+DDS_TX_HELPER.run(TX.NODE_UPDATE, function(ctx) {
+  DDS_NODES.update(nodeId, fields);
+});
+
+// With presentation callback — IDs produced in fn, used in onSuccess
+DDS_TX_HELPER.run(TX.NODE_CREATE, function(ctx) {
+  var result = DDS_NODES.create(fields);
+  ctx.nodeId = result.applied[0]._created_id;
+  var pos = DDS_LAYOUT.placeNode(ctx.nodeId, mapId);
+  ctx.x = pos ? pos.x : 200;
+  ctx.y = pos ? pos.y : 200;
+  var rows = DDS_STORE.insert('map_nodes', { map_id: mapId, node_id: ctx.nodeId, x: ctx.x, y: ctx.y });
+  ctx.mapNodeId = rows[0].id;
+}, function(ctx) {
+  // Cytoscape add — outside transaction, after commit
+  DDS_CY.add({ group: 'nodes', data: { id: 'n' + ctx.nodeId, ... }, position: { x: ctx.x, y: ctx.y } });
+});
 
 ### 1.2 Scope: functional and presentation tables
 
@@ -250,7 +265,7 @@ Statuses: `to-do` | `done` | `n/a`
 
 | Interaction | TX key | English label | Status |
 |---|---|---|---|
-| Confirm node creation (modal) | `TX.NODE_CREATE` | Create node | to-do |
+| Confirm node creation (modal) | `TX.NODE_CREATE` | Create node | done |
 | Confirm node edit (modal) | `TX.NODE_UPDATE` | Edit node | to-do |
 
 ### 3.2 DDS_FLOW_UI — SCRIPT 1400

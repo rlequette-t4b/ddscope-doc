@@ -1,87 +1,28 @@
-  // ------------------------------------------------------------------
+// ------------------------------------------------------------------
   // Transaction/Delta API
   // ------------------------------------------------------------------
 
+  var api = {};
+
   // Adds a listener called after each change, receiving the generated delta
   api.onChange = function(fn) {
-    if (!this._changeListeners) this._changeListeners = [];
-    this._changeListeners.push(fn);
+    this._changeListener = (typeof fn === 'function') ? fn : null;
   };
 
   // Restores the model to the state before the given delta
   api.restore = function(delta) {
-    throw new Error('DDS_STORE.restore is not implemented yet');
-  };
-// AUDITOR:LARGE_BLOCK_JUSTIFIED - Single-responsibility store: memory CRUD + file persistence, must be complete.
-// ============================================================
-// DDS_STORE  In-memory project store + file persistence
-// ============================================================
-// All DDScope data access goes through this module.
-// Private _state holds { project, dirty }  no dependency on DDS global.
-// Files are .json  File System Access API when available,
-// download/upload fallback on other browsers.
-// ============================================================
-
-var DDS_STORE = (function () {
-
-  var _counters = {};                  // auto-increment counters per table
-
-  // Private state  isolated from DDS global for testability
-  var _state = {
-    project: null,
-    dirty:   false
+    // Pour l'instant, on suppose que le delta est un snapshot JSON (string)
+    this.loadFromText(typeof delta === 'string' ? delta : JSON.stringify(delta));
   };
 
-  // ------------------------------------------------------------------
-  // Internal helpers
-  // ------------------------------------------------------------------
-
-  function _table(name) {
-    var p = _state.project;
-    if (!p) throw new Error('[DDS_STORE] No project loaded');
-    if (!p[name]) p[name] = [];
-    return p[name];
-  }
-
-  function _nextId(table) {
-    if (!_counters[table]) {
-      // Seed from existing data
-      var rows = _state.project && _state.project[table];
-      _counters[table] = rows && rows.length
-        ? Math.max.apply(null, rows.map(function(r) { return r.id || 0; }))
-        : 0;
-    }
-    _counters[table] += 1;
-    return _counters[table];
-  }
-
-  function _match(row, filters) {
-    if (!filters) return true;
-    return Object.keys(filters).every(function(k) {
-      var val = filters[k];
-      if (Array.isArray(val)) return val.indexOf(row[k]) !== -1;
-      // Use loose equality to handle int/string mismatches (e.g. mapId from DOM vs stored integer)
-      return row[k] == val; // jshint ignore:line
-    });
-  }
-
-  function _markDirty() {
-    _state.dirty = true;
-    var name = (_state.project && _state.project.project && _state.project.project.name) || 'Untitled';
-    if (typeof DDS_STORE.onDirtyChange === 'function') DDS_STORE.onDirtyChange(true, name);
-  }
-
-  function _markClean(name) {
-    _state.dirty = false;
-    var resolvedName = name || (_state.project && _state.project.project && _state.project.project.name) || 'Untitled';
-    if (typeof DDS_STORE.onDirtyChange === 'function') DDS_STORE.onDirtyChange(false, resolvedName);
+  // Appeler le listener après chaque modification
+  function _fireChange(delta) {
+    if (typeof api._changeListener === 'function') api._changeListener(delta);
   }
 
   // ------------------------------------------------------------------
   // Memory CRUD (synchronous)
   // ------------------------------------------------------------------
-
-  var api = {};
 
   // query(table, filters?, options?)
   // options: { order: 'field.asc|desc' }
@@ -115,6 +56,7 @@ var DDS_STORE = (function () {
       return row;
     });
     _markDirty();
+    _fireChange(api.toJson());
     return inserted;
   };
 
@@ -129,7 +71,10 @@ var DDS_STORE = (function () {
         updated.push(r);
       }
     });
-    if (updated.length) _markDirty();
+    if (updated.length) {
+      _markDirty();
+      _fireChange(api.toJson());
+    }
     return updated;
   };
 
@@ -144,7 +89,10 @@ var DDS_STORE = (function () {
       else { kept.push(r); }
     });
     _state.project[table] = kept;
-    if (removed.length) _markDirty();
+    if (removed.length) {
+      _markDirty();
+      _fireChange(api.toJson());
+    }
     return removed;
   };
 
