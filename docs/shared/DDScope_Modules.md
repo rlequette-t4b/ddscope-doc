@@ -16,6 +16,7 @@
 | 0.7 | May 2026 | DDS_LANES added as helper facade for swim lane CRUD. delete() is a cascade routed via DDS_MODEL.deleteSwimLane. |
 | 0.8 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library for node types; icon_key, label_position, transparent_bg documented. |
 | 0.9 | May 2026 | DDS_ANNOTATIONS (SCRIPT 1670) and DDS_ANNOTATIONS_UI (SCRIPT 1780) added. DDS_MODEL.deleteAnnotation added. |
+| 1.0 | May 2026 | DDS_TRANSACTION (SCRIPT 1860) added - stub undo/redo transaction manager |
 
 ---
 
@@ -70,6 +71,17 @@ Any module may call `DDS_STORE.query` on any table at any time. Helpers expose n
 
 **Exception — presentation layer:**
 `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`, `map_annotations` are managed directly by presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, etc.) and are outside `DDS_ACTIONS`' scope.
+
+### Transaction ownership
+
+`DDS_TRANSACTION` is called by UI layer modules only. `DDS_ACTIONS` is not transaction-aware.
+
+A single user interaction may chain multiple `DDS_ACTIONS.execute()` calls. The UI module is
+responsible for:
+- calling `DDS_TRANSACTION.begin(label)` before the first `execute()` call,
+- calling `DDS_TRANSACTION.commit(transactionId)` after the last successful `execute()` call,
+- calling `DDS_TRANSACTION.rollback(transactionId)` if any `execute()` call fails or the
+  interaction is cancelled.
 
 ---
 
@@ -411,6 +423,47 @@ DDS_ACTIONS.ACTIONS                // object — structured vocabulary definitio
 ```
 DDS_STORE   SCRIPT 150
 DDS_MODEL   SCRIPT 1550
+```
+
+---
+
+### DDS_TRANSACTION
+
+```
+global:         DDS_TRANSACTION
+block:          SCRIPT 1860
+file:           src/DDS_TRANSACTION.js
+testability:    store-dependent
+contract:       stub
+dom_mixed:      no
+api_documented: yes
+deps_declared:  yes
+```
+
+**Responsibility:** snapshot-based undo/redo transaction manager. Captures `DDS_STORE` state via
+`toJson()` on `begin()` and restores it via `loadFromText()` on `rollback()` or `undo()`.
+Maintains two stacks (undo / redo) for user-facing history. `clear()` resets both stacks on
+project open.
+
+**Transaction ownership:** called by UI layer modules only. `DDS_ACTIONS` is not
+transaction-aware. A single user interaction may chain multiple `DDS_ACTIONS.execute()` calls;
+the UI module starts, commits, or rolls back the wrapping transaction.
+
+**API:**
+```
+DDS_TRANSACTION.begin(label)              // string — transactionId; captures DDS_STORE snapshot
+DDS_TRANSACTION.commit(transactionId)     // void — seals transaction as undo point
+DDS_TRANSACTION.rollback(transactionId)   // void — restores pre-begin snapshot
+DDS_TRANSACTION.undo()                    // boolean — true if undo was available
+DDS_TRANSACTION.redo()                    // boolean — true if redo was available
+DDS_TRANSACTION.canUndo()                 // boolean
+DDS_TRANSACTION.canRedo()                 // boolean
+DDS_TRANSACTION.clear()                   // void — resets both stacks (call on project open)
+```
+
+**Dependencies:**
+```
+DDS_STORE   SCRIPT 150
 ```
 
 ---
@@ -833,6 +886,7 @@ DDS         SCRIPT 400
 - [X] **Migrate `DDS_FLOWS_UI`** — replace any direct store calls with DDS_FLOWS.*
 - [X] **Remove SCRIPT 1600** (old DDS_PRODUCTS + DDS_NODES) — replaced by empty superseded stub
 - [X] **`DDS_STORE` DOM isolation refactor** — prerequisite for all store-dependent unit tests
+- [ ] **Implement `DDS_TRANSACTION`** (SCRIPT 1860) — stub only; undo/redo + rollback to implement
 - [ ] **Implement `DDS_ICONS`** (SCRIPT 110) — new pure module, SVG icon library
 - [ ] **Extend `DDS_MAP.applyNodeColors()`** → `applyAllNodeStyles()` — icon + label_position + transparent_bg support
 - [ ] **Settings UI** — icon selector + label_position dropdown + transparent_bg toggle in node_types table

@@ -27,6 +27,7 @@
 | 1.9 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS, DDS_BOMS, DDS_DEMANDS. DDS_ACTIONS.execute() made synchronous. UI modules call helpers only. |
 | 2.0 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library; icon_key, label_position, transparent_bg on node_types; applyNodeColors extended to applyAllNodeStyles. |
 | 2.1 | May 2026 | DDS_ANNOTATIONS helper and DDS_ANNOTATIONS_UI table view added to module registry |
+| 2.2 | May 2026 | DDS_TRANSACTION (SCRIPT 1900) added - stub undo/redo + transaction ownership documented |
 
 ---
 
@@ -65,6 +66,7 @@ The table below is a structural overview only — it does not duplicate the deta
 | `DDS_DURATION` | SCRIPT 1650 | Duration arithmetic and formatting |
 | `DDS_MODEL` | SCRIPT 1550 | Cascade delete rules — authoritative runtime |
 | `DDS_ACTIONS` | SCRIPT 1850 | Action execution engine — synchronous; apply action lists on DDS_STORE/DDS_MODEL, resolve new_* references, action vocabulary |
+| `DDS_TRANSACTION` | SCRIPT 1900 | Snapshot-based undo/redo transaction manager — wraps DDS_STORE state capture and restore |
 | `DDS_JSON` | SCRIPT 600 | Project import with copy modes + ID remapping |
 
 ### Helper layer modules
@@ -167,6 +169,22 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 - AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly.
 - Presentation layer modules manage `map_*` tables directly via `DDS_STORE` — this is the only exception.
 - `DDS_STORE.query` is unrestricted — any module may read any table.
+
+### Transaction ownership
+
+`DDS_TRANSACTION` sits above the write stack and is called by UI layer modules only.
+`DDS_ACTIONS` is not transaction-aware.
+
+A single user interaction may chain multiple `DDS_ACTIONS.execute()` calls. The UI module
+is responsible for wrapping those calls in a transaction:
+
+- `DDS_TRANSACTION.begin(label)` - before the first `execute()` call; captures a DDS_STORE snapshot
+- `DDS_TRANSACTION.commit(transactionId)` - after the last successful `execute()` call
+- `DDS_TRANSACTION.rollback(transactionId)` - if any `execute()` call fails or the interaction
+   is cancelled; restores DDS_STORE to the pre-begin snapshot
+
+Undo/redo history (`undo()` / `redo()`) navigates committed transaction snapshots.
+`clear()` must be called on project open to reset both stacks.
 
 ```javascript
 DDS_STORE.query(table, filters, options)   // → array
