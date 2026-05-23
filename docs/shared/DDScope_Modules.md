@@ -16,8 +16,8 @@
 | 0.7 | May 2026 | DDS_LANES added as helper facade for swim lane CRUD. delete() is a cascade routed via DDS_MODEL.deleteSwimLane. |
 | 0.8 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library for node types; icon_key, label_position, transparent_bg documented. |
 | 0.9 | May 2026 | DDS_ANNOTATIONS (SCRIPT 1670) and DDS_ANNOTATIONS_UI (SCRIPT 1780) added. DDS_MODEL.deleteAnnotation added. |
-| 1.0 | May 2026 | DDS_TRANSACTION (SCRIPT 1860) added - stub undo/redo transaction manager |
-| 1.1 | May 2026 | Undo/Redo API: onChange callback, canUndo/canRedo, nav bar doc; block address fix; version bump |
+| 1.0 | May 2026 | DDS_TRANSACTIONS (SCRIPT 1860) added - stub undo/redo transaction manager |
+| 1.2 | May 2026 | Rename DDS_TRANSACTION → DDS_TRANSACTIONS; dependency graph restored |
 
 ---
 
@@ -29,8 +29,8 @@
 
 **What is not recorded here:** implementation details, UI behaviour (see `DDScope_UI.md`), data model rules (see `DDScope_DataModel.md`).
 
-**About DDS_TRANSACTION:**
-The module `DDS_TRANSACTION` (Functional layer) is the transaction manager for undo/redo. It is called only by UI modules to wrap user interactions that may chain multiple `DDS_ACTIONS.execute()` calls. It captures DDS_STORE state snapshots on `begin`, restores them on `rollback`/`undo`, and manages the undo/redo stacks. Helpers and AI modules do not call it directly.
+**About DDS_TRANSACTIONS:**
+The module `DDS_TRANSACTIONS` (Functional layer) is the transaction manager for undo/redo. It is called only by UI modules to wrap user interactions that may chain multiple `DDS_ACTIONS.execute()` calls. It captures DDS_STORE state snapshots on `begin`, restores them on `rollback`/`undo`, and manages the undo/redo stacks. Helpers and AI modules do not call it directly.
 
 Both DEV and TEST contexts must keep their copy in sync (manual transfer — see `README.md`).
 
@@ -78,13 +78,13 @@ Any module may call `DDS_STORE.query` on any table at any time. Helpers expose n
 
 ### Transaction ownership
 
-`DDS_TRANSACTION` is called by UI layer modules only. `DDS_ACTIONS` is not transaction-aware.
+`DDS_TRANSACTIONS` is called by UI layer modules only. `DDS_ACTIONS` is not transaction-aware.
 
 A single user interaction may chain multiple `DDS_ACTIONS.execute()` calls. The UI module is
 responsible for:
-- calling `DDS_TRANSACTION.begin(label)` before the first `execute()` call,
-- calling `DDS_TRANSACTION.commit(transactionId)` after the last successful `execute()` call,
-- calling `DDS_TRANSACTION.rollback(transactionId)` if any `execute()` call fails or the
+- calling `DDS_TRANSACTIONS.begin(label)` before the first `execute()` call,
+- calling `DDS_TRANSACTIONS.commit(transactionId)` after the last successful `execute()` call,
+- calling `DDS_TRANSACTIONS.rollback(transactionId)` if any `execute()` call fails or the
   interaction is cancelled.
 
 ---
@@ -104,7 +104,7 @@ graph TD
   subgraph Functional["Functional layer"]
     DDS_MODEL
     DDS_ACTIONS
-    DDS_TRANSACTION
+    DDS_TRANSACTIONS
     DDS_JSON
     DDS_AI_CONTEXT
   end
@@ -120,36 +120,34 @@ graph TD
     DDS_LANES
   end
 
-    block:          SCRIPT 1900
-    file:           src/DDS_TRANSACTION.js
+  subgraph AI["AI layer"]
+    DDS_AI
     DDS_AI_UI
   end
 
-  DDS_MODEL       --> DDS_STORE
-  DDS_ACTIONS     --> DDS_STORE
-  DDS_ACTIONS     --> DDS_MODEL
-  DDS_TRANSACTION --> DDS_STORE
-  DDS_JSON        --> DDS_STORE
-  DDS_AI_CONTEXT  --> DDS_STORE
+  DDS_MODEL        --> DDS_STORE
+  DDS_ACTIONS      --> DDS_STORE
+  DDS_ACTIONS      --> DDS_MODEL
+  DDS_TRANSACTIONS --> DDS_STORE
+  DDS_JSON         --> DDS_STORE
+  DDS_AI_CONTEXT   --> DDS_STORE
 
-  DDS_NODES    --> DDS_ACTIONS
-  DDS_NODES    --> DDS_STORE
-
-    **API:**
-    ```
-    DDS_TRANSACTION.begin(label)              // string — transactionId; captures DDS_STORE snapshot
-    DDS_TRANSACTION.commit(transactionId)     // void — seals transaction as undo point
-    DDS_TRANSACTION.rollback(transactionId)   // void — restores pre-begin snapshot
-    DDS_TRANSACTION.undo()                    // boolean — true if undo was available
-    DDS_TRANSACTION.redo()                    // boolean — true if redo was available
-    DDS_TRANSACTION.canUndo()                 // boolean
-    DDS_TRANSACTION.canRedo()                 // boolean
-    DDS_TRANSACTION.clear()                   // void — resets both stacks (call on project open)
-    DDS_TRANSACTION.onChange(fn)              // void — registers a callback fired after any undo/redo/clear/commit; fn() is called with no arguments
-    ```
+  DDS_NODES       --> DDS_ACTIONS
+  DDS_NODES       --> DDS_STORE
+  DDS_PRODUCTS    --> DDS_ACTIONS
+  DDS_PRODUCTS    --> DDS_STORE
+  DDS_FLOWS       --> DDS_ACTIONS
+  DDS_FLOWS       --> DDS_STORE
+  DDS_SKUS        --> DDS_ACTIONS
+  DDS_SKUS        --> DDS_STORE
+  DDS_BOMS        --> DDS_ACTIONS
+  DDS_BOMS        --> DDS_STORE
+  DDS_DEMANDS     --> DDS_ACTIONS
+  DDS_DEMANDS     --> DDS_STORE
+  DDS_ANNOTATIONS --> DDS_ACTIONS
   DDS_ANNOTATIONS --> DDS_STORE
-  DDS_LANES    --> DDS_ACTIONS
-  DDS_LANES    --> DDS_STORE
+  DDS_LANES       --> DDS_ACTIONS
+  DDS_LANES       --> DDS_STORE
 
   DDS_AI          --> DDS_STORE
   DDS_AI          --> DDS_AI_CONTEXT
@@ -160,7 +158,7 @@ graph TD
   DDS_AI_UI       --> DDS_ACTIONS
 
   %% Transaction manager is called only by UI modules (not shown in this registry)
-  %% UI --> DDS_TRANSACTION
+  %% UI --> DDS_TRANSACTIONS
 ```
 
 **Notes:**
@@ -438,12 +436,12 @@ DDS_MODEL   SCRIPT 1550
 
 ---
 
-### DDS_TRANSACTION
+### DDS_TRANSACTIONS
 
 ```
-global:         DDS_TRANSACTION
+global:         DDS_TRANSACTIONS
 block:          SCRIPT 1860
-file:           src/DDS_TRANSACTION.js
+file:           src/DDS_TRANSACTIONS.js
 testability:    store-dependent
 contract:       stub
 dom_mixed:      no
@@ -460,16 +458,19 @@ project open.
 transaction-aware. A single user interaction may chain multiple `DDS_ACTIONS.execute()` calls;
 the UI module starts, commits, or rolls back the wrapping transaction.
 
+Remplacer toutes les occurrences de `DDS_TRANSACTION` (hors section header et métadonnées déjà traités ci-dessus) par `DDS_TRANSACTIONS` dans la section de ce module.
+
 **API:**
 ```
-DDS_TRANSACTION.begin(label)              // string — transactionId; captures DDS_STORE snapshot
-DDS_TRANSACTION.commit(transactionId)     // void — seals transaction as undo point
-DDS_TRANSACTION.rollback(transactionId)   // void — restores pre-begin snapshot
-DDS_TRANSACTION.undo()                    // boolean — true if undo was available
-DDS_TRANSACTION.redo()                    // boolean — true if redo was available
-DDS_TRANSACTION.canUndo()                 // boolean
-DDS_TRANSACTION.canRedo()                 // boolean
-DDS_TRANSACTION.clear()                   // void — resets both stacks (call on project open)
+DDS_TRANSACTIONS.begin(label)              // string — transactionId; captures DDS_STORE snapshot
+DDS_TRANSACTIONS.commit(transactionId)     // void — seals transaction as undo point
+DDS_TRANSACTIONS.rollback(transactionId)   // void — restores pre-begin snapshot
+DDS_TRANSACTIONS.undo()                    // boolean — true if undo was available
+DDS_TRANSACTIONS.redo()                    // boolean — true if redo was available
+DDS_TRANSACTIONS.canUndo()                 // boolean
+DDS_TRANSACTIONS.canRedo()                 // boolean
+DDS_TRANSACTIONS.clear()                   // void — resets both stacks (call on project open)
+DDS_TRANSACTIONS.onChange(fn)              // void — registers a callback fired after any undo/redo/clear/commit; fn() is called with no arguments
 ```
 
 **Dependencies:**

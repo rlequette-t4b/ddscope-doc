@@ -114,7 +114,6 @@ How to check if a local module is up to date:
 | `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 | `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
 | `DDS_LANES.js` | SCRIPT 1640 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-
 | `DDS_TRANSACTIONS.js` | SCRIPT 1860 | store-dependent | YES | PULL | 2026-05-23  | v101 | #local-stub |
 
 *b2wise — Confidential*
