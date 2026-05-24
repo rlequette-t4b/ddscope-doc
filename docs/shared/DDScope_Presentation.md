@@ -10,6 +10,7 @@
 | Version | Date | Summary |
 |---|---|---|
 | 0.1 | May 2026 | Initial extraction from DDScope_Architecture.md |
+| 0.2 | May 2026 | §4 Auto-layout added — BFS ranking algorithm extracted from DDScope_Architecture.md §6 |
 
 ---
 
@@ -50,3 +51,40 @@ The algorithm applies in order:
 3. **No swim-lanes on the map** — the node is placed at the centre of the current viewport (injected as `getViewportCenter()`).
 
 The same algorithm is used for annotation placement. `DDS_LAYOUT.placeAnnotation(annotationId, mapId, { getSwimLaneBounds, getViewportCenter })` follows identical rules.
+
+---
+
+## 4. Auto-layout
+
+`DDS_MAP.runLayout()` triggers the BFS-based layout algorithm per swim-lane. Nodes without a swim-lane on the active map are not repositioned — their positions are preserved as-is.
+
+**Ghost note nodes are excluded** from the layout node grouping — they are filtered out before lane assignment (`node.hasClass('dds-note-ghost')`).
+
+The algorithm runs in two steps: rank computation per lane (`_computeRanksForLane`), then column and vertical placement per lane (`_placeLaneNodes`).
+
+### 4.1 BFS ranking — `_computeRanksForLane(laneNodeIds)`
+
+Ranks are computed **locally per swim-lane**, considering only flows where both endpoints belong to the lane. Flows entering from other swim-lanes are ignored — nodes with no internal predecessor are treated as sources (rank 0).
+
+**`layout_offset`** (integer, from `map_flows`) controls BFS inclusion and column distance:
+- `0` — the flow is excluded from BFS entirely; the nodes it connects are free to share a column.
+- `N > 0` (default `1`) — the target must be placed at least `N` columns after the source.
+
+**`layout_direction_inverted`** (boolean, from `map_flows`) applies to bidirectional flows only. When `true`, source and target are swapped in the BFS predecessor/successor graph, so the rank propagates in the opposite direction.
+
+* **rankMin** — longest-path from sources (Kahn topological sort, cycle-safe). Ensures a node is placed after all its internal predecessors.
+* **rankMax** — second pass from rankMin:
+  - `rankMax(n) = min(rankMin(successors)) − 1` — a node cannot be placed after any of its successors.
+  - If no internal successors: `rankMax(n) = max(rankMin)` across the lane — the node may float to the last column.
+  - `rankMax ≥ rankMin` is enforced.
+
+### 4.2 Column assignment — `_placeLaneNodes`
+
+Each node is assigned to the column (rank value) in `[rankMin, rankMax]` whose canvas X is closest to the node's pre-layout X. This allows the user to influence column placement by repositioning a node before running Layout.
+
+Column X positions are evenly spaced (max 150px between columns), centred within the swim-lane width.
+
+### 4.3 Vertical placement within a column
+
+- **1–2 nodes**: pre-layout Y is preserved, clamped to lane bounds with a 20px margin.
+- **3+ nodes**: spread evenly between the column's own YMin/YMax (pre-layout), clamped to lane bounds with a 20px margin. Sort order within the column follows pre-layout Y (ascending).

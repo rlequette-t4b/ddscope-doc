@@ -10,6 +10,7 @@
 | Version | Date | Summary |
 |---|---|---|
 | 0.1 | May 2026 | Initial extraction from DDScope_Architecture.md |
+| 0.2 | May 2026 | §4 Fit-to-canvas, §5 Taxi edge rendering, §6 BFS rank badges added — extracted from DDScope_Architecture.md §6 |
 
 ---
 
@@ -51,3 +52,49 @@ Many operations modify one or a few Cytoscape elements without requiring a full 
 
 | Operation | Function | What it does |
 |---|---|---|
+
+## 4. Fit-to-canvas — `fitMap`
+
+`DDS_MAP.fitMap` computes the union bounding box of all visible elements on the active map and applies pan and zoom via `DDS_CY.viewport()`.
+
+**Bounding box inputs:**
+- Cytoscape node positions from `map_nodes` for the active map.
+- Swim-lane geometry from `map_swim_lanes` for the active map.
+
+**Exclusions:** BFS rank badge debug nodes (class `dds-bfs-badge`) are excluded from the bounding box calculation. Note ghosts, flow note ghosts, and annotation ghosts are **included**.
+
+**Timing:** execution is deferred by 50 ms via `setTimeout` to ensure the browser has painted the container before viewport computation.
+
+`fitMap` is triggered on project open, map tab switch, and via the Fit button (⛶) in the toolbar.
+
+---
+
+## 5. Taxi Edge Rendering
+
+### 5.1 Edge curve and bend
+
+Edges use `curve-style: taxi` with `taxi-direction: horizontal` by default. The `curve_style` field on `map_flows` can override this to `straight`.
+
+The taxi bend position is controlled per-edge via `taxi-turn`, applied individually after `DDS_CY.add()` in `loadMap`. The value derives from `waypoint_pct` (float, 0–1) stored in `map_flows`. Default: `0.5` (midpoint).
+
+### 5.2 Waypoint drag handle
+
+A draggable handle (`.dds-waypoint-handle`) appears on the bend of the selected taxi edge. Drag updates `taxi-turn` in real time; release persists `waypoint_pct` to `map_flows`. Double-click resets to `0.5`.
+
+The fields `layout_offset` and `layout_direction_inverted` are loaded from `map_flows` onto each Cytoscape edge as `edge.data('layoutOffset')` and `edge.data('layoutDirectionInverted')` for use by the presentation layer layout algorithm — see [DDScope_Presentation.md](../shared/DDScope_Presentation.md) §4.
+
+### 5.3 Flow note ghost (`dds-flow-note-ghost`)
+
+When `show_notes_label` and `notes_as_annotation` are both `true` on a `map_flows` record, a ghost node (class `dds-flow-note-ghost`, id `flow-note-{flow_id}`) is created and positioned at the flow midpoint offset by `notes_annotation_dx` and `notes_annotation_dy`.
+
+- The ghost is **draggable**: release persists the new offset to `map_flows`.
+- The ghost is **excluded** from fit-to-canvas and auto-layout (same filter as `dds-note-ghost`).
+- When `notes_as_annotation` is `false`, the note is rendered as a native Cytoscape edge label instead.
+
+---
+
+## 6. BFS Rank Badges (debug)
+
+When the `show_bfs_ranks` debug setting is active, `DDS_MAP.renderBfsRankBadges(mapId)` creates a Cytoscape ghost node (class `dds-bfs-badge`) above each swim-lane node that has stored `bfs_rank_min` and `bfs_rank_max` values in `map_nodes`.
+
+These ghost nodes are excluded from the fit-to-canvas bounding box calculation. They are created and destroyed on each `loadMap` call — they are not persisted to `map_nodes` or exported in JSON.
