@@ -56,3 +56,15 @@ The developer then performs the update manually:
 3. Ask the assistant to apply the patch to the correct canonical document in the subfolder matching its category.
 4. Commit and sync to GitHub.
 5. Refresh from GitHub in DEV.
+
+## Slack Channel
+
+A shared Slack channel is used for lightweight coordination between DEV, TEST, and the developer.
+
+| Property | Value |
+|---|---|
+| Channel name | `#ddscope-sync` |
+| Channel ID | `C0B5RSURETF` |
+| Workspace | tech4best |
+
+Rules and usage conventions for this channel are to be defined as the workflow matures.
