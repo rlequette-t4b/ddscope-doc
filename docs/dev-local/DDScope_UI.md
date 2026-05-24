@@ -261,7 +261,7 @@ To remove or delete an element from the active map, select it on the canvas and 
 
 ## 5. Map Interaction
 
-The map is rendered with Cytoscape.js. Swim-lanes are HTML divs overlaid on the Cytoscape canvas and kept in sync via pan/zoom events. All canvas state (node positions, swim-lane geometry, flow visibility, CTT line geometry) is scoped to the active map.
+All canvas state (node positions, swim-lane geometry, flow visibility, CTT line geometry) is scoped to the active map. For the rendering engine implementation, see [DDScope_Rendering.md](../dev-local/DDScope_Rendering.md).
 
 ### Node interactions
 
@@ -309,7 +309,7 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 
 ### CTT line interactions
 
-- The CTT line is an HTML overlay (`.dds-ctt-line-wrap`) rendered below the node, synchronised with Cytoscape pan/zoom.
+- The CTT line is displayed below the node and follows it on pan/zoom.
 - **Drag line** — repositions the overlay; persists `demand_x`, `demand_y` to `map_nodes`.
 - **Drag handle (left or right)** — resizes the line symmetrically; persists `demand_length` to `map_nodes`.
 - **Node drag** — the CTT overlay follows the node, preserving its relative offset.
@@ -318,7 +318,7 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 ### Flow interactions
 
 - **Flow creation** — drag from the green handle that appears on node hover to a target node.
-- **Flow rerouting** — selecting a flow shows two draggable handles: a **blue circle** on the source endpoint, a **purple circle** on the target endpoint. Both handles are positioned at the exact point where the edge meets the node (using Cytoscape's `sourceEndpoint()` / `targetEndpoint()`), including when the edge connects at the top or bottom of a node. Dragging a handle to another valid node reroutes that endpoint and refreshes the side panel. Releasing in empty space cancels with no change. A ghost line connects the fixed opposite endpoint to the cursor during drag. Valid target nodes are highlighted during drag; the opposite endpoint node is excluded.
+- **Flow rerouting** — selecting a flow shows two draggable handles: a **blue circle** on the source endpoint, a **purple circle** on the target endpoint. Both handles are positioned at the exact point where the edge meets the node, including when the edge connects at the top or bottom. Dragging a handle to another valid node reroutes that endpoint and refreshes the side panel. Releasing in empty space cancels with no change. A ghost line connects the fixed opposite endpoint to the cursor during drag. Valid target nodes are highlighted during drag; the opposite endpoint node is excluded.
 - **Selection** — click an edge to open the side panel.
 - **Waypoint handle** — selecting a flow reveals a circular handle on the taxi bend. Drag to reposition; double-click to reset to midpoint (50%).
 

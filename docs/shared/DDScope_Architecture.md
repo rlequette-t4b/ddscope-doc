@@ -1,7 +1,7 @@
-{REPLACE_ALL}
-*v2.1 — Draft — May 2026*
+# DDScope — Architecture
+*v3.0 — Draft — May 2026*
 
-*See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_UI.md](DDScope_UI.md) for rendering behaviour. [DDScope_Modules.md](DDScope_Modules.md) for the JavaScript module registry.*
+*See also: [DDScope_DataModel.md](DDScope_DataModel.md) · [DDScope_Presentation.md](DDScope_Presentation.md) · [DDScope_Rendering.md](../dev-local/DDScope_Rendering.md) · [DDScope_UI.md](../dev-local/DDScope_UI.md) · [DDScope_Modules.md](DDScope_Modules.md)*
 
 ---
 
@@ -10,25 +10,8 @@
 | Version | Date | Summary |
 |---|---|---|
 | 0.4 | May 2026 | Initial split from monolithic spec |
-| 0.5 | May 2026 | Data model updated for map model — 4 new entity groups; nodes and swim_lanes revised |
-| 0.6 | May 2026 | stock_points renamed to skus; tags added on flows and skus; swim_lanes position field removed |
-| 0.7 | May 2026 | Excel/SheetJS reference removed; app ID removed |
-| 0.8 | May 2026 | boms and bom_components added |
-| 0.9 | May 2026 | Persistence migrated to local JSON file (DDS_STORE); DataStore/Supabase references removed; project_id removed |
-| 1.0 | May 2026 | Dirty state extended: Save button gated on dirty flag; DDS_STORE.markDirty() and DDS_STORE.resetDirty() exposed publicly |
-| 1.1 | May 2026 | Node placement (DDS_LAYOUT) and auto-layout (DDS_MAP.runLayout) documented |
-| 1.2 | May 2026 | Auto-layout upgraded to custom BFS ranking per swim-lane; waypoint handle on taxi edges; vertical snap on drag |
-| 1.3 | May 2026 | tag_colors table added; legend_visible on maps; DDS_MAP tag color + legend functions documented |
-| 1.4 | May 2026 | Note overlay on nodes: DDS_MAP.renderNoteGhosts, ghost node lifecycle, exclusions from fitMap and runLayout |
-| 1.5 | May 2026 | skip_in_layout on map_flows: excluded from BFS rank computation; loaded on Cytoscape edges in loadMap |
-| 1.6 | May 2026 | demands and map_demands added; DDS_DURATION utility module documented; CTT line HTML overlay documented |
-| 1.7 | May 2026 | JavaScript module registry introduced; module table updated to reference DDScope_Modules.md |
-| 1.8 | May 2026 | DDS_ACTIONS added (SCRIPT 1850) in functional layer; DDS_AI_EXECUTOR removed; DDS_AI responsibility updated |
-| 1.9 | May 2026 | Helper layer introduced: DDS_NODES, DDS_PRODUCTS, DDS_FLOWS, DDS_SKUS, DDS_BOMS, DDS_DEMANDS. DDS_ACTIONS.execute() made synchronous. UI modules call helpers only. |
-| 2.0 | May 2026 | DDS_ICONS added (SCRIPT 110) — SVG icon library; icon_key, label_position, transparent_bg on node_types; applyNodeColors extended to applyAllNodeStyles. |
-| 2.1 | May 2026 | DDS_ANNOTATIONS helper and DDS_ANNOTATIONS_UI table view added to module registry |
-| 2.2 | May 2026 | DDS_TRANSACTIONS (SCRIPT 1860) added - stub undo/redo + transaction ownership documented |
-| 2.3 | May 2026 | DDS_TOOLS (SCRIPT 40) added — transversal utility module (DDS_TOOLS.log levelled logger). TX (SCRIPT 1865) et DDS_TX_HELPER (SCRIPT 1870) ajoutés — catalogue de labels de transaction et wrapper UI transaction. |
+| 0.5–2.3 | May 2026 | Incremental updates (see prior history in git) |
+| 3.0 | May 2026 | Major restructure: implementation details extracted to dedicated documents; Architecture now describes layers and dependencies only |
 
 ---
 
@@ -36,28 +19,38 @@
 
 DDScope runs entirely within the CommWise platform as a single-page CommWise Web App. Single-user per session. No concurrent editing.
 
----
-
-## 2. Stack
+**Stack:**
 
 | Concern | Solution |
 |---|---|
 | Persistent storage | Local JSON file — in-memory store + File System Access API |
-| Map rendering | Cytoscape.js v3.33.1 (cdnjs) |
+| Map rendering | Cytoscape.js v3.33.1 |
 | Swim-lane rendering | HTML overlay divs (not Cytoscape compounds) |
-| Auto-layout | Custom BFS ranking per swim-lane (DDS_MAP.runLayout) + Dagre v0.8.5 for free nodes |
+| Auto-layout | Custom BFS ranking per swim-lane |
 
 ---
 
-## 3. JavaScript Modules
+## 2. Layered Architecture
 
+DDScope is organised into five layers. Each layer has a single responsibility and a constrained dependency direction — no layer may depend on a layer above it.
 
-DDScope logic is split across named JavaScript modules, each living in a dedicated CommWise SCRIPT block. All modules are exposed as globals on `window` under the `DDS_` prefix.
+```
+┌───────────────────────────────┐  User-facing interactions, views, panels
+│           UI layer           │
+├───────────────────────────────┤  Cytoscape canvas + HTML overlays
+│        Rendering layer        │
+├───────────────────────────────┤  map_* entity logic, layout algorithms
+│      Presentation layer       │
+├─────────────┬───────────────┬─┤  Domain helpers / AI action execution
+│  Helper layer│   AI layer    │
+├───────────────────────────────┤  DDS_STORE, DDS_ACTIONS, DDS_MODEL
+│       Functional layer        │
+└───────────────────────────────┘
+```
 
-**[DDScope_Modules.md](DDScope_Modules.md) is the authoritative registry** for all `DDS_*` modules. It records for each module: CommWise block address (`code_type` + `position`), public API, runtime dependencies, testability classification, and extraction readiness. Consult it before working on any module.
+### Functional layer
 
-The tables below are a structural overview only — patterns, responsibilities, and layer boundaries.
-They do not duplicate the API contracts, block addresses, or dependency declarations found in the registry.
+The foundation. Manages in-memory state (`DDS_STORE`), action execution (`DDS_ACTIONS`), cascade rules (`DDS_MODEL`), undo/redo (`DDS_TRANSACTIONS`), and file persistence. No knowledge of rendering or UI.
 Block addresses (`SCRIPT NNN`) are shown here only for modules absent from the registry (AI layer and Presentation layer).
 
 

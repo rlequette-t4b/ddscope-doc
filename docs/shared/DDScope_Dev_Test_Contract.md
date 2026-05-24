@@ -44,11 +44,10 @@ All DDScope documentation is kept by TEST under four categories:
 | Category | Visibility | Purpose |
 |---|---|---|
 | `shared` | Visible in DEV and TEST | Common DDScope specifications shared by both environments |
-| `bridge` | Visible in DEV and TEST | Shared workflow and contract documents connecting DEV and TEST |
 | `test-local` | TEST only | Local TEST procedures and implementation notes |
 | `dev-local` | DEV only | Local DEV procedures and implementation notes |
 
-When DEV needs to update a document in `bridge`, `shared`, or `dev-local`, it may emit a Markdown patch in english describing the intended changes clearly.
+When DEV needs to update a document in `shared`, `test-local`, or `dev-local`, it may emit a Markdown patch in english describing the intended changes clearly.
 
 The developer then performs the update manually:
 
@@ -57,19 +56,3 @@ The developer then performs the update manually:
 3. Ask the assistant to apply the patch to the correct canonical document in the subfolder matching its category.
 4. Commit and sync to GitHub.
 5. Refresh from GitHub in DEV.
-
-TEST-local documentation is managed directly in TEST and is not part of the DEV patch workflow.
-
-### 2. Code
-
-**UI Code** is only changed by DEV using CommWise MCP.
-
-**Functional Modules** code can be changed by both sides using CommWise MCP. DEV does not maintain a separate code base.
-
-TEST has a process to synchronise its workspace with CommWise.
-
-It is the developer's responsibility to avoid parallel overwrites. CommWise revisions and GitHub can help restore accidental conflicts.
-
----
-
-*b2wise - Confidential*
