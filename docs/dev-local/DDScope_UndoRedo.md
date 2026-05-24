@@ -338,7 +338,7 @@ Statuses: `to-do` | `done` | `n/a`
 
 | Interaction | TX key | English label | Status |
 |---|---|---|---|
-| Confirm node create (table) | `TX.NODE_CREATE` | Create node | to-do |
+| Confirm node create (table) | `TX.NODE_CREATE` | Create node | done |
 | Save node edit (table inline) | `TX.NODE_UPDATE` | Edit node | to-do |
 | Confirm node delete (table) | `TX.NODE_DELETE` | Delete node | to-do |
 
@@ -399,7 +399,7 @@ Statuses: `to-do` | `done` | `n/a`
 
 | Interaction | TX key | English label | Status |
 |---|---|---|---|
-| User confirms AI action plan | `TX.AI_APPLY_ACTIONS` | Apply AI changes | to-do |
+| User confirms AI action plan | `TX.AI_APPLY_ACTIONS` | Apply AI changes | done |
 
 > The transaction wraps the full `DDS_ACTIONS.execute(actions)` call. If `result.failed` is non-null, `rollback()` is called and the error is surfaced in the AI panel. `DDS_AI` itself is not transaction-aware.
 
