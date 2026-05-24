@@ -1,3 +1,4 @@
+// CommWise block content — IIFE exposing a global
 // AUDITOR:LARGE_BLOCK_JUSTIFIED - Single-responsibility store: memory CRUD + file persistence, must be complete.
 // ============================================================
 // DDS_STORE  In-memory project store + file persistence
@@ -69,20 +70,20 @@ var DDS_STORE = (function () {
 
   var api = {};
   // ------------------------------------------------------------------
-  // Deltas for transactions API 
+  // Deltas for transactions API
   // a delta is a record of changes to move from one state to an other
   // ------------------------------------------------------------------
 
   // list of changes in the current delta
   var _changes = null;
   // each change is an array [current, backup, table]
-  // 
+  //
   // backup  = null -> object was created after the delta began, it's at the end of the table
   // current = null -> object was deleted after the delta began, backup is the original object
   // current and backup non-null -> object was updated, backup is a copy of original state, table not used
- 
+
   // define start of a delta, throws an error if a delta is already in progress
-  api.beginDelta = function() {  
+  api.beginDelta = function() {
     if (_changes !== null) {
       throw new Error('A delta is already in progress');
     }
@@ -107,11 +108,11 @@ var DDS_STORE = (function () {
   var _addChange = function(object, operation, table) {
 
     if (_changes !== null) { // if no delta in progrss do not record changes
-       
+
       if (operation === 0) { // objet is created during the delta, record it with null backup
         _changes.push([object, null, table]); // record creation
         return;
-      } 
+      }
 
       if (operation === 2) { // object is deleted during the delta
         var index = _changes.findIndex(function(s) { // check it was created during the delta
@@ -123,14 +124,14 @@ var DDS_STORE = (function () {
         }
         _changes.push([null, object, table]); // record deletion
         return;
-      } 
+      }
 
       // if object is already in the delta stick to original change
       if (_changes.find(function(s) {
              return (s[0] === object);
       })) {
         return
-      }  
+      }
 
       // record the backup for an update
       _changes.push([object, Object.assign({}, object)]);
@@ -157,7 +158,11 @@ var DDS_STORE = (function () {
       } else {
         // object was updated after the snapshot began
         // properties should be exchanged between current and backup
-        Object.keys(backup).forEach(function(k) {
+        // Use union of keys — backup may lack keys added by the update (e.g. waypoint_pct absent at insert time)
+        var allKeys = Object.keys(current).concat(Object.keys(backup).filter(function(k) {
+          return !(k in current);
+        }));
+        allKeys.forEach(function(k) {
           var temp = current[k];
           current[k] = backup[k];
           backup[k] = temp;
@@ -381,8 +386,5 @@ var DDS_STORE = (function () {
 
 }());
 
-
+// ESM export appended during extraction — do not remove
 export default DDS_STORE;
-
-
-

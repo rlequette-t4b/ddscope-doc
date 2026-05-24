@@ -98,5 +98,22 @@ describe('DDS_STORE Deltas', () => {
 
   });
 
+  it('restore correctly when an attribute was added during a Delta', () => {
+    // insert a node before the delta
+    DDS_STORE.insert('nodes', { name: 'A' });
+    expect(DDS_STORE.query('nodes')).toHaveLength(1);
+    var node = DDS_STORE.query('nodes')[0];
+    
+    DDS_STORE.beginDelta();
+    // add a new attribute to the node
+    DDS_STORE.update('nodes', node.id, { color: 'red' });
+    expect(node.color).toBe('red');
+    var delta = DDS_STORE.endDelta();
+
+    var revDelta = DDS_STORE.revertDelta(delta);
+
+    // the color attribute should be removed or nullified after undo
+    expect(node.color).toBeUndefined() || expect(node.color).toBeNull();
+  });
 
 });
