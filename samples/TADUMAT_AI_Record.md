@@ -38,19 +38,12 @@ pardon le tag est aval
 
 **User:**
 ```
-deux fournisseurs externes l'un a une note "à marque TADUMAT"
+deux fournisseurs externes de meme nom "fournisseur externe" l'un a une note "à marque TADUMAT"
 ```
 
 **Assistant:** L'utilisateur souhaite ajouter deux fournisseurs externes. L'un d'eux doit avoir une note 'à marque TADUMAT'. Je vais créer deux nœuds de type SUPPLIER dans la swim-lane Fournisseur, avec des noms génériques, et ajouter la note spécifiée au premier.
 
----
 
-**User:**
-```
-renomme les  : fournisseurs externes
-```
-
-**Assistant:** L'utilisateur souhaite renommer les deux fournisseurs existants (nœuds avec les IDs 4 et 5) pour les appeler 'fournisseurs externes'. Je vais les renommer en 'Fournisseur externe 1' et 'Fournisseur externe 2' pour maintenir la distinction entre eux.
 
 ---
 
@@ -65,7 +58,7 @@ les deux fournissent tous les entrepots, flot tag amont
 
 **User:**
 ```
-cree unflot bidirectionel entre les deux entrepots tag transferts avec une note RARE TRANSFERTS INTERSITES
+cree un flot bidirectionel entre les deux entrepots tag transferts avec une note RARE TRANSFERTS INTERSITES
 ```
 
 **Assistant:** L'utilisateur veut créer un flux bidirectionnel entre les deux entrepôts LILLE (id: 2) et VALENCE (id: 3) avec le tag 'transfert' et la note 'RARE TRANSFERTS INTERSITES'. Je vais utiliser le paramètre bidirectional=true pour créer un flux qui permet les échanges dans les deux sens entre les entrepôts.
