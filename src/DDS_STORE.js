@@ -245,6 +245,11 @@ var DDS_STORE = (function () {
         _addChange(r, 2, tbl);
       }
     });
+    // Mutate in place to keep delta references valid (revertDelta uses table.push/pop)
+    removed.forEach(function(r) {
+      var idx = tbl.indexOf(r);
+      if (idx !== -1) tbl.splice(idx, 1);
+    });
 
     if (removed.length) {
       _markDirty();

@@ -1,6 +1,6 @@
 # DDScope — Transaction Pattern & Implementation Tracker
 
-*v0.6 — Draft — May 2026*
+*v0.7 — Draft — May 2026*
 
 ---
 
@@ -14,6 +14,7 @@
 | 0.4 | May 2026 | DDS_TX_HELPER.run() extended with onSuccess callback — presentation-layer side effects separated from store mutations; DDS_NODE_UI._doSave() patched as first call site |
 | 0.5 | May 2026 | map_* tables confirmed in TX scope; DDS_PANEL node panel fully wired (all 7 handlers); swim-lane panel wired (2 handlers); flow panel wired (10 handlers, issues in progress); annotation panel wired (4 handlers, to test — bug on annotation creation); _afterUndoRedo closes side panel to avoid stale fields |
 | 0.6 | May 2026 | DDS_FLOW_UI wirés (FLOW_CREATE, FLOW_REROUTE) ; DDS_MAP drag nœud (MAP_MOVE_NODE) et note ghost (MAP_MOVE_NOTE_GHOST) ; DDS_REMOVE toutes branches (NODE_DELETE, FLOW_DELETE, LANE_DELETE, ANNOTATION_DELETE, MAP_REMOVE_*, MULTI_DELETE) ; TX.MULTI_DELETE ajouté au catalogue ; colonne tested ajoutée à l'inventaire ; règle "une TX par interaction" documentée |
+| 0.7 | May 2026 | Waypoint drag + dblclick câblés (MAP_MOVE_WAYPOINT) ; swim-lane drag + resize câblés (MAP_RESIZE_LANE) ; fix revertDelta union-des-clés ; preserveViewport après undo/redo ; pattern "begin au mousedown" documenté (§1.5) ; fix revertDelta documenté (§1.6) ; sections 3.1 node edit et 3.5 DDS_ELEMENTS_UI passées en n/a ; tables Nodes/Flows/Annotations inline edit passées en n/a (feature supprimée) ; tous les call sites DDS_PANEL et DDS_REMOVE passés en tested=yes |
 
 ---
 
@@ -32,7 +33,7 @@
 2. `fn` and `onSuccess` must be synchronous — no async/await.
 3. A single `run()` per user interaction, even when multiple helpers are chained.
 4. If `fn` throws, rollback is automatic and `onSuccess` is never called.
-5. Do not call `DDS_TRANSACTIONS.begin/commit/rollback` directly in UI modules.
+5. Do not call `DDS_TRANSACTIONS.begin/commit/rollback` directly in UI modules **unless** the drag pattern requires opening the transaction at `mousedown` (see §1.5).
 6. A single `run()` per user interaction, even when multiple helpers are chained inside `fn`. Opening one transaction per helper call would produce multiple undo stack entries for what the user perceives as a single action.
 
 ```js
@@ -58,7 +59,7 @@ DDS_TX_HELPER.run(TX.NODE_CREATE, function(ctx) {
 
 ### 1.2 Scope: functional and presentation tables
 
-`DDS_TRANSACTIONS` captures the full `DDS_STORE` snapshot via `toJson()`, which includes **all tables** — both functional (`nodes`, `flows`, etc.) and presentation (`map_nodes`, `map_flows`, `map_annotations`, `map_swim_lanes`, `map_demands`). Undo/redo therefore restores canvas positions, visibility, and layout state alongside functional data.
+`DDS_TRANSACTIONS` captures the full `DDS_STORE` state via a delta mechanism on `begin()` and restores it on `rollback()` or `undo()`. This covers **all tables** — both functional (`nodes`, `flows`, etc.) and presentation (`map_nodes`, `map_flows`, `map_annotations`, `map_swim_lanes`, `map_demands`). Undo/redo therefore restores canvas positions, visibility, and layout state alongside functional data.
 
 This means **all store mutations are in scope**, including:
 - Node/flow/product/SKU/BOM/demand/annotation CRUD (via helper modules).
@@ -70,9 +71,9 @@ This means **all store mutations are in scope**, including:
 - CTT line position and size (`map_nodes.demand_x/y/length`).
 - Add/remove element from map (`map_nodes`, `map_flows`, `map_annotations` insert/delete).
 
-**Note:** mutations on `map_*` tables (e.g. `map_nodes.note_visible`, `map_nodes.label_position`, `map_flows.curve_style`, `map_annotations.font_size`) are **fully in scope** — the snapshot captures all tables indiscriminately. They must be wrapped in `DDS_TX_HELPER.run()` like any other store mutation, with Cytoscape/DOM side effects placed in the `onSuccess` callback.
+**Note:** mutations on `map_*` tables (e.g. `map_nodes.note_visible`, `map_nodes.label_position`, `map_flows.curve_style`, `map_annotations.font_size`) are **fully in scope**. They must be wrapped in `DDS_TX_HELPER.run()` like any other store mutation, with Cytoscape/DOM side effects placed in the `onSuccess` callback.
 
-**After undo/redo on the map view:** call `DDS_MAP.loadMap()` then `DDS_SWIMLANES.render()`. Do **not** call `runLayout()` — positions are restored from the snapshot and must not be recalculated.
+**After undo/redo on the map view:** call `DDS_MAP.loadMap(mapId, true)` (with `preserveViewport=true`) then `DDS_SWIMLANES.render()`. Do **not** call `runLayout()` — positions are restored from the snapshot and must not be recalculated.
 
 ### 1.3 Case: interaction cancelled by the user
 
@@ -92,9 +93,9 @@ function handleConfirm() {
 }
 ```
 
-### 1.4 Case: drag interactions
+### 1.4 Case: drag interactions (standard)
 
-Drag interactions persist position updates to the store on the terminal event (`dragfree`, mouseup, or equivalent). The transaction wraps only the store write — not the drag motion itself.
+Drag interactions that do **not** mutate store records directly in `onMove` persist position updates to the store on the terminal event (`dragfree`, mouseup, or equivalent). The transaction wraps only the store write — not the drag motion itself.
 
 ```js
 DDS_CY.on('dragfree', 'node', function(e) {
@@ -106,9 +107,100 @@ DDS_CY.on('dragfree', 'node', function(e) {
 });
 ```
 
-### 1.5 Case: partial failure in a multi-step interaction
+### 1.5 Case: drag interactions with direct store mutation in onMove
 
-If a helper call throws mid-sequence, rollback is automatic and restores the full snapshot taken at `begin()` — including changes made by earlier helpers that had already succeeded. No manual partial rollback is needed.
+Some drag handlers (swim-lane drag, CTT drag) mutate store records **directly by reference** during `onMove` for real-time rendering — without going through `DDS_STORE.update`. This means the record already has the new value when `DDS_TX_HELPER.run` would be called in `onUp`, causing `_addChange` to capture an incorrect backup.
+
+**Required pattern for these cases:**
+
+1. Capture original values into a local snapshot **before** `begin`.
+2. Call `DDS_TRANSACTIONS.begin(TX.<KEY>)` at `mousedown` — before `onMove` touches the record.
+3. In `onMove`: mutate the record directly for real-time rendering (unchanged).
+4. In `onUp` (moved): restore original values on the record → `DDS_STORE.update` with new values → `DDS_TRANSACTIONS.commit(txId)`.
+5. In `onUp` (click without drag): `DDS_TRANSACTIONS.rollback(txId)`.
+
+```js
+// mousedown — capture originals BEFORE begin
+var _origValues = {};
+members.forEach(function(m) {
+  _origValues[m.id] = { x: m.x || 0, y: m.y || 0 };
+});
+var _txId = DDS_TRANSACTIONS.begin(TX.MAP_RESIZE_LANE);
+
+// onMove — direct mutation for real-time rendering
+function onMove(e) {
+  msl.x = origX + delta.dx;  // direct reference mutation
+  DDS_SWIMLANES.syncOverlay();
+}
+
+// onUp — restore originals, then update to new values
+function onUp() {
+  if (!_moved) {
+    DDS_TRANSACTIONS.rollback(_txId);
+    // ... open panel or cancel
+    return;
+  }
+  members.forEach(function(m) {
+    var orig = _origValues[m.id];
+    var newX = m.x, newY = m.y;
+    m.x = orig.x; m.y = orig.y;  // restore for _addChange
+    DDS_STORE.update('map_swim_lanes', { id: m.id }, { x: newX, y: newY });
+  });
+  DDS_TRANSACTIONS.commit(_txId);
+}
+```
+
+**Why not use `DDS_TX_HELPER.run`?** Because `run` calls `begin` immediately before `fn` — too late when `onMove` has already mutated the record. The explicit `begin/commit/rollback` split is required for multi-event interactions.
+
+### 1.6 Known fix: revertDelta and absent fields
+
+`DDS_STORE.revertDelta` swaps field values between the current record and the backup. If a field is absent from the backup (because the record was inserted without that field and the field was added later by an `update`), the swap silently skips it — undo appears to do nothing for that field.
+
+**Fix applied (SCRIPT 150):** `revertDelta` now uses the **union of keys** from `current` and `backup`:
+
+```js
+var allKeys = Object.keys(current).concat(Object.keys(backup).filter(function(k) {
+  return !(k in current);
+}));
+allKeys.forEach(function(k) {
+  var temp = current[k];
+  current[k] = backup[k];
+  backup[k] = temp;
+});
+```
+
+This affects all optional fields absent at insert time: `waypoint_pct`, `demand_x/y/length`, `note_dx/dy`, `notes_annotation_dx/dy`, etc. The fix is generic and benefits all call sites automatically.
+
+### 1.7 Case: side panel open during undo/redo
+
+When undo/redo is applied, the side panel's input fields reflect the pre-operation store state and become stale. The chosen strategy is **close the panel** on every undo/redo — the user re-selects the element to continue editing.
+
+Implementation: `_afterUndoRedo()` in `DDS_UI_NAV` (SCRIPT 700):
+
+```js
+async function _afterUndoRedo() {
+  // Close side panel — its fields are stale after undo/redo
+  if (window.DDS_PANEL) DDS_PANEL.close();
+  var view = DDS && DDS.state && DDS.state.currentView;
+  if (view === 'map') {
+    // preserveViewport=true — keep pan/zoom so the user can see what changed
+    await DDS_MAP.loadMap(DDS_MAP.state.currentMapId, true);
+  } else if (view) {
+    if (view === 'nodes'       && window.DDS_NODES_UI)       DDS_NODES_UI.render();
+    if (view === 'flows'       && window.DDS_FLOWS_UI)        DDS_FLOWS_UI.render();
+    if (view === 'products'    && window.DDS_PRODUCTS_UI)     DDS_PRODUCTS_UI.render();
+    if (view === 'boms'        && window.DDS_BOMS_UI)         DDS_BOMS_UI.render();
+    if (view === 'demand'      && window.DDS_DEMANDS_UI)      DDS_DEMANDS_UI.render();
+    if (view === 'annotations' && window.DDS_ANNOTATIONS_UI)  DDS_ANNOTATIONS_UI.render();
+  }
+  DDS_STORE.markDirty();
+  _refresh();
+}
+```
+
+### 1.8 Case: partial failure in a multi-step interaction
+
+If a helper call throws mid-sequence, rollback is automatic and restores the full state captured at `begin()` — including changes made by earlier helpers that had already succeeded. No manual partial rollback is needed.
 
 ```js
 DDS_TX_HELPER.run(TX.FLOW_REROUTE, function(ctx) {
@@ -117,7 +209,7 @@ DDS_TX_HELPER.run(TX.FLOW_REROUTE, function(ctx) {
 });
 ```
 
-### 1.6 AI layer
+### 1.9 AI layer
 
 `DDS_AI_UI` owns the transaction wrapping AI-generated action plans. After the user confirms the plan, `DDS_AI_UI` calls `DDS_TX_HELPER.run()` with the full action list. `DDS_AI` itself is not transaction-aware.
 
@@ -131,19 +223,7 @@ function handleAiConfirm(actions) {
 }
 ```
 
-### 1.7 Case: side panel open during undo/redo
-
-When undo/redo is applied, the side panel's input fields reflect the pre-operation store state and become stale. The chosen strategy is **close the panel** on every undo/redo — the user re-selects the element to continue editing.
-
-Implementation: `_afterUndoRedo()` in `DDS_UI_NAV` (SCRIPT 700) calls `DDS_PANEL.close()` as its first action, before `loadMap()` or any table re-render.
-
-```js
-async function _afterUndoRedo() {
-  // Close side panel — its fields are stale after undo/redo
-  if (window.DDS_PANEL) DDS_PANEL.close();
-  // ... loadMap / table re-render
-}
-```
+If `result.failed` is non-null, rollback is called and the error is surfaced in the AI panel. `DDS_AI` itself is not transaction-aware.
 
 ---
 
@@ -259,14 +339,16 @@ const TX_LABELS_EN = {
 Statuses: `to-do` | `done` | `n/a`
 Tested: `yes` | `partial` | `no` | `—` (n/a or to-do)
 
-> **n/a** is reserved for read-only interactions and ephemeral UI state (panel open/close, tab switch, dropdown hover) that produce no store mutation.
+> **n/a** is reserved for: read-only interactions, ephemeral UI state (panel open/close, tab switch), features removed from scope, and table interactions replaced by the map + side panel pattern.
 
 ### 3.1 DDS_NODE_UI — SCRIPT 1300
 
 | Interaction | TX key | English label | Status | Tested |
 |---|---|---|---|---|
 | Confirm node creation (modal) | `TX.NODE_CREATE` | Create node | done | yes |
-| Confirm node edit (modal) | `TX.NODE_UPDATE` | Edit node | to-do | — |
+| ~~Confirm node edit (modal)~~ | — | — | n/a | — |
+
+> Node edit via modal does not exist — editing is via the side panel only (§3.3).
 
 ### 3.2 DDS_FLOW_UI — SCRIPT 1400
 
@@ -274,20 +356,24 @@ Tested: `yes` | `partial` | `no` | `—` (n/a or to-do)
 |---|---|---|---|---|
 | Drop to create flow | `TX.FLOW_CREATE` | Create flow | done | yes |
 | Confirm reroute (drag handle drop) | `TX.FLOW_REROUTE` | Reroute flow | done | yes |
+| Waypoint drag (mouseup) | `TX.MAP_MOVE_WAYPOINT` | Move waypoint | done | yes |
+| Waypoint double-click reset | `TX.MAP_MOVE_WAYPOINT` | Reset waypoint | done | yes |
+
+> Waypoint uses `_lastPct` captured during `onMove` — never `cyEdge.style('taxi-turn')` which may return a computed px value rather than the percentage.
 
 ### 3.3 DDS_PANEL — SCRIPT 1500 + 1505
 
 | Interaction | TX key | English label | Status | Tested |
 |---|---|---|---|---|
 | Save node fields (side panel) | `TX.NODE_UPDATE` | Edit node | done | yes |
-| Save flow fields (side panel) | `TX.FLOW_UPDATE` | Edit flow | done | partial |
-| Assign node to lane (side panel) | `TX.NODE_ASSIGN_LANE` | Move node to lane | done | no |
-| Add product to flow (side panel) | `TX.FLOW_ADD_PRODUCT` | Add product to flow | done | no |
-| Remove product from flow (side panel) | `TX.FLOW_REMOVE_PRODUCT` | Remove product from flow | done | no |
-| Add SKU (demand sub-section) | `TX.SKU_ADD` | Add SKU | done | no |
-| Update SKU (demand sub-section) | `TX.SKU_UPDATE` | Edit SKU | done | no |
-| Remove SKU (demand sub-section) | `TX.SKU_REMOVE` | Remove SKU | done | no |
-| Save demand fields | `TX.DEMAND_UPDATE` | Edit demand | done | no |
+| Save flow fields (side panel) | `TX.FLOW_UPDATE` | Edit flow | done | yes |
+| Assign node to lane (side panel) | `TX.NODE_ASSIGN_LANE` | Move node to lane | done | yes |
+| Add product to flow (side panel) | `TX.FLOW_ADD_PRODUCT` | Add product to flow | done | yes |
+| Remove product from flow (side panel) | `TX.FLOW_REMOVE_PRODUCT` | Remove product from flow | done | yes |
+| Add SKU (demand sub-section) | `TX.SKU_ADD` | Add SKU | done | yes |
+| Update SKU (demand sub-section) | `TX.SKU_UPDATE` | Edit SKU | done | yes |
+| Remove SKU (demand sub-section) | `TX.SKU_REMOVE` | Remove SKU | done | yes |
+| Save demand fields | `TX.DEMAND_UPDATE` | Edit demand | done | yes |
 
 ### 3.4 DDS_REMOVE — SCRIPT 2050
 
@@ -307,9 +393,11 @@ Tested: `yes` | `partial` | `no` | `—` (n/a or to-do)
 
 | Interaction | TX key | English label | Status | Tested |
 |---|---|---|---|---|
-| Add node to map | `TX.MAP_ADD_NODE` | Add node to map | to-do | — |
-| Add flow to map | `TX.MAP_ADD_FLOW` | Add flow to map | to-do | — |
-| Add annotation to map | `TX.MAP_ADD_ANNOTATION` | Add annotation to map | to-do | — |
+| Add node to map | `TX.MAP_ADD_NODE` | Add node to map | n/a | — |
+| Add flow to map | `TX.MAP_ADD_FLOW` | Add flow to map | n/a | — |
+| Add annotation to map | `TX.MAP_ADD_ANNOTATION` | Add annotation to map | n/a | — |
+
+> Elements panel feature removed from scope (priority 2 — multi-map management).
 
 ### 3.6 DDS_MAP_UI — SCRIPT 1200
 
@@ -322,35 +410,46 @@ Tested: `yes` | `partial` | `no` | `—` (n/a or to-do)
 | Confirm project rename (nav bar modal) | `TX.PROJECT_RENAME` | Rename project | to-do | — |
 | Confirm add product on map (modal) | `TX.MAP_ADD_PRODUCT_NODE` | Add product to map | to-do | — |
 
+> All §3.6 interactions are **priority 2** (multi-map management). Not scheduled.
+
 > The "Add product on map" modal creates a product (if new), a node, and a SKU in a single interaction — all helper calls must be wrapped in a **single** transaction.
 
-### 3.7 Drag interactions — DDS_MAP / DDS_SWIMLANES
+### 3.7 Drag interactions — DDS_MAP / DDS_SWIMLANES / DDS_FLOW_UI
 
 | Interaction | TX key | English label | Status | Tested |
 |---|---|---|---|---|
 | Node drag (`dragfree`) — `map_nodes.x/y` | `TX.MAP_MOVE_NODE` | Move node | done | yes |
 | Note ghost drag (`dragfree`) — `map_nodes.note_dx/dy` | `TX.MAP_MOVE_NOTE_GHOST` | Move note | done | yes |
+| Waypoint drag (mouseup) — `map_flows.waypoint_pct` | `TX.MAP_MOVE_WAYPOINT` | Move waypoint | done | yes |
+| Swim-lane drag (mouseup) — `map_swim_lanes.x/y` + `map_nodes.x/y` | `TX.MAP_RESIZE_LANE` | Move swim lane | done | yes |
+| Swim-lane resize (mouseup) — `map_swim_lanes.x/y/width/height` | `TX.MAP_RESIZE_LANE` | Resize swim lane | done | yes |
 | CTT line drag (mouseup) — `map_nodes.demand_x/y` | `TX.MAP_MOVE_CTT` | Move CTT line | to-do | — |
 | CTT handle drag (mouseup) — `map_nodes.demand_length` | `TX.MAP_RESIZE_CTT` | Resize CTT line | to-do | — |
-| Flow waypoint drag (mouseup) — `map_flows.waypoint_pct` | `TX.MAP_MOVE_WAYPOINT` | Move flow waypoint | to-do | — |
 | Flow note ghost drag (`dragfree`) — `map_flows.notes_annotation_dx/dy` | `TX.MAP_MOVE_FLOW_NOTE_GHOST` | Move flow note | to-do | — |
 | Annotation drag (`dragfree`) — `map_annotations.x/y` | `TX.MAP_MOVE_ANNOTATION` | Move annotation | to-do | — |
-| Swim-lane resize/reposition (mouseup) — `map_swim_lanes.x/y/width/height` | `TX.MAP_RESIZE_LANE` | Resize swim lane | to-do | — |
+
+> Swim-lane drag and resize use the **begin-at-mousedown** pattern (§1.5) — `onMove` mutates `msl` directly by reference for real-time rendering.
+>
+> CTT drag will require the same pattern (SCRIPT 1055 mutates `map_nodes` via `DDS_STORE.update` in `mousemove` — needs refactor to write only at `mouseup`).
 
 ### 3.8 DDS_NODES_UI — SCRIPT 1750
 
 | Interaction | TX key | English label | Status | Tested |
 |---|---|---|---|---|
 | Confirm node create (table) | `TX.NODE_CREATE` | Create node | done | — |
-| Save node edit (table inline) | `TX.NODE_UPDATE` | Edit node | to-do | — |
-| Confirm node delete (table) | `TX.NODE_DELETE` | Delete node | to-do | — |
+| ~~Save node edit (table inline)~~ | — | — | n/a | — |
+| ~~Confirm node delete (table)~~ | — | — | n/a | — |
+
+> Table is read-only + delete only. Inline edit removed from scope — editing via map + side panel.
 
 ### 3.9 DDS_FLOWS_UI — SCRIPT 1760
 
 | Interaction | TX key | English label | Status | Tested |
 |---|---|---|---|---|
-| Save flow edit (table inline) | `TX.FLOW_UPDATE` | Edit flow | to-do | — |
-| Confirm flow delete (table) | `TX.FLOW_DELETE` | Delete flow | to-do | — |
+| ~~Save flow edit (table inline)~~ | — | — | n/a | — |
+| ~~Confirm flow delete (table)~~ | — | — | n/a | — |
+
+> Table is read-only + delete only. Inline edit removed from scope.
 
 ### 3.10 DDS_PRODUCTS_UI — SCRIPT 1700
 
@@ -359,6 +458,8 @@ Tested: `yes` | `partial` | `no` | `—` (n/a or to-do)
 | Confirm product create (table) | `TX.PRODUCT_CREATE` | Create product | to-do | — |
 | Save product edit (table inline) | `TX.PRODUCT_UPDATE` | Edit product | to-do | — |
 | Confirm product delete (table) | `TX.PRODUCT_DELETE` | Delete product | to-do | — |
+
+> Products table retains inline edit — no map-based editing surface for products.
 
 ### 3.11 DDS_BOMS_UI — SCRIPT 1900
 
@@ -379,8 +480,10 @@ Tested: `yes` | `partial` | `no` | `—` (n/a or to-do)
 
 | Interaction | TX key | English label | Status | Tested |
 |---|---|---|---|---|
-| Save annotation edit (inline) | `TX.ANNOTATION_UPDATE` | Edit annotation | to-do | — |
+| ~~Save annotation edit (inline)~~ | — | — | n/a | — |
 | Confirm annotation delete (table) | `TX.ANNOTATION_DELETE` | Delete annotation | to-do | — |
+
+> Table is read-only + delete only. Inline edit removed from scope.
 
 ### 3.14 Swim lane management
 
@@ -410,11 +513,19 @@ Tested: `yes` | `partial` | `no` | `—` (n/a or to-do)
 
 ## 4. Implementation checklist (per call site)
 
+**Standard pattern (`DDS_TX_HELPER.run`):**
 - [ ] Identify the submit / terminal-event handler (not modal open, not drag start).
 - [ ] Wrap all store mutations in `DDS_TX_HELPER.run(TX.<KEY>, fn, onSuccess?)`.
 - [ ] Put all Cytoscape / DOM side effects in `onSuccess`, never in `fn`.
 - [ ] Use `ctx` to pass data produced in `fn` to `onSuccess`.
 - [ ] Verify `run()` is not called on cancel/dismiss.
 - [ ] Single `run()` per user interaction — never one per helper call.
-- [ ] For map view: verify undo/redo handler calls `loadMap()`, not `runLayout()`.
+- [ ] For map view: verify undo/redo handler calls `loadMap(mapId, true)`, not `runLayout()`.
 - [ ] Mark status as `done` and tested as `no` in this document.
+
+**Begin-at-mousedown pattern (direct reference mutation in onMove — §1.5):**
+- [ ] Capture `_origValues` from all affected records **before** `begin`.
+- [ ] Call `DDS_TRANSACTIONS.begin(TX.<KEY>)` at `mousedown`.
+- [ ] In `onUp` (moved): restore originals on records → `DDS_STORE.update` with new values → `DDS_TRANSACTIONS.commit(txId)`.
+- [ ] In `onUp` (not moved / cancel): `DDS_TRANSACTIONS.rollback(txId)`.
+- [ ] Cytoscape / DOM side effects (syncOverlay, triggerAutoLayout) placed after `commit`, outside the transaction.

@@ -39,7 +39,7 @@ CommWise is the source of truth for all application code. It can be modified by 
 
 ### 1. Documentation
 
-All DDScope documentation is kept by TEST under four categories:
+All DDScope documentation is kept by TEST in md format a GitHub workspace under three folders:
 
 | Category | Visibility | Purpose |
 |---|---|---|
@@ -47,15 +47,15 @@ All DDScope documentation is kept by TEST under four categories:
 | `test-local` | TEST only | Local TEST procedures and implementation notes |
 | `dev-local` | DEV only | Local DEV procedures and implementation notes |
 
-When DEV needs to update a document in `shared`, `test-local`, or `dev-local`, it may emit a Markdown patch in english describing the intended changes clearly.
+The documents in shared and dev-local are imported from GitHub in the Claude project context of DEV.
+When DEV needs to update a document it creates a full new version.
 
 The developer then performs the update manually:
 
-1. Download the patch file.
-2. Move it into the `docs/` folder.
-3. Ask the assistant to apply the patch to the correct canonical document in the subfolder matching its category.
-4. Commit and sync to GitHub.
-5. Refresh from GitHub in DEV.
+1. Download the file.
+2. Move it into the `docs/xxx` folder.
+3. Commit and sync to GitHub.
+4. Refresh from GitHub in DEV.
 
 ## Slack Channel
 

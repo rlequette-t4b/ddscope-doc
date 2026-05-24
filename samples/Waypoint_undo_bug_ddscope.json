@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "project": {
+    "name": "Waypoint undo bug",
+    "description": "",
+    "created_by": "r.lequette@tech4best.com",
+    "auto_layout": false
+  },
+  "swim_lanes": [],
+  "node_types": [],
+  "product_types": [],
+  "nodes": [
+    {
+      "name": "A",
+      "type_code": null,
+      "swim_lane_id": null,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-24T18:04:01.628Z",
+      "updated_at": "2026-05-24T18:04:01.628Z"
+    },
+    {
+      "name": "B",
+      "type_code": null,
+      "swim_lane_id": null,
+      "tags": [],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-24T18:04:04.948Z",
+      "updated_at": "2026-05-24T18:04:04.948Z"
+    }
+  ],
+  "products": [],
+  "flows": [
+    {
+      "source_node_id": 1,
+      "target_node_id": 2,
+      "product_ids": [],
+      "tags": [],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": false,
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-24T18:04:26.856Z",
+      "updated_at": "2026-05-24T18:04:26.856Z"
+    }
+  ],
+  "skus": [],
+  "boms": [],
+  "bom_components": [],
+  "tag_styles": [],
+  "demands": [],
+  "maps": [
+    {
+      "name": "Map 1",
+      "position": 1,
+      "legend_visible": true,
+      "id": 1,
+      "created_at": "2026-05-23T13:54:24.867Z",
+      "updated_at": "2026-05-24T18:04:23.675Z",
+      "direction": "left-right"
+    }
+  ],
+  "map_nodes": [
+    {
+      "map_id": 1,
+      "node_id": 1,
+      "x": 1213,
+      "y": 541,
+      "id": 1,
+      "created_at": "2026-05-24T18:04:01.629Z",
+      "updated_at": "2026-05-24T18:05:28.437Z"
+    },
+    {
+      "map_id": 1,
+      "node_id": 2,
+      "x": 1574,
+      "y": 647,
+      "id": 2,
+      "created_at": "2026-05-24T18:04:04.948Z",
+      "updated_at": "2026-05-24T18:04:19.093Z"
+    }
+  ],
+  "map_flows": [
+    {
+      "map_id": 1,
+      "flow_id": 1,
+      "id": 1,
+      "created_at": "2026-05-24T18:04:26.856Z",
+      "updated_at": "2026-05-24T18:21:49.161Z",
+      "waypoint_pct": 0.5
+    }
+  ],
+  "map_swim_lanes": [],
+  "map_demands": [],
+  "annotations": [],
+  "map_annotations": []
+}
