@@ -1,0 +1,1 @@
+Please follow the project instructions outlined in [CLAUDE.md](./CLAUDE.md).
