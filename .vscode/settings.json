@@ -1,5 +1,13 @@
 {
   "vitest.enable": true,
   "vitest.configSearchPatterns": ["vitest.config.js"],
-  "playwright.reuseBrowser": true
+  "playwright.reuseBrowser": true,
+  "chat.mcp.serverSampling": {
+    "ddscope/.vscode/mcp.json: slack": {
+      "allowedModels": [
+        "copilot/auto",
+        "copilotcli/claude-sonnet-4.6"
+      ]
+    }
+  }
 }
