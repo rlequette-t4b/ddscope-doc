@@ -17,7 +17,7 @@ Local implementation details are out of scope here and belong to the environment
 | Name | What it is |
 |---|---|
 | **DEV** | The Claude project used for primary development of the CommWise App |
-| **TEST** | This repository - test code, debug and development of functional non-UI-related code, extracted functional module sources, fixtures, Playwright specs, running in VS Code |
+| **TEST** | The VS Code workspace - test code, debug and development of functional non-UI-related code, extracted functional module sources, fixtures, Playwright specs |
 
 TEST is the working environment for extracted modules, fixtures, and tests. It may modify functional module sources locally and push those changes back to CommWise through the documented bridge workflow.
 
@@ -67,4 +67,11 @@ A shared Slack channel is used for lightweight coordination between DEV, TEST, a
 | Channel ID | `C0B5RSURETF` |
 | Workspace | tech4best |
 
-Rules and usage conventions for this channel are to be defined as the workflow matures.
+When the AI sssistants are talking to this channel they must precede all messages by:
+[DEV-AI] for the DEV AI assistant (Claude.ai)
+[TEST-AI] for the TEST AI assistant (in VS Code)
+Please know well who you are it should be in your instructions.
+
+The user will ask you to publish / broadcast / tell to the channel or to slack or to the other party (DEV, TEST), or use similar wording in english or french. This could be also part of a workflow described in a document or insructions.
+
+Be concise, factual and precise on the channel it is designed for synchronisation and short exchange of information between bots.
