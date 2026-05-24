@@ -152,26 +152,8 @@ function onUp() {
 
 **Why not use `DDS_TX_HELPER.run`?** Because `run` calls `begin` immediately before `fn` — too late when `onMove` has already mutated the record. The explicit `begin/commit/rollback` split is required for multi-event interactions.
 
-### 1.6 Known fix: revertDelta and absent fields
 
-`DDS_STORE.revertDelta` swaps field values between the current record and the backup. If a field is absent from the backup (because the record was inserted without that field and the field was added later by an `update`), the swap silently skips it — undo appears to do nothing for that field.
-
-**Fix applied (SCRIPT 150):** `revertDelta` now uses the **union of keys** from `current` and `backup`:
-
-```js
-var allKeys = Object.keys(current).concat(Object.keys(backup).filter(function(k) {
-  return !(k in current);
-}));
-allKeys.forEach(function(k) {
-  var temp = current[k];
-  current[k] = backup[k];
-  backup[k] = temp;
-});
-```
-
-This affects all optional fields absent at insert time: `waypoint_pct`, `demand_x/y/length`, `note_dx/dy`, `notes_annotation_dx/dy`, etc. The fix is generic and benefits all call sites automatically.
-
-### 1.7 Case: side panel open during undo/redo
+### 1.6 Case: side panel open during undo/redo
 
 When undo/redo is applied, the side panel's input fields reflect the pre-operation store state and become stale. The chosen strategy is **close the panel** on every undo/redo — the user re-selects the element to continue editing.
 
@@ -198,7 +180,7 @@ async function _afterUndoRedo() {
 }
 ```
 
-### 1.8 Case: partial failure in a multi-step interaction
+### 1.7 Case: partial failure in a multi-step interaction
 
 If a helper call throws mid-sequence, rollback is automatic and restores the full state captured at `begin()` — including changes made by earlier helpers that had already succeeded. No manual partial rollback is needed.
 
@@ -209,7 +191,7 @@ DDS_TX_HELPER.run(TX.FLOW_REROUTE, function(ctx) {
 });
 ```
 
-### 1.9 AI layer
+### 1.8 AI layer
 
 `DDS_AI_UI` owns the transaction wrapping AI-generated action plans. After the user confirms the plan, `DDS_AI_UI` calls `DDS_TX_HELPER.run()` with the full action list. `DDS_AI` itself is not transaction-aware.
 

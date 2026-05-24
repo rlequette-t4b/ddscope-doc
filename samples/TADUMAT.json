@@ -1,0 +1,244 @@
+{
+  "version": 1,
+  "project": {
+    "name": "TADUMAT",
+    "description": "Tremplate",
+    "created_by": "r.lequette@tech4best.com"
+  },
+  "swim_lanes": [
+    {
+      "name": "Clients",
+      "color": "#1e88e5",
+      "id": 1,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:11:11.013Z"
+    },
+    {
+      "name": "Fournisseur",
+      "color": "#00897b",
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:12:13.832Z"
+    },
+    {
+      "name": "Stock",
+      "color": "#43a047",
+      "id": 3,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:12:04.167Z"
+    },
+    {
+      "name": "Distribution",
+      "color": "#1e88e5",
+      "id": 4,
+      "created_at": "2026-05-24T20:11:41.149Z",
+      "updated_at": "2026-05-24T20:11:41.149Z"
+    }
+  ],
+  "node_types": [
+    {
+      "code": "SUPPLIER",
+      "label": "Supplier",
+      "shape": "rectangle",
+      "is_default": false,
+      "default_swim_lane_id": 2,
+      "is_product_node_default": false,
+      "color": "#1e88e5",
+      "icon_key": "factory",
+      "label_position": "below",
+      "transparent_bg": true,
+      "id": 1,
+      "created_at": "2026-05-22T20:24:07.956Z",
+      "updated_at": "2026-05-22T20:24:07.956Z"
+    },
+    {
+      "code": "SHOP",
+      "label": "Shop",
+      "shape": "ellipse",
+      "is_default": true,
+      "default_swim_lane_id": 3,
+      "is_product_node_default": false,
+      "color": "#1e88e5",
+      "icon_key": null,
+      "label_position": "below",
+      "transparent_bg": false,
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "WH",
+      "label": "Warehouse",
+      "shape": "rectangle",
+      "is_default": false,
+      "default_swim_lane_id": 3,
+      "is_product_node_default": false,
+      "color": "#6d4c41",
+      "icon_key": "warehouse",
+      "label_position": "below",
+      "transparent_bg": true,
+      "id": 3,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "CUSTOMER",
+      "label": "Customer",
+      "shape": "rectangle",
+      "is_default": false,
+      "default_swim_lane_id": 1,
+      "is_product_node_default": false,
+      "color": "#00897b",
+      "icon_key": "customer",
+      "label_position": "below",
+      "transparent_bg": false,
+      "id": 4,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "PRODUCT",
+      "label": "Product",
+      "shape": "rectangle",
+      "is_default": false,
+      "color": "#6d4c41",
+      "default_swim_lane_id": 3,
+      "is_product_node_default": true,
+      "id": 5,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "PLANT",
+      "label": "Plant",
+      "shape": "rectangle",
+      "is_default": false,
+      "color": "#fbc02d",
+      "default_swim_lane_id": null,
+      "is_product_node_default": false,
+      "icon_key": "factory",
+      "label_position": "below",
+      "transparent_bg": true,
+      "id": 6,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "DC",
+      "label": "DC",
+      "shape": "rectangle",
+      "is_default": false,
+      "color": "#1e88e5",
+      "default_swim_lane_id": 1,
+      "is_product_node_default": false,
+      "id": 7,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    }
+  ],
+  "product_types": [
+    {
+      "code": "RM",
+      "label": "Raw Material",
+      "shape": "ellipse",
+      "color": "#4A90D9",
+      "is_default": false,
+      "id": 1,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "WIP",
+      "label": "WIP",
+      "shape": "ellipse",
+      "color": "#E8A838",
+      "is_default": false,
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "FG",
+      "label": "Finished Good",
+      "shape": "ellipse",
+      "color": "#5BA85A",
+      "is_default": true,
+      "id": 3,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    }
+  ],
+  "nodes": [],
+  "products": [],
+  "flows": [],
+  "skus": [],
+  "boms": [],
+  "bom_components": [],
+  "tag_styles": [],
+  "demands": [],
+  "maps": [
+    {
+      "name": "Map 1",
+      "position": 1,
+      "legend_visible": true,
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    }
+  ],
+  "map_nodes": [],
+  "map_flows": [],
+  "map_swim_lanes": [
+    {
+      "map_id": 2,
+      "swim_lane_id": 1,
+      "x": 265.283316088393,
+      "y": -130.4226538719717,
+      "width": 168,
+      "height": 468.5279916287722,
+      "group_order": "2.1",
+      "id": 1,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:11:52.637Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 2,
+      "x": 1371.3534690441597,
+      "y": -130.4226538719717,
+      "width": 198.5,
+      "height": 468.5279916287722,
+      "group_order": "2.4",
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:11:52.637Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 3,
+      "x": 712.3174690441599,
+      "y": -130.4226538719717,
+      "width": 659.036,
+      "height": 468.5279916287722,
+      "group_order": "2.3",
+      "id": 3,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:11:52.637Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 4,
+      "x": 433.283316088393,
+      "y": -130.4226538719717,
+      "width": 279.03415295576684,
+      "height": 468.5279916287722,
+      "id": 4,
+      "created_at": "2026-05-24T20:11:41.149Z",
+      "updated_at": "2026-05-24T20:11:52.637Z",
+      "group_order": "2.2"
+    }
+  ],
+  "map_demands": [],
+  "annotations": [],
+  "map_annotations": []
+}

@@ -1,0 +1,646 @@
+{
+  "version": 1,
+  "project": {
+    "name": "TADUMAT",
+    "description": "Tremplate",
+    "created_by": "r.lequette@tech4best.com"
+  },
+  "swim_lanes": [
+    {
+      "name": "Clients",
+      "color": "#1e88e5",
+      "id": 1,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:11:11.013Z"
+    },
+    {
+      "name": "Fournisseur",
+      "color": "#00897b",
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:12:13.832Z"
+    },
+    {
+      "name": "Stock",
+      "color": "#43a047",
+      "id": 3,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:12:04.167Z"
+    },
+    {
+      "name": "Distribution",
+      "color": "#1e88e5",
+      "id": 4,
+      "created_at": "2026-05-24T20:11:41.149Z",
+      "updated_at": "2026-05-24T20:11:41.149Z"
+    }
+  ],
+  "node_types": [
+    {
+      "code": "SUPPLIER",
+      "label": "Fournisseur",
+      "shape": "rectangle",
+      "is_default": false,
+      "default_swim_lane_id": 2,
+      "is_product_node_default": false,
+      "color": "#1e88e5",
+      "icon_key": "factory",
+      "label_position": "below",
+      "transparent_bg": true,
+      "id": 1,
+      "created_at": "2026-05-22T20:24:07.956Z",
+      "updated_at": "2026-05-24T20:15:54.612Z"
+    },
+    {
+      "code": "WH",
+      "label": "Entrepot",
+      "shape": "rectangle",
+      "is_default": false,
+      "default_swim_lane_id": 3,
+      "is_product_node_default": false,
+      "color": "#6d4c41",
+      "icon_key": "warehouse",
+      "label_position": "below",
+      "transparent_bg": true,
+      "id": 3,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:15:54.612Z"
+    },
+    {
+      "code": "CUSTOMER",
+      "label": "Customer",
+      "shape": "rectangle",
+      "is_default": false,
+      "default_swim_lane_id": 1,
+      "is_product_node_default": false,
+      "color": "#00897b",
+      "icon_key": "customer",
+      "label_position": "below",
+      "transparent_bg": true,
+      "id": 4,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:17:21.492Z"
+    },
+    {
+      "code": "PRODUCT",
+      "label": "Produit",
+      "shape": "rectangle",
+      "is_default": false,
+      "color": "#6d4c41",
+      "default_swim_lane_id": 3,
+      "is_product_node_default": true,
+      "id": 5,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:15:54.612Z",
+      "icon_key": null,
+      "label_position": "center",
+      "transparent_bg": false
+    }
+  ],
+  "product_types": [
+    {
+      "code": "RM",
+      "label": "Raw Material",
+      "shape": "ellipse",
+      "color": "#4A90D9",
+      "is_default": false,
+      "id": 1,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "WIP",
+      "label": "WIP",
+      "shape": "ellipse",
+      "color": "#E8A838",
+      "is_default": false,
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    },
+    {
+      "code": "FG",
+      "label": "Finished Good",
+      "shape": "ellipse",
+      "color": "#5BA85A",
+      "is_default": true,
+      "id": 3,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    }
+  ],
+  "nodes": [
+    {
+      "name": "MAGASINS CLIENTS",
+      "type_code": "CUSTOMER",
+      "swim_lane_id": 1,
+      "tags": [],
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-24T20:20:43.246Z",
+      "updated_at": "2026-05-24T20:20:43.246Z"
+    },
+    {
+      "name": "LILLE",
+      "type_code": "WH",
+      "swim_lane_id": 3,
+      "tags": [
+        "nord"
+      ],
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-24T20:21:47.646Z",
+      "updated_at": "2026-05-24T20:21:47.646Z"
+    },
+    {
+      "name": "VALENCE",
+      "type_code": "WH",
+      "swim_lane_id": 3,
+      "tags": [
+        "sud"
+      ],
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-24T20:21:47.646Z",
+      "updated_at": "2026-05-24T20:21:47.646Z"
+    },
+    {
+      "name": "Fournisseur externe 1",
+      "type_code": "SUPPLIER",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "à marque TADUMAT",
+      "id": 4,
+      "created_at": "2026-05-24T20:24:40.181Z",
+      "updated_at": "2026-05-24T20:26:06.549Z"
+    },
+    {
+      "name": "Fournisseur externe 2",
+      "type_code": "SUPPLIER",
+      "swim_lane_id": 2,
+      "tags": [],
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-24T20:24:40.181Z",
+      "updated_at": "2026-05-24T20:26:06.550Z"
+    },
+    {
+      "name": "DEPOT EXTERNE",
+      "type_code": "WH",
+      "swim_lane_id": 3,
+      "tags": [
+        "externe"
+      ],
+      "notes": "Dépôt externe de LILLE",
+      "id": 6,
+      "created_at": "2026-05-24T20:31:44.741Z",
+      "updated_at": "2026-05-24T20:33:55.431Z"
+    },
+    {
+      "name": "DEPOT EXTERNE",
+      "type_code": "WH",
+      "swim_lane_id": 3,
+      "tags": [
+        "externe"
+      ],
+      "notes": "Dépôt externe de VALENCE",
+      "id": 7,
+      "created_at": "2026-05-24T20:31:44.741Z",
+      "updated_at": "2026-05-24T20:33:55.431Z"
+    }
+  ],
+  "products": [],
+  "flows": [
+    {
+      "source_node_id": 2,
+      "target_node_id": 1,
+      "product_ids": [],
+      "tags": [
+        "aval"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": false,
+      "notes": "",
+      "id": 1,
+      "created_at": "2026-05-24T20:22:38.486Z",
+      "updated_at": "2026-05-24T20:23:01.165Z"
+    },
+    {
+      "source_node_id": 3,
+      "target_node_id": 1,
+      "product_ids": [],
+      "tags": [
+        "aval"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": false,
+      "notes": "",
+      "id": 2,
+      "created_at": "2026-05-24T20:22:38.486Z",
+      "updated_at": "2026-05-24T20:23:01.165Z"
+    },
+    {
+      "source_node_id": 4,
+      "target_node_id": 2,
+      "product_ids": [],
+      "tags": [
+        "amont"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": false,
+      "notes": "",
+      "id": 3,
+      "created_at": "2026-05-24T20:27:36.478Z",
+      "updated_at": "2026-05-24T20:27:36.478Z"
+    },
+    {
+      "source_node_id": 4,
+      "target_node_id": 3,
+      "product_ids": [],
+      "tags": [
+        "amont"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": false,
+      "notes": "",
+      "id": 4,
+      "created_at": "2026-05-24T20:27:36.478Z",
+      "updated_at": "2026-05-24T20:27:36.478Z"
+    },
+    {
+      "source_node_id": 5,
+      "target_node_id": 2,
+      "product_ids": [],
+      "tags": [
+        "amont"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": false,
+      "notes": "",
+      "id": 5,
+      "created_at": "2026-05-24T20:27:36.478Z",
+      "updated_at": "2026-05-24T20:27:36.478Z"
+    },
+    {
+      "source_node_id": 5,
+      "target_node_id": 3,
+      "product_ids": [],
+      "tags": [
+        "amont"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": false,
+      "notes": "",
+      "id": 6,
+      "created_at": "2026-05-24T20:27:36.478Z",
+      "updated_at": "2026-05-24T20:27:36.478Z"
+    },
+    {
+      "source_node_id": 2,
+      "target_node_id": 3,
+      "product_ids": [],
+      "tags": [
+        "transfert"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": true,
+      "notes": "RARES\nTRANSFERTS\nINTERSITES",
+      "id": 7,
+      "created_at": "2026-05-24T20:28:41.725Z",
+      "updated_at": "2026-05-24T20:29:54.871Z"
+    },
+    {
+      "source_node_id": 2,
+      "target_node_id": 6,
+      "product_ids": [],
+      "tags": [
+        "externe"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": true,
+      "notes": "",
+      "id": 8,
+      "created_at": "2026-05-24T20:31:44.741Z",
+      "updated_at": "2026-05-24T20:31:44.741Z"
+    },
+    {
+      "source_node_id": 3,
+      "target_node_id": 7,
+      "product_ids": [],
+      "tags": [
+        "externe"
+      ],
+      "lead_time_value": null,
+      "lead_time_unit": null,
+      "bidirectional": true,
+      "notes": "",
+      "id": 9,
+      "created_at": "2026-05-24T20:31:44.741Z",
+      "updated_at": "2026-05-24T20:31:44.741Z"
+    }
+  ],
+  "skus": [],
+  "boms": [],
+  "bom_components": [],
+  "tag_styles": [
+    {
+      "tag": "nord",
+      "color": "#43a047",
+      "line_color": "#43a047",
+      "line_style": null,
+      "line_width": null,
+      "id": 1,
+      "created_at": "2026-05-24T20:18:04.108Z",
+      "updated_at": "2026-05-24T20:18:04.108Z"
+    },
+    {
+      "tag": "sud",
+      "color": "#fbc02d",
+      "line_color": "#fbc02d",
+      "line_style": null,
+      "line_width": null,
+      "id": 2,
+      "created_at": "2026-05-24T20:18:20.061Z",
+      "updated_at": "2026-05-24T20:18:20.061Z"
+    },
+    {
+      "tag": "aval",
+      "color": "#fbc02d",
+      "line_color": "#e53935",
+      "line_style": null,
+      "line_width": null,
+      "id": 3,
+      "created_at": "2026-05-24T20:19:03.204Z",
+      "updated_at": "2026-05-24T20:19:03.204Z"
+    },
+    {
+      "tag": "amont",
+      "color": "#fbc02d",
+      "line_color": "#43a047",
+      "line_style": null,
+      "line_width": null,
+      "id": 4,
+      "created_at": "2026-05-24T20:19:16.998Z",
+      "updated_at": "2026-05-24T20:19:16.998Z"
+    },
+    {
+      "tag": "transferts",
+      "color": "#fbc02d",
+      "line_color": "#1e88e5",
+      "line_style": null,
+      "line_width": null,
+      "id": 5,
+      "created_at": "2026-05-24T20:19:36.172Z",
+      "updated_at": "2026-05-24T20:19:36.172Z"
+    },
+    {
+      "tag": "externe",
+      "color": "#fbc02d",
+      "line_color": "#fbc02d",
+      "line_style": null,
+      "line_width": null,
+      "id": 6,
+      "created_at": "2026-05-24T20:19:50.846Z",
+      "updated_at": "2026-05-24T20:19:50.846Z"
+    }
+  ],
+  "demands": [],
+  "maps": [
+    {
+      "name": "Map 1",
+      "position": 1,
+      "legend_visible": true,
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-22T20:24:07.957Z"
+    }
+  ],
+  "map_nodes": [
+    {
+      "map_id": 2,
+      "node_id": 1,
+      "x": 349,
+      "y": 155,
+      "id": 1,
+      "created_at": "2026-05-24T20:20:43.247Z",
+      "updated_at": "2026-05-24T20:34:50.978Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 2,
+      "x": 994,
+      "y": 62,
+      "id": 2,
+      "created_at": "2026-05-24T20:21:47.646Z",
+      "updated_at": "2026-05-24T20:34:50.978Z",
+      "label_position": "above"
+    },
+    {
+      "map_id": 2,
+      "node_id": 3,
+      "x": 994,
+      "y": 264,
+      "id": 3,
+      "created_at": "2026-05-24T20:21:47.646Z",
+      "updated_at": "2026-05-24T20:34:50.978Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 4,
+      "x": 1528,
+      "y": -1,
+      "id": 4,
+      "created_at": "2026-05-24T20:24:40.181Z",
+      "updated_at": "2026-05-24T20:34:50.978Z",
+      "note_visible": true,
+      "note_dx": 2,
+      "note_dy": 82
+    },
+    {
+      "map_id": 2,
+      "node_id": 5,
+      "x": 1528,
+      "y": 292,
+      "id": 5,
+      "created_at": "2026-05-24T20:24:40.181Z",
+      "updated_at": "2026-05-24T20:34:50.978Z"
+    },
+    {
+      "map_id": 2,
+      "node_id": 6,
+      "x": 1144,
+      "y": -37,
+      "id": 6,
+      "created_at": "2026-05-24T20:31:44.742Z",
+      "updated_at": "2026-05-24T20:34:50.978Z",
+      "label_position": "above"
+    },
+    {
+      "map_id": 2,
+      "node_id": 7,
+      "x": 1144,
+      "y": 317,
+      "id": 7,
+      "created_at": "2026-05-24T20:31:44.742Z",
+      "updated_at": "2026-05-24T20:34:50.978Z",
+      "note_visible": false
+    }
+  ],
+  "map_flows": [
+    {
+      "map_id": 2,
+      "flow_id": 1,
+      "id": 1,
+      "created_at": "2026-05-24T20:22:38.486Z",
+      "updated_at": "2026-05-24T20:35:15.238Z",
+      "waypoint_pct": 0.6483469442315102
+    },
+    {
+      "map_id": 2,
+      "flow_id": 2,
+      "id": 2,
+      "created_at": "2026-05-24T20:22:38.486Z",
+      "updated_at": "2026-05-24T20:35:10.438Z",
+      "waypoint_pct": 0.6473821218584468
+    },
+    {
+      "map_id": 2,
+      "flow_id": 3,
+      "id": 3,
+      "created_at": "2026-05-24T20:27:36.478Z",
+      "updated_at": "2026-05-24T20:27:36.478Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 4,
+      "id": 4,
+      "created_at": "2026-05-24T20:27:36.478Z",
+      "updated_at": "2026-05-24T20:27:36.478Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 5,
+      "id": 5,
+      "created_at": "2026-05-24T20:27:36.478Z",
+      "updated_at": "2026-05-24T20:27:36.478Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 6,
+      "id": 6,
+      "created_at": "2026-05-24T20:27:36.478Z",
+      "updated_at": "2026-05-24T20:27:36.478Z"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 7,
+      "id": 7,
+      "created_at": "2026-05-24T20:28:41.726Z",
+      "updated_at": "2026-05-24T20:30:02.359Z",
+      "show_notes_label": true,
+      "notes_as_annotation": true,
+      "layout_offset": 0,
+      "notes_annotation_dx": 52,
+      "notes_annotation_dy": 4
+    },
+    {
+      "map_id": 2,
+      "flow_id": 8,
+      "id": 8,
+      "created_at": "2026-05-24T20:31:44.742Z",
+      "updated_at": "2026-05-24T20:33:11.807Z",
+      "layout_direction_inverted": true,
+      "curve_style": "straight"
+    },
+    {
+      "map_id": 2,
+      "flow_id": 9,
+      "id": 9,
+      "created_at": "2026-05-24T20:31:44.742Z",
+      "updated_at": "2026-05-24T20:32:56.488Z",
+      "layout_direction_inverted": true,
+      "curve_style": "straight"
+    }
+  ],
+  "map_swim_lanes": [
+    {
+      "map_id": 2,
+      "swim_lane_id": 1,
+      "x": 265.283316088393,
+      "y": -130.4226538719717,
+      "width": 168,
+      "height": 543.9032461549889,
+      "group_order": "2.1",
+      "id": 1,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:34:00.111Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 2,
+      "x": 1425.3152344618757,
+      "y": -130.4226538719717,
+      "width": 204.69485598893516,
+      "height": 543.9032461549889,
+      "group_order": "2.4",
+      "id": 2,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:34:00.111Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 3,
+      "x": 712.3174690441599,
+      "y": -130.4226538719717,
+      "width": 712.9977654177158,
+      "height": 543.9032461549889,
+      "group_order": "2.3",
+      "id": 3,
+      "created_at": "2026-05-22T20:24:07.957Z",
+      "updated_at": "2026-05-24T20:34:00.111Z"
+    },
+    {
+      "map_id": 2,
+      "swim_lane_id": 4,
+      "x": 433.283316088393,
+      "y": -130.4226538719717,
+      "width": 279.03415295576684,
+      "height": 543.9032461549889,
+      "id": 4,
+      "created_at": "2026-05-24T20:11:41.149Z",
+      "updated_at": "2026-05-24T20:34:00.111Z",
+      "group_order": "2.2"
+    }
+  ],
+  "map_demands": [],
+  "annotations": [
+    {
+      "notes": "🚧\nPas de visibilités sur le portefeuilles de commandes \nPas de prévisions fiables",
+      "swim_lane_id": 4,
+      "tags": [],
+      "id": 1,
+      "created_at": "2026-05-24T20:36:32.670Z",
+      "updated_at": "2026-05-24T20:37:38.216Z"
+    }
+  ],
+  "map_annotations": [
+    {
+      "map_id": 2,
+      "annotation_id": 1,
+      "x": 571.8974797463312,
+      "y": 316.9047952179771,
+      "id": 1,
+      "created_at": "2026-05-24T20:36:32.670Z",
+      "updated_at": "2026-05-24T20:37:46.863Z",
+      "font_size": 18
+    }
+  ]
+}
