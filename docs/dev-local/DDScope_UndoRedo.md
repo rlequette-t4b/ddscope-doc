@@ -12,6 +12,7 @@
 | 0.2 | May 2026 | Clarified map_* scope; added all presentation-layer call sites, drag interactions, AI layer |
 | 0.3 | May 2026 | DDS_TX_HELPER (SCRIPT 1870) added — wraps begin/commit/rollback; pattern updated at all call sites |
 | 0.4 | May 2026 | DDS_TX_HELPER.run() extended with onSuccess callback — presentation-layer side effects separated from store mutations; DDS_NODE_UI._doSave() patched as first call site |
+| 0.5 | May 2026 | map_* tables confirmed in TX scope; DDS_PANEL node panel fully wired (all 7 handlers); swim-lane panel wired (2 handlers); flow panel wired (10 handlers, issues in progress); annotation panel wired (4 handlers, to test — bug on annotation creation); _afterUndoRedo closes side panel to avoid stale fields |
 
 ---
 
@@ -67,7 +68,10 @@ This means **all store mutations are in scope**, including:
 - Annotation canvas position updates (`map_annotations.x/y` on drag).
 - Note ghost offsets (`map_nodes.note_dx/note_dy`, `map_flows.notes_annotation_dx/dy`).
 - CTT line position and size (`map_nodes.demand_x/y/length`).
+
 - Add/remove element from map (`map_nodes`, `map_flows`, `map_annotations` insert/delete).
+
+**Note:** mutations on `map_*` tables (e.g. `map_nodes.note_visible`, `map_nodes.label_position`, `map_flows.curve_style`, `map_annotations.font_size`) are **fully in scope** — the snapshot captures all tables indiscriminately. They must be wrapped in `DDS_TX_HELPER.run()` like any other store mutation, with Cytoscape/DOM side effects placed in the `onSuccess` callback.
 
 **After undo/redo on the map view:** call `DDS_MAP.loadMap()` then `DDS_SWIMLANES.render()`. Do **not** call `runLayout()` — positions are restored from the snapshot and must not be recalculated.
 
@@ -129,6 +133,20 @@ try {
 ```
 
 ### 1.6 AI layer
+
+### 1.7 Case: side panel open during undo/redo
+
+When undo/redo is applied, the side panel's input fields reflect the pre-operation store state and become stale. The chosen strategy is **close the panel** on every undo/redo — the user re-selects the element to continue editing.
+
+Implementation: `_afterUndoRedo()` in `DDS_UI_NAV` (SCRIPT 700) calls `DDS_PANEL.close()` as its first action, before `loadMap()` or any table re-render.
+
+```js
+async function _afterUndoRedo() {
+  // Close side panel — its fields are stale after undo/redo
+  if (window.DDS_PANEL) DDS_PANEL.close();
+  // ... loadMap / table re-render
+}
+```
 
 `DDS_AI_UI` owns the transaction wrapping AI-generated action plans. After the user confirms the plan, `DDS_AI_UI` opens a transaction, calls `DDS_ACTIONS.execute()` with the full action list, then commits or rolls back. `DDS_AI` itself is not transaction-aware.
 
