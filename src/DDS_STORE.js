@@ -127,7 +127,7 @@ var DDS_STORE = (function () {
 
       // if object is already in the delta stick to original change
       if (_changes.find(function(s) {
-            s[0] === object;
+             return (s[0] === object);
       })) {
         return
       }  

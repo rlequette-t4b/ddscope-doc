@@ -26,7 +26,7 @@ describe('DDS_STORE Deltas', () => {
     expect(DDS_STORE.query('nodes')).toHaveLength(0);
 
     // insert a node
-    DDS_STORE.insert('nodes', { name: 'A'});
+    DDS_STORE.insert('nodes', { name: 'A' });
     expect(DDS_STORE.query('nodes')).toHaveLength(1);
 
     // cancel the current Delta, which should remove the inserted node
@@ -35,34 +35,68 @@ describe('DDS_STORE Deltas', () => {
   });
 
   it('perform undo/redo for one node', () => {
-    
-      DDS_STORE.beginDelta();
 
-      // no nodes at start
-      expect(DDS_STORE.query('nodes')).toHaveLength(0);
+    DDS_STORE.beginDelta();
 
-      // insert a node and commit
-      DDS_STORE.insert('nodes', { name: 'A'});
+    // no nodes at start
+    expect(DDS_STORE.query('nodes')).toHaveLength(0);
 
-      var delta = DDS_STORE.endDelta();
+    // insert a node and commit
+    DDS_STORE.insert('nodes', { name: 'A' });
 
-      expect(DDS_STORE.query('nodes')).toHaveLength(1);
+    var delta = DDS_STORE.endDelta();
 
-      // undo the Delta, which should remove the inserted node
-      var revDelta = DDS_STORE.revertDelta(delta);
+    expect(DDS_STORE.query('nodes')).toHaveLength(1);
 
-      expect(DDS_STORE.query('nodes')).toHaveLength(0);
+    // undo the Delta, which should remove the inserted node
+    var revDelta = DDS_STORE.revertDelta(delta);
 
-      // redo the Delta, which should add back the inserted node
-      var revDelta2 = DDS_STORE.revertDelta(revDelta);
-      expect(DDS_STORE.query('nodes')).toHaveLength(1);
+    expect(DDS_STORE.query('nodes')).toHaveLength(0);
 
-      // check that the node is the same after undo/redo
-      expect(DDS_STORE.query('nodes')[0].name).toBe('A');
+    // redo the Delta, which should add back the inserted node
+    var revDelta2 = DDS_STORE.revertDelta(revDelta);
+    expect(DDS_STORE.query('nodes')).toHaveLength(1);
 
-      // undo the Delta again, which should remove the inserted node
-      DDS_STORE.revertDelta(revDelta2);
-      expect(DDS_STORE.query('nodes')).toHaveLength(0);
-    
+    // check that the node is the same after undo/redo
+    expect(DDS_STORE.query('nodes')[0].name).toBe('A');
+
+    // undo the Delta again, which should remove the inserted node
+    DDS_STORE.revertDelta(revDelta2);
+    expect(DDS_STORE.query('nodes')).toHaveLength(0);
+
   });
+
+  it('restore the original state when an object is updated twice in the same Delta', () => {
+
+    // insert a node before the delta
+    DDS_STORE.insert('nodes', { name: 'A' });
+    expect(DDS_STORE.query('nodes')).toHaveLength(1);
+    var node = DDS_STORE.query('nodes')[0];
+    // check the name is A
+    expect(node.name).toBe('A');
+
+    DDS_STORE.beginDelta();
+    // update the node twice
+    DDS_STORE.update('nodes', node.id, { name: 'B' });
+    expect(node.name).toBe('B');
+    DDS_STORE.update('nodes', node.id, { name: 'C' });
+    expect(node.name).toBe('C');
+
+    var delta = DDS_STORE.endDelta();
+    var revDelta = DDS_STORE.revertDelta(delta);
+
+    // still one node and the same node
+    expect(DDS_STORE.query('nodes')).toHaveLength(1);
+    // the node is still the same
+    expect(DDS_STORE.query('nodes')[0]).toBe(node);
+    // the name should be back to A
+    expect(node.name).toBe('A');
+
+    // now after redo the name should be C
+    DDS_STORE.revertDelta(revDelta);
+    expect(node.name).toBe('C');
+
+  });
+
+
 });
