@@ -245,7 +245,7 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 
 `DDS_MAP.fitMap` computes the union bounding box of Cytoscape node positions (from `map_nodes` for the active map) and swim-lane geometry (from `map_swim_lanes` for the active map), then applies pan and zoom via `DDS_CY.viewport()`. A 50 ms `setTimeout` defers execution until the browser has painted the container.
 
-**Ghost note nodes are excluded** from the bounding box calculation (`node.hasClass('dds-note-ghost')` filter applied before `boundingBox()`).
+Only BFS rank badge debug nodes are excluded from the bounding box calculation — note ghosts, flow note ghosts, and annotation ghosts are included.
 
 ### Node placement
 
@@ -253,7 +253,7 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 
 The algorithm applies in order:
 
-1. **Swim-lane assigned and visible on the map** — candidates are generated on a grid inside the swim-lane rectangle, scanning rows from bottom to top, left to right within each row. The first position whose distance to all existing nodes exceeds `MIN_DIST` is returned.
+1. **Swim-lane assigned and visible on the map** — the node is placed vertically centred in the lane (`y = lane_y + lane_height / 2`), and horizontally after the rightmost existing node in that lane (`x = max_node_x + GRID_X`), clamped to the lane right boundary minus `MARGIN`.
 2. **No swim-lane, or swim-lane absent from the map** — the node is placed below the bounding box of all swim-lanes visible on the map, horizontally centred. If the position is occupied, the node shifts left by `FALLBACK_STEP`, repeated up to 20 times.
 3. **No swim-lanes on the map** — the node is placed at the centre of the current viewport.
 

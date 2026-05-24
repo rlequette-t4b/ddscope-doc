@@ -298,7 +298,10 @@ The **+ Product** button in the map toolbar opens a modal that creates a node-pr
 
 ### Annotation interactions
 
-- **Creation** — via the **+ Annotation** button in the map toolbar. Opens a modal with a textarea for the `notes` content, a swim-lane selector (optional), and a tags field. On confirm: creates the `annotations` record and a `map_annotations` record placing it at the viewport centre of the active map.
+- **Creation** — via the **+ Annotation** button in the map toolbar. Opens a modal with a textarea for the `notes` content, a swim-lane selector (optional), and a tags field. On confirm: creates the `annotations` record and a `map_annotations` record. Initial canvas position follows the same logic as `DDS_LAYOUT.placeNode`:
+  - **Swim-lane assigned and visible on the map** — vertically centred in the lane, horizontally placed after the rightmost existing node (+ GRID_X), clamped to the lane right boundary.
+  - **No swim-lane, or swim-lane absent from the map** — below the bounding box of all swim-lanes visible on the map, horizontally centred.
+  - **No swim-lanes on the map** — centre of the current viewport.
 - **Selection** — click an annotation ghost node to open the annotation side panel. Click the canvas background to close.
 - **Drag** — free positioning; position saved to `map_annotations` on `dragfree`. Excluded from fit-to-canvas and auto-layout.
 - **Keyboard delete** — `Del` key on a selected annotation triggers the Remove modal.
@@ -349,7 +352,7 @@ Y snap uses neighbours aligned on the same X column; X snap uses neighbours alig
 
 | Control              | Behaviour                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Ghost note nodes and CTT lines are excluded from this calculation. Also triggered on project open and map tab switch. |
+| **Fit (⛶)**          | Computes bounding box of nodes and swim-lanes for the active map, applies pan and zoom. Only BFS rank badge debug nodes are excluded from this calculation — note ghosts, flow note ghosts, and annotation ghosts are included. Also triggered on project open and map tab switch. |
 | **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Flows with `layout_offset = 0` are excluded from rank computation. Flows with `layout_offset = N > 1` impose a minimum column distance of `N` between source and target. Bidirectional flows with `layout_direction_inverted = true` have their source and target swapped in the BFS graph. Positions saved to `map_nodes`. |
 | **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
 | **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
