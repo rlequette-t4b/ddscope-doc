@@ -12,7 +12,7 @@
   - [7. Open Questions](#7-open-questions)
 
 # DDScope — Overview
-*v2.1 — Draft — May 2026*
+*v2.3 — Draft — May 2026*
 
 ---
 
@@ -39,6 +39,7 @@
 | 2.0 | May 2026 | Annotations entity renamed to Notes (notes / map_notes) |
 | 2.1 | May 2026 | Annotations feature promoted from pre-backlog to v1 scope |
 | 2.2 | May 2026 | §5 Pre-backlog extracted to DDScope_Backlog.md |
+| 2.3 | May 2026 | Map notes panel, canvas toggle, and flexible copy modal added to v1 scope (FEAT-002, FEAT-003, FEAT-004) |
 
 ---
 
@@ -69,7 +70,7 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 ### 4.1 Version 1 — Target
 
 - Multi-project management — each project is a standalone JSON file; New, Load, Save, and Save As operations.
-- Project duplication — full deep copy of all entities with ID remapping, with selectable copy modes (full project, swim-lanes & types, types only).
+- Project duplication — flexible copy modal with four independent options (Types, Categories, Lanes, All content). All maps are always copied. See FEAT-004.
 - Definition and management of supply chain nodes — name, type, swim-lane assignment, tags, notes.
 - Definition and management of products — name, type, tags, notes.
 - Definition of flows between nodes — associated products, lead times, tags.
@@ -77,27 +78,17 @@ DDScope is implemented as a set of JavaScript modules, each living in a dedicate
 - SKU management — node x product associations with tags expressing the nature of the association (stock, buffer, transit, etc.).
 - BOM management — bill of material per node: one output product, one or more input components with quantities. Accessible from the node side panel and the BOMs tab.
 - Free tagging of nodes, products, flows, and SKUs for grouping and filtering.
-- Tag colors — association of tags with display colors for node background coloring on the map. Configurable in the Settings tab. Priority: first match in insertion order. Copied in all three project copy modes.
+- Tag colors — association of tags with display colors for node background coloring on the map. Configurable in the Settings tab. Priority: first match in insertion order. Copied in all copy modes.
 - Legend — SVG inline overlay on the map canvas (bottom-left), showing (node type x tag) combinations present on the active map, grouped by type. Toggle persisted per map. Compatible with html2canvas for future PDF export.
 - Node note overlay — display of node notes as italic text directly on the map canvas. Toggled per node per map via a "Show note on map" checkbox in the node side panel. The overlay is draggable independently of the node, with relative offset persisted per map. Excluded from fit-to-canvas and auto-layout. When the AI assistant sets a note via `update_node`, the overlay is enabled automatically on the active map.
 - Map view: nodes and flows only. Products are visible in the detail panels of flows and nodes.
 - Fit-to-canvas and auto-layout (BFS ranking per swim-lane; nodes without a swim-lane are not repositioned).
 - Table views: node list, flow list, product list, and demand list.
 - Annotations — free-form text elements placed freely on the map canvas. Optional swim-lane assignment (annotation translates with its lane). Tags. Created via the "+ Annotation" button in the toolbar. Visible per map via the Elements panel. Side panel for editing. Remove modal (map-only or full delete). Dedicated Annotations tab in the table view (all project annotations, not filtered by active map).
+- Map notes panel — structured bullet-point notes displayed below the map canvas. Notes are grouped into free-text categories defined in Settings and shared across all maps. Each category can be collapsed and shown or hidden per map independently. Captures workshop observations alongside the supply chain diagram — the same practice as b2wise PowerPoint deliverables, but navigable and structured. See FEAT-002.
+- Canvas visibility toggle — each map can hide its Cytoscape canvas entirely, leaving only the notes panel visible at full height. Transforms the map into a structured bullet-point slide without altering any map data. See FEAT-003.
 - Side panel for editing node, flow, swim-lane, and SKU properties. Tag changes on nodes immediately refresh node color and legend.
 - JSON file operations — New, Load, Save, Save As. Each project is a standalone `.json` file on the consultant's machine.
-- Project copy modes — three levels of copy when creating a project from an existing source:
-
-  | Mode | Functional entities copied | Maps copied |
-  |---|---|---|
-  | **Full project** | All entities | All maps with full geometry |
-  | **Swim-lanes & types** | Swim-lane definitions + node types + product types + tag colors | First map only — swim-lane geometry copied; no nodes or flows |
-  | **Types only** | Node types and product types + tag colors | First map only — empty |
-
-  All IDs are remapped in memory — the new project is fully independent of the source.
-
-  Annotations are included in **Full project** copy only. Swim-lanes & types and Types only copies do not include annotations.
-
 - AI assistant — natural language modification of the functional model with human confirmation before any write. The assistant understands the product-node pattern: when asked to place a product on the map it creates the node + SKU; when asked to associate a product with a flow between existing nodes it uses `add_product_to_flow` without creating a node.
 
 Navigation tab order (v1): `Map — Nodes — Flows — Products — BOMs — Demand — Annotations — Settings`.

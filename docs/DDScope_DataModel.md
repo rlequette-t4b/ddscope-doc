@@ -36,6 +36,7 @@
 | 2.8 | May 2026 | label_position added to map_nodes for per-map label position override |
 | 2.9 | May 2026 | notes_annotation_dx, notes_annotation_dy added to map_flows for flow note ghost offset |
 | 3.0 | May 2026 | annotations and map_annotations added (§9, §16); cascade rules updated (§17.1) |
+| 3.1 | May 2026 | note_categories and notes added (§10a, §10b); canvas_visible added to maps (§11); map_note_categories removed — category presence on a map is derived from its notes |
 
 ---
 
@@ -46,7 +47,7 @@ The model prioritises flexibility over formalism. Entities have a small set of s
 Every entity includes the following system fields, not repeated in the field definitions below: `id` (integer, auto-incremented in memory), `created_at`, `updated_at` (ISO timestamps).
 
 **Functional vs presentation separation.** The model distinguishes two layers:
-- The **functional layer** (nodes, products, flows, SKUs, swim-lanes, BOMs, tag colors, demands) describes the supply chain as it exists — independent of any visual representation.
+- The **functional layer** (nodes, products, flows, SKUs, swim-lanes, BOMs, tag colors, demands, note categories, notes) describes the supply chain as it exists — independent of any visual representation.
 - The **presentation layer** (maps and map-scoped entities) describes how elements are arranged and which elements are visible on a given map.
 
 **SKU lifecycle.** SKUs are not automatically synchronised with flows. Adding or removing a product from a flow does not create or delete SKUs. SKU coherence with the flow structure is the responsibility of the consultant, assisted by the future `validateSkus` function (see §17.4). The only automatic SKU operations are deletions triggered by `delete_node`, `delete_product`, and `remove_sku` (see §17.1).
@@ -262,6 +263,39 @@ Priority: first match in `tag_colors` insertion order wins when a node has multi
 
 ---
 
+## 10a. Note Categories
+
+Project-level groupings for map notes. Defined and managed in the Settings tab. Shared across all maps.
+
+**JSON array:** `note_categories`
+
+| Field | Type | Description |
+|---|---|---|
+| label | text | Display name — free text |
+| position | integer | Display order in the notes panel and Settings |
+
+A default `"General"` category is created automatically at project creation. Every note must belong to a category — there are no uncategorised notes.
+
+**Map presence.** There is no `map_note_categories` table. A category is considered present on a map when at least one of its notes has been placed on that map (see §10b). Collapsed/visible state per map is managed in the rendering layer only, not persisted in the data model.
+
+---
+
+## 10b. Notes
+
+Bullet-point observations captured during workshops, structured by category. Notes live at the project level and are independent of any specific map.
+
+**JSON array:** `notes`
+
+| Field | Type | Description |
+|---|---|---|
+| category_id | integer | Reference to `note_categories[].id` |
+| content | text | Free-form text — the bullet point content |
+| position | integer | Display order within the category |
+
+**Notes are project-level entities.** All notes are visible in the notes panel on every map. There is no per-map filtering of notes — the panel always shows the full project note set, organised by category.
+
+---
+
 ## 11. Map
 
 A named view of a subset of the project's supply chain elements. Each project has at least one map. The last remaining map cannot be deleted.
@@ -274,6 +308,7 @@ A named view of a subset of the project's supply chain elements. Each project ha
 | position | integer | Tab order |
 | direction | text | Flow display direction — `right-left` (default) or `left-right` |
 | legend_visible | boolean | Whether the legend overlay is visible on this map. Defaults to `true`. |
+| canvas_visible | boolean | When `false`, the Cytoscape canvas is hidden and the notes panel fills the full height. Map data is preserved. Defaults to `true`. |
 
 ---
 
@@ -399,47 +434,55 @@ Project metadata, stored under the `project` key (object, not array) in the JSON
 
 ### 17.0 Layered write architecture
 
-DDScope enforces a layered write architecture for all mutations to the functional model:
+DDScope enforces a layered write architecture for all mutations to the functional model. Notes (`note_categories`, `notes`) are written via `DDS_CMD` — the first domain bootstrapping the new command layer — not via the legacy helper pattern.
 
 ```
 UI modules
-    ↓  (all writes)
-Helper layer                    ← DDS_NODES, DDS_PRODUCTS, DDS_FLOWS,
-(domain helpers)                    DDS_SKUS, DDS_BOMS, DDS_DEMANDS
-    ↓  translates to actions
-DDS_ACTIONS  (synchronous)
+    ↓  (functional writes — legacy domains)
+Helper layer        ← DDS_NODES, DDS_PRODUCTS, DDS_FLOWS,
+                       DDS_SKUS, DDS_BOMS, DDS_DEMANDS, DDS_ANNOTATIONS
+    ↓
+DDS_ACTIONS (synchronous)
     ↓ simple ops          ↓ cascade ops
 DDS_STORE              DDS_MODEL
-    ↓                      ↓
-          DDS_STORE (raw CRUD)
+
+UI modules
+    ↓  (notes domain — new pattern)
+DDS_CMD.execute(TX.KEY, params, mapId, onSuccess?)
+    ↓  wraps begin/commit/rollback automatically
+DDS_STORE / DDS_MODEL
 
 AI modules
-    ↓  (write directly — no helper)
+    ↓  (write directly — no helper, no DDS_CMD for now)
 DDS_ACTIONS
     ↓  ...
 ```
 
-**Rule 1 — UI writes only via helpers.**
-No UI module (`DDS_BOMS_UI`, `DDS_PANEL`, `DDS_DEMANDS_UI`, `DDS_NODES_UI`, `DDS_PRODUCTS_UI`, `DDS_FLOWS_UI`, `DDS_SETTINGS_UI`, etc.) may call `DDS_ACTIONS.execute()`, `DDS_STORE.insert/update/remove`, or `DDS_MODEL.*` directly. All writes from UI go through a domain helper.
+**Rule 1 — UI writes only via helpers (legacy domains) or DDS_CMD (notes domain).**
+No UI module may call `DDS_ACTIONS.execute()`, `DDS_STORE.insert/update/remove`, or `DDS_MODEL.*` directly.
 
 **Rule 2 — AI writes via `DDS_ACTIONS` directly.**
-AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly — bypassing helpers.
+AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly. Notes are not yet in the AI vocabulary.
 
-**Rule 3 — Helpers translate to actions.**
-Each helper method builds an action list and calls `DDS_ACTIONS.execute()` synchronously. Helpers also expose named read methods as `DDS_STORE.query` wrappers for UI convenience.
+**Rule 3 — DDS_CMD.execute signature.**
+```javascript
+DDS_CMD.execute(txKey, params, mapId, onSuccess?)
+```
+- `txKey` — constant from the `TX` catalogue (e.g. `TX.NOTE_CATEGORY_CREATE`).
+- `params` — command-specific parameters object.
+- `mapId` — active map id, or `null` for commands with no map dimension.
+- `onSuccess` — optional callback for DOM/Cytoscape side effects, called after commit.
+- Wraps `DDS_TRANSACTIONS.begin/commit/rollback` automatically.
+- Returns `{ ok: boolean, id?: integer }`.
 
-**Rule 4 — `DDS_ACTIONS.execute()` is synchronous.**
+**Rule 4 — `DDS_ACTIONS.execute()` is synchronous (legacy).**
 Returns `{ applied: action[], failed: action|null }` directly. No Promise.
 
-**Rule 5 — `DDS_ACTIONS` uses `DDS_STORE` for simple ops, `DDS_MODEL` for cascades.**
-- Simple mutations (add, update): `DDS_ACTIONS` calls `DDS_STORE.insert/update/remove` directly.
-- Operations with cascade (delete_node, delete_flow, delete_product, delete_bom, remove_sku, delete_demand): `DDS_ACTIONS` delegates to `DDS_MODEL`.
-
-**Rule 6 — reads are unrestricted.**
-Any module may call `DDS_STORE.query` on any table at any time. UI modules should prefer helper read methods over direct `DDS_STORE.query` calls for consistency.
+**Rule 5 — reads are unrestricted.**
+Any module may call `DDS_STORE.query` on any table at any time.
 
 **Exceptions — presentation layer:**
-Presentation layer modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_ELEMENTS`, `DDS_PANEL` for canvas state, etc.) manage `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`, `map_annotations` directly via `DDS_STORE`. These tables are outside `DDS_ACTIONS`' and helpers' scope.
+Presentation layer modules manage `map_*` tables directly via `DDS_STORE`. Collapsed/visible state of note categories in the notes panel is managed in the rendering layer only and is not persisted.
 
 ### 17.1 Delete operations and cascades
 
@@ -455,6 +498,7 @@ The table below defines what is deleted when each destructive operation is perfo
 | `deleteDemand(nodeId, productId)` | All `map_demands` where `demand_id` matches. The `demands` record. |
 | `delete_annotation` | Deletes the `annotations` record. Cascades to all `map_annotations` records for this annotation. |
 | `deleteBom(bomId)` | All `bom_components` where `bom_id` matches. The `boms` record. |
+| `deleteNoteCategory(categoryId)` | All `notes` where `category_id` matches. The `note_categories` record. (No `map_note_categories` — table does not exist.) |
 | `rerouteFlow(flowId, newSourceId?, newTargetId?)` | Updates `source_node_id` and/or `target_node_id`. **No SKU modification.** |
 | `addProductToFlow(flowId, productId)` | Appends `productId` to `flows[flowId].product_ids`. **No SKU creation.** |
 | `removeProductFromFlow(flowId, productId)` | Removes `productId` from `flows[flowId].product_ids`. **No SKU deletion.** |

@@ -42,6 +42,10 @@ Example opening:
 
 On request at the start of a session: read the channel, present unprocessed messages, and discuss what to do with each. Once handled, add a ✅ reaction to mark it as processed. No deletion, no mandatory import target.
 
+**Reading the channel — reaction check (mandatory):**
+
+`slack_read_channel` does not return reactions. To identify already-processed messages, call `slack_get_reactions` on each message individually after reading the channel. Messages with a ✅ reaction are already processed and must be skipped. Only present messages without a ✅ reaction.
+
 ### During the session
 
 If the conversation drifts toward a domain not in the initial scope, signal it explicitly:
