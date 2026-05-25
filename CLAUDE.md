@@ -36,6 +36,12 @@ When memorizing something, apply this test: *could another AI working via CommWi
 Example opening:
 > "Cette session semble concerner les domaines **Rendering** et **CommWise**. Je vais charger : `DDScope_Rendering.md`, `DDScope_Presentation.md`, `DDScope_Modules.md`, `DDScope_CommWise.md`. C'est bien ça ?"
 
+### Slack inbox (#ddscope-sync)
+
+`#ddscope-sync` serves as an asynchronous idea inbox (notes posted from phone or outside sessions).
+
+On request at the start of a session: read the channel, present unprocessed messages, and discuss what to do with each. Once handled, add a ✅ reaction to mark it as processed. No deletion, no mandatory import target.
+
 ### During the session
 
 If the conversation drifts toward a domain not in the initial scope, signal it explicitly:
