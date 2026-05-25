@@ -1,5 +1,5 @@
 # DDScope — Architecture
-*v3.1 — Draft — May 2026*
+*v3.2 — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) · [DDScope_Presentation.md](DDScope_Presentation.md) · [DDScope_Rendering.md](DDScope_Rendering.md) · [DDScope_UI.md](DDScope_UI.md) · [DDScope_Modules.md](DDScope_Modules.md)*
 
@@ -14,6 +14,7 @@
 | 3.0 | May 2026 | Major restructure: implementation details extracted to dedicated documents; Architecture now describes layers and dependencies only |
 | 3.1 | May 2026 | §6 Key Implementation Details dispatched to Presentation, Rendering, and UI docs |
 | 3.2 | May 2026 | Internal links updated — single flat docs/ folder |
+| 3.3 | May 2026 | §6 Obsolete Patterns added |
 
 ---
 
@@ -228,6 +229,18 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
 ```
 
 A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_nodes` records (`bfs_rank_min`, `bfs_rank_max`) default to `null` at runtime. `label_position` defaults to `null` (uses node type value) at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `layout_offset`, `layout_direction_inverted`, `show_notes_label`, `notes_as_annotation`, `notes_annotation_dx`, `notes_annotation_dy`, `curve_style`) default to `0.5`, `1`, `false`, `false`, `false`, `0`, `-30`, and `"taxi"` respectively at runtime. Fields absent from `node_types` records (`icon_key`, `label_position`, `transparent_bg`) default to `null`, `"center"`, and `false` respectively at runtime.
+
+---
+
+## 6. Obsolete Patterns
+
+Patterns that have been superseded. Do not use in any new code.
+
+| Pattern | Replaced by | Details |
+|---|---|---|
+| `skip_in_layout` on `map_flows` | `layout_offset: 0` | Old boolean field; `layout_offset` is the authoritative control — `0` excludes the flow from BFS, `N > 0` sets minimum column distance |
+| CommWise DataStore as persistence layer | File System Access API + `DDS_STORE` | DDScope persists to a local JSON file. DataStore is not used as a persistence layer. Any reference to DataStore as primary storage is obsolete. |
+| Sequential `insert()` loops | Batch inserts with `inserted_ids` for ID remapping | Sequential inserts across related tables fail to remap foreign keys correctly. Use batch insert patterns that return `inserted_ids` and remap references before the next insert. |
 
 ---
 

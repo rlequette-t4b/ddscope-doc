@@ -1,5 +1,5 @@
 # DDScope — Test Environment
-*v0.6 — Draft — May 2026*
+*v0.7 — May 2026*
 
 ---
 
@@ -13,6 +13,7 @@
 | 0.4 | May 2026 | Test mode and Playwright loading backdoor documented (Axe 2) |
 | 0.5 | May 2026 | DDS_ACTIONS added to module boundaries; DDS_AI_EXECUTOR removed |
 | 0.6 | May 2026 | Unified environment: DEV/TEST split removed; Claude Desktop replaces VS Code extension and Copilot; Slack removed from scope |
+| 0.7 | May 2026 | Pull/Push workflow consolidated here (was split between CLAUDE.md and Module Extraction Workflow); CLAUDE.md now points here |
 
 ---
 
@@ -79,7 +80,7 @@ ddscope/
 │   ├── README.md
 │   └── ...
 │
-├── CLAUDE.md                   ← Primary context for Claude Desktop
+├── CLAUDE.md                   ← Behavioral instructions for Claude Desktop
 ├── .env.example
 ├── playwright.config.js
 ├── vitest.config.js
@@ -129,6 +130,62 @@ import '../src/DDS_STORE.js'; // loads DDS_STORE on globalThis
 
 ---
 
+## Module Pull/Push Workflow
+
+Module synchronisation between CommWise (source of truth) and `src/` is AI-assisted via Claude Desktop.
+
+### Module organisation conventions
+
+- JS global: `DDS_<MODULE>` (e.g. `DDS_STORE`, `DDS_DURATION`)
+- CommWise block title: `JS: DDS_<MODULE> — <one-line description>`
+- Extracted file: `src/DDS_<MODULE>.js`
+
+### Pull — extract or refresh a module
+
+Ask Claude Desktop: *"Extract DDS_STORE from CommWise into src/"* or *"Refresh DDS_ACTIONS"*
+
+Steps:
+1. Look up the module in `DDScope_Modules.md` — get block position and testability class.
+2. Skip `render-dependent` and `out-of-scope` modules.
+3. Call `commwise_get_block` with `appID: 22645`, `code_type: 'script'`, `position: <N>`.
+4. Verify the block title starts with `JS: DDS_` — abort if not.
+5. Append `export default <GLOBAL>;` for ESM compatibility.
+6. Write to `src/<MODULE>.js`.
+7. Update tracking table in `src/README.md`: direction `PULL`, timestamp, app version, revision ID.
+
+### Push — export a corrected module to CommWise
+
+Ask Claude Desktop: *"Push DDS_STORE to CommWise"*
+
+**Eligibility:** only `pure` or `store-dependent` modules. Never push `render-dependent` modules from this repo.
+
+Steps:
+1. Look up module in `DDScope_Modules.md` — confirm eligibility.
+2. `commwise_get_block` — fetch current live block, confirm the intended diff.
+3. `commwise_start_session` — open a write session.
+4. Strip `export default <GLOBAL>;` from the payload (extraction-only line).
+5. `commwise_update_block` with `create_revision: true`, `append_release_notes: true`.
+6. Re-fetch and verify exact content match.
+7. Update tracking table in `src/README.md`: direction `PUSH`, timestamp, app version, revision ID.
+8. Re-extract into `src/` to confirm parity.
+
+### Module boundaries
+
+| Module | Responsibility | Testability |
+|---|---|---|
+| `DDS_STORE` | In-memory CRUD, dirty flag, ID counters, file persistence | store-dependent (after DOM refactor) |
+| `DDS_DURATION` | Duration arithmetic and formatting | pure |
+| `DDS_ACTIONS` | Action execution + new_* resolution + vocabulary | store-dependent |
+| `DDS_AI_CONTEXT` | Project → Claude context JSON serialisation | store-dependent |
+| `DDS_JSON` | Project import with copy modes + ID remapping | store-dependent |
+| `DDS_PRODUCTS` | Product CRUD + SKU cascade | store-dependent |
+| `DDS_BOMS` | BOM CRUD + cascade | store-dependent |
+| `DDS_DEMANDS` | Demand CRUD + map_demands + cascade | store-dependent |
+
+Render-dependent modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_LAYOUT`, all `*_UI` modules) are out of scope for unit testing.
+
+---
+
 ## Axe 1 — Functional Tests (Vitest + Node.js)
 
 ### Principle
@@ -137,13 +194,11 @@ DDScope logic modules (store, duration, actions) are extracted from CommWise SCR
 
 ### Module extraction
 
-Module extraction is AI-assisted via Claude Desktop connected to the CommWise MCP. CommWise SCRIPT blocks expose modules as browser globals:
+CommWise SCRIPT blocks expose modules as browser globals:
 
 ```javascript
 window.DDS_STORE = (function () { ... })();
 ```
-
-To request an extraction, ask Claude Desktop: *"Extract DDS_ACTIONS from CommWise into src/"*. Claude uses the module registry to look up the block position, fetches it via `commwise_get_block`, appends `export default <GLOBAL>;` for ESM compatibility, and writes the file to `src/`.
 
 To make these modules runnable in Node.js, a minimal `shims/window.js` stub is imported at the top of each test file:
 
@@ -284,49 +339,6 @@ Non-blocking. Placeholder convention for now — annotate tests with a ticket re
 ```javascript
 test('[DDS-42] cascade: delete_node removes all dependent flows', () => { ... });
 ```
-
----
-
-## Module Extraction Workflow
-
-Module extraction is fully AI-assisted via Claude Desktop. The developer does not run any script manually.
-
-### Extracting a module
-
-Ask Claude Desktop:
-
-> *"Extract DDS_ACTIONS from CommWise into src/"*
-> *"Extract all testable modules from CommWise"*
-
-Claude will:
-1. Look up the module entry in `DDScope_Modules.md` (block position, global name, file path, testability).
-2. Skip modules with `testability: render-dependent` or `out-of-scope`.
-3. Call `commwise_get_block` with `appID: 22645`, `code_type: 'script'`, and the block position.
-4. Verify the block title starts with `JS: DDS_` — skip if not.
-5. Append `export default <GLOBAL>;` for ESM compatibility.
-6. Write the result to `src/<MODULE>.js`.
-7. Update the tracking table in `src/README.md`.
-
-### Module Organisation Principles
-
-- JS global: `DDS_<MODULE>` (e.g. `DDS_STORE`, `DDS_DURATION`)
-- CommWise block title: `JS: DDS_<MODULE> — <one-line description>`
-- Extracted file: `src/DDS_<MODULE>.js`
-
-### Module boundaries
-
-| Module | Responsibility | Testability |
-|---|---|---|
-| `DDS_STORE` | In-memory CRUD, dirty flag, ID counters, file persistence | store-dependent (after DOM refactor) |
-| `DDS_DURATION` | Duration arithmetic and formatting | pure |
-| `DDS_ACTIONS` | Action execution + new_* resolution + vocabulary | store-dependent |
-| `DDS_AI_CONTEXT` | Project → Claude context JSON serialisation | store-dependent |
-| `DDS_JSON` | Project import with copy modes + ID remapping | store-dependent |
-| `DDS_PRODUCTS` | Product CRUD + SKU cascade | store-dependent |
-| `DDS_BOMS` | BOM CRUD + cascade | store-dependent |
-| `DDS_DEMANDS` | Demand CRUD + map_demands + cascade | store-dependent |
-
-Render-dependent modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_LAYOUT`, all `*_UI` modules) are out of scope for unit testing.
 
 ---
 

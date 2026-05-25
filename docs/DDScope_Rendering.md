@@ -1,5 +1,5 @@
 # DDScope — Rendering Engine
-*v0.2 — Draft — May 2026*
+*v0.3 — May 2026*
 
 *See also: [DDScope_Presentation.md](DDScope_Presentation.md) for layout logic. [DDScope_UI.md](DDScope_UI.md) for interaction triggers. [DDScope_Architecture.md](DDScope_Architecture.md) for layer dependencies.*
 
@@ -12,6 +12,7 @@
 | 0.1 | May 2026 | Initial extraction from DDScope_Architecture.md |
 | 0.2 | May 2026 | §4 Fit-to-canvas, §5 Taxi edge rendering, §6 BFS rank badges added — extracted from DDScope_Architecture.md §6 |
 | 0.3 | May 2026 | Internal links updated — single flat docs/ folder |
+| 0.4 | May 2026 | §7 Known Traps added — loadMap/runLayout inside Cytoscape event handlers |
 
 ---
 
@@ -43,7 +44,7 @@ When a layout computation is needed, the rendering engine calls the presentation
 11. If `show_bfs_ranks` is active: call `renderBfsRankBadges(mapId)`.
 12. Call `DDS_SWIMLANES.render(mapId)`.
 
-`loadMap` is called only on map open and map switch. It must never be called inside a Cytoscape event handler or via `setTimeout(0)` — see the critical drag-stability rule in `CLAUDE.md`.
+`loadMap` is called only on map open and map switch. See §7 for the critical constraint on call context.
 
 ---
 
@@ -101,6 +102,18 @@ When `show_notes_label` and `notes_as_annotation` are both `true` on a `map_flow
 When the `show_bfs_ranks` debug setting is active, `DDS_MAP.renderBfsRankBadges(mapId)` creates a Cytoscape ghost node (class `dds-bfs-badge`) above each swim-lane node that has stored `bfs_rank_min` and `bfs_rank_max` values in `map_nodes`.
 
 These ghost nodes are excluded from the fit-to-canvas bounding box calculation. They are created and destroyed on each `loadMap` call — they are not persisted to `map_nodes` or exported in JSON.
+
+---
+
+## 7. Known Traps
+
+### `loadMap()` / `runLayout()` inside Cytoscape event handlers
+
+Calling `loadMap()` (which removes and re-adds all elements) during an active Cytoscape event corrupts internal drag state. The symptom is nodes becoming undraggable or snapping to incorrect positions after a map reload.
+
+**Never call `loadMap()` or `runLayout()` inside a Cytoscape event handler** (`select`, `tap`, `dragfree`, etc.) **or via `setTimeout(0)`.**
+
+**Safe call contexts:** project open, map tab switch only.
 
 ---
 

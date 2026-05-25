@@ -12,19 +12,20 @@ Single source of truth for all DDScope documentation. All files are flat in this
 |---|---|---|
 | [DDScope_Overview.md](DDScope_Overview.md) | Active | Product purpose, scope v1/v2, constraints |
 | [DDScope_DataModel.md](DDScope_DataModel.md) | Active | All entities, fields, cascade rules |
-| [DDScope_Architecture.md](DDScope_Architecture.md) | Active | Layered architecture, persistence pattern |
+| [DDScope_Architecture.md](DDScope_Architecture.md) | Active | Layered architecture, persistence pattern, obsolete patterns |
 | [DDScope_Modules.md](DDScope_Modules.md) | Active | Module registry — APIs, deps, testability |
 | [DDScope_Presentation.md](DDScope_Presentation.md) | Active | Presentation layer — map_* logic, layout algorithms, DI contract |
 | [DDScope_Actions.md](DDScope_Actions.md) | Active | AI action vocabulary |
 | [DDScope_AI_Assistant.md](DDScope_AI_Assistant.md) | Active | Embedded AI assistant RFC |
 | [DDScope_Backlog.md](DDScope_Backlog.md) | Active | Feature backlog — pre-backlog candidates, committed features, user manual copy |
+| [DDScope_CommWise.md](DDScope_CommWise.md) | Active | CommWise platform conventions — session lifecycle, editing, AI proxy, known traps |
 
 ### Implementation details
 
 | Document | Status | Notes |
 |---|---|---|
-| [DDScope_Rendering.md](DDScope_Rendering.md) | Active | Cytoscape canvas, overlays, ghost nodes, styles |
-| [DDScope_UI.md](DDScope_UI.md) | Active | UI implementation details |
+| [DDScope_Rendering.md](DDScope_Rendering.md) | Active | Cytoscape canvas, overlays, ghost nodes, styles, known traps |
+| [DDScope_UI.md](DDScope_UI.md) | Active | UI implementation details, known traps |
 | [DDScope_UndoRedo.md](DDScope_UndoRedo.md) | Active | Transaction pattern, call site inventory |
 | [DDScope_ElementsLifecycle.md](DDScope_ElementsLifecycle.md) | Active | Element lifecycle on maps |
 
@@ -32,24 +33,131 @@ Single source of truth for all DDScope documentation. All files are flat in this
 
 | Document | Status | Notes |
 |---|---|---|
-| [DDScope_TestEnvironment.md](DDScope_TestEnvironment.md) | Active | Repo conventions, Vitest/Playwright setup, extraction workflow |
+| [DDScope_TestEnvironment.md](DDScope_TestEnvironment.md) | Active | Repo conventions, Vitest/Playwright setup, module pull/push workflow |
 
 ---
 
-## Reading Order
+## Domains
 
-If new to the project, start here:
+Catalogue of work domains. At the start of each session, an AI assistant infers the relevant domains from the first request, states them explicitly, and loads the listed documents after confirmation.
 
-1. [DDScope_Overview.md](DDScope_Overview.md)
-2. [DDScope_DataModel.md](DDScope_DataModel.md)
-3. [DDScope_Architecture.md](DDScope_Architecture.md)
-4. [DDScope_Modules.md](DDScope_Modules.md)
-5. [DDScope_Presentation.md](DDScope_Presentation.md)
-6. [DDScope_Rendering.md](DDScope_Rendering.md)
-7. [DDScope_UI.md](DDScope_UI.md)
-8. [DDScope_Actions.md](DDScope_Actions.md)
-9. [DDScope_AI_Assistant.md](DDScope_AI_Assistant.md)
-10. [DDScope_TestEnvironment.md](DDScope_TestEnvironment.md)
+THe objective of domains is also to help AI assitant to better engineer their session context, keep it focused to avoid bloating and confusion while having all useful konwledge for the taks on hand.
+
+This list is open-ended — add a domain when a combination of documents recurs regularly.
+
+---
+
+### Specification (French: Spécification)
+*Design, backlog, data model, conceptual architecture — no CommWise access required.*
+
+| Document | Why |
+|---|---|
+| `DDScope_Overview.md` | Product scope, v1/v2 constraints |
+| `DDScope_DataModel.md` | Entities, fields, cascade rules |
+| `DDScope_Architecture.md` | Layers, dependencies, obsolete patterns |
+| `DDScope_Backlog.md` | Active backlog, pending design decisions |
+
+---
+
+### Functional (French: Fonctionnel)
+*DDS_STORE, DDS_ACTIONS, DDS_MODEL, transactions, helpers — pure business logic, no rendering.*
+
+| Document | Why |
+|---|---|
+| `DDScope_Architecture.md` | Write rules per layer, persistence |
+| `DDScope_DataModel.md` | Entities and cascades being manipulated |
+| `DDScope_Modules.md` | Module APIs, dependencies, testability |
+| `DDScope_Actions.md` | Action vocabulary |
+| `DDScope_UndoRedo.md` | Transaction pattern, call site inventory |
+| `DDScope_CommWise.md` | If reading or writing CommWise blocks |
+
+---
+
+### Rendering (French: Rendu)
+*Cytoscape, swim-lanes, layout, ghost nodes, canvas DOM.*
+
+| Document | Why |
+|---|---|
+| `DDScope_Rendering.md` | Rendering engine, Cytoscape traps |
+| `DDScope_Presentation.md` | map_* logic, layout algorithms |
+| `DDScope_Modules.md` | Render-dependent modules, CommWise positions |
+| `DDScope_CommWise.md` | Session lifecycle, editing, regex traps |
+
+---
+
+### Interface (French: Interface)
+*Panels, modals, nav bar, table views, user interactions.*
+
+| Document | Why |
+|---|---|
+| `DDScope_UI.md` | Full UI spec, known traps (disabled buttons…) |
+| `DDScope_ElementsLifecycle.md` | Element lifecycle on maps |
+| `DDScope_Modules.md` | UI modules, CommWise positions |
+| `DDScope_CommWise.md` | Session lifecycle, editing, regex traps |
+
+---
+
+### Embedded AI (French: IA embarquée)
+*DDS_AI, DDS_AI_CONTEXT, assistant panel, CommWise proxy.*
+
+| Document | Why |
+|---|---|
+| `DDScope_AI_Assistant.md` | Full assistant RFC |
+| `DDScope_Actions.md` | Action vocabulary, plan format |
+| `DDScope_Modules.md` | AI layer modules, CommWise positions |
+| `DDScope_CommWise.md` | secureRequest proxy, session lifecycle |
+
+---
+
+### Testing (French: Tests)
+*Vitest, Playwright, pull/push extraction, fixtures.*
+
+| Document | Why |
+|---|---|
+| `DDScope_TestEnvironment.md` | Full setup, pull/push workflow, Playwright backdoors |
+| `DDScope_Modules.md` | Module testability, extraction contracts |
+| `DDScope_CommWise.md` | Session lifecycle for push operations |
+
+---
+
+### CommWise
+*Reading, writing, and deploying blocks — without associated application work (e.g. audit, migration).*
+
+| Document | Why |
+|---|---|
+| `DDScope_CommWise.md` | All platform conventions |
+| `DDScope_Modules.md` | Block positions, expected titles |
+
+---
+
+## Where to Place Information
+
+Apply these criteria in order when deciding where to document something.
+
+**Criterion 1 — What is the scope?**
+
+The domains section of this document and the table below should help you locate the right document to update, you can aso propose new documents or refactoring, but do it in last resort.
+
+| Scope | Target document |
+|---|---|
+| CommWise platform behaviour (any app) | `DDScope_CommWise.md` |
+| Architecture or layer rule | `DDScope_Architecture.md` |
+| Module API, dependency, or testability | `DDScope_Modules.md` |
+| Data model, entity, field, cascade | `DDScope_DataModel.md` |
+| Presentation layer / layout algorithm | `DDScope_Presentation.md` |
+| Rendering / Cytoscape / canvas | `DDScope_Rendering.md` |
+| UI interaction, panel, modal | `DDScope_UI.md` |
+| AI action vocabulary | `DDScope_Actions.md` |
+| AI assistant feature | `DDScope_AI_Assistant.md` |
+| Test convention, fixture, pull/push workflow | `DDScope_TestEnvironment.md` |
+| Feature backlog or design note | `DDScope_Backlog.md` |
+
+**Criterion 2 — Is it proactive or reactive knowledge?**
+- Proactive (read before starting) → body of the relevant doc.
+- Reactive (consulted when something breaks) → "Known Traps" section at the end of the relevant doc. Propse to create if it does not exist.
+
+**What does NOT belong in `docs/`:**
+Anything specific to an AI assistant's execution environment, tool constraints, or operational patterns. Those go in the AI assistant's instruction file at the repo root.
 
 ---
 

@@ -1,4 +1,4 @@
-- [DDScope — User Interface](#ddscope--user-interface)
+  - [DDScope — User Interface](#ddscope--user-interface)
   - [Version History](#version-history)
   - [1. Workflow](#1-workflow)
   - [2. Views](#2-views)
@@ -206,26 +206,26 @@ A pencil button (✎) appears on hover to the right of the project name. Clickin
 
 Two buttons — **Undo (↩)** and **Redo (↪)** — sont placés dans la zone droite de la barre de navigation, à gauche du bouton Save.
 
-**State :** chaque bouton est activé ou désactivé selon `DDS_TRANSACTION.canUndo()` et `DDS_TRANSACTION.canRedo()`. L’état n’est pas pollé : la nav bar enregistre un unique callback via `DDS_TRANSACTION.onChange(fn)` à l’initialisation. Ce callback appelle `canUndo()` / `canRedo()` et met à jour l’état des boutons immédiatement. Les deux boutons sont désactivés si aucun projet n’est ouvert.
+**State :** chaque bouton est activé ou désactivé selon `DDS_TRANSACTION.canUndo()` et `DDS_TRANSACTION.canRedo()`. L'état n'est pas pollé : la nav bar enregistre un unique callback via `DDS_TRANSACTION.onChange(fn)` à l'initialisation. Ce callback appelle `canUndo()` / `canRedo()` et met à jour l'état des boutons immédiatement. Les deux boutons sont désactivés si aucun projet n'est ouvert.
 
 **Raccourcis clavier :**
 - Undo : `Ctrl+Z`
 - Redo : `Ctrl+Y`
 
-Les raccourcis sont actifs globalement (pas limités à une vue) quand un projet est ouvert. Ils n’ont aucun effet si un modal ou un champ texte a le focus.
+Les raccourcis sont actifs globalement (pas limités à une vue) quand un projet est ouvert. Ils n'ont aucun effet si un modal ou un champ texte a le focus.
 
-**Comportement lors de l’activation (clic ou raccourci) :**
+**Comportement lors de l'activation (clic ou raccourci) :**
 1. Appelle `DDS_TRANSACTION.undo()` ou `DDS_TRANSACTION.redo()`.
 2. Si le retour est `false` (pile vide), ne rien faire.
 3. Si `true` : rafraîchir la vue active —
   - Si la vue active est la **Map** : appeler `DDS_MAP.loadMap()` puis `DDS_SWIMLANES.render()`. Ne pas appeler `runLayout()` : les positions sont restaurées depuis le snapshot et ne doivent pas être recalculées.
   - Si la vue active est une **table** (Nodes, Flows, Products, BOMs, Demand, Annotations) : recharger le contenu depuis `DDS_STORE`.
   - Si la vue active est **Settings** : recharger les données depuis `DDS_STORE`.
-4. Le callback `onChange` est déclenché automatiquement après `undo()` / `redo()`, mettant à jour l’état des boutons.
+4. Le callback `onChange` est déclenché automatiquement après `undo()` / `redo()`, mettant à jour l'état des boutons.
 
-**Initialisation :** au boot, la nav bar appelle `DDS_TRANSACTION.onChange(updateUndoRedoButtons)` une fois. À l’ouverture ou création de projet, `DDS_TRANSACTION.clear()` est appelé (par `DDS_STORE`), ce qui déclenche le callback et désactive les deux boutons.
+**Initialisation :** au boot, la nav bar appelle `DDS_TRANSACTION.onChange(updateUndoRedoButtons)` une fois. À l'ouverture ou création de projet, `DDS_TRANSACTION.clear()` est appelé (par `DDS_STORE`), ce qui déclenche le callback et désactive les deux boutons.
 
-**Pas de liste d’historique :** aucun menu déroulant ou compteur n’est affiché. Seul l’état activé/désactivé est visible.
+**Pas de liste d'historique :** aucun menu déroulant ou compteur n'est affiché. Seul l'état activé/désactivé est visible.
 
 ### Save button
 
@@ -489,6 +489,18 @@ Modifying or deleting tag colors immediately refreshes node colors on the canvas
 | Show BFS ranks | Displays amber badges above swim-lane nodes showing their min-max BFS rank. Requires running Layout after enabling. Persisted in DataStore. |
 
 All changes are persisted on Save. If no project is open, a placeholder is shown.
+
+---
+
+## 8. Known Traps
+
+### Disabled nav buttons — CommWise visibility override
+
+CommWise applies `visibility: hidden` on all disabled buttons via a high-specificity global rule. Class-level overrides (e.g. `.dds-btn-ghost:disabled`) are insufficient.
+
+**Fix:** target each button by ID with `visibility: visible !important` + `display: inline-flex !important` on both normal and `:disabled` states.
+
+Model: `#dds-btn-save` in STYLE 300. Apply this pattern to every new nav button.
 
 ---
 
