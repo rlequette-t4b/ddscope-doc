@@ -1,5 +1,5 @@
 # DDScope — Architecture
-*v3.2 — May 2026*
+*v3.4 — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) · [DDScope_Presentation.md](DDScope_Presentation.md) · [DDScope_Rendering.md](DDScope_Rendering.md) · [DDScope_UI.md](DDScope_UI.md) · [DDScope_Modules.md](DDScope_Modules.md)*
 
@@ -15,6 +15,7 @@
 | 3.1 | May 2026 | §6 Key Implementation Details dispatched to Presentation, Rendering, and UI docs |
 | 3.2 | May 2026 | Internal links updated — single flat docs/ folder |
 | 3.3 | May 2026 | §6 Obsolete Patterns added |
+| 3.4 | May 2026 | §4 table catalogue and §5.5 file format moved to DDScope_DataModel.md; replaced by pointers |
 
 ---
 
@@ -44,7 +45,7 @@ DDScope is organised into five layers. Each layer has a single responsibility an
 │        Rendering layer        │
 ├───────────────────────────────┤  map_* entity logic, layout algorithms
 │      Presentation layer       │
-├─────────────┬───────────────┬─┤  Domain helpers / AI action execution
+├─────────────┬───────────────┬─┤  Domain helpers / AI action execution / DDS_CMD
 │  Helper layer│   AI layer    │
 ├───────────────────────────────┤  DDS_STORE, DDS_ACTIONS, DDS_MODEL
 │       Functional layer        │
@@ -54,8 +55,6 @@ DDScope is organised into five layers. Each layer has a single responsibility an
 ### Functional layer
 
 The foundation. Manages in-memory state (`DDS_STORE`), action execution (`DDS_ACTIONS`), cascade rules (`DDS_MODEL`), undo/redo (`DDS_TRANSACTIONS`), and file persistence. No knowledge of rendering or UI.
-Block addresses (`SCRIPT NNN`) are shown here only for modules absent from the registry (AI layer and Presentation layer).
-
 
 ### Functional layer modules
 
@@ -69,36 +68,32 @@ Block addresses (`SCRIPT NNN`) are shown here only for modules absent from the r
 | `DDS_MODEL` | Cascade delete rules — authoritative runtime |
 | `DDS_ACTIONS` | Action execution engine — synchronous; apply action lists on DDS_STORE/DDS_MODEL, resolve new_* references, action vocabulary |
 | `DDS_TRANSACTIONS` | Snapshot-based undo/redo transaction manager — wraps DDS_STORE state capture and restore |
-| `TX` | Transaction label catalogue — centralised constants for `DDS_TRANSACTIONS.begin()` |
-| `DDS_TX_HELPER` | UI transaction wrapper — `DDS_TX_HELPER.run(label, fn, onSuccess?)` encapsulates begin/commit/rollback; temporary, pending presentation layer refactor |
+| `DDS_TX` | Transaction label catalogue — centralised constants for `DDS_TRANSACTIONS.begin()` and `DDS_CMD.execute()` |
+| `DDS_CMD` | Unified command layer — notes domain bootstrap; replaces helpers + DDS_ACTIONS for migrated domains |
+| `DDS_TX_HELPER` | UI transaction wrapper — `DDS_TX_HELPER.run(label, fn, onSuccess?)` encapsulates begin/commit/rollback; temporary, pending full DDS_CMD migration |
 | `DDS_JSON` | Project import with copy modes + ID remapping |
-
-
 
 ### Helper layer modules
 
-UI modules call helpers for all functional writes and reads. Helpers translate semantic calls into `DDS_ACTIONS` action lists. They never call `DDS_STORE.insert/update/remove` directly except for presentation-layer operations explicitly noted.
+UI modules call helpers for all functional writes and reads (legacy domains). Helpers translate semantic calls into `DDS_ACTIONS` action lists.
 
 | Module | Responsibility |
 |---|---|
-| `DDS_NODES` | Node CRUD helper — wraps add_node, update_node, delete_node, assign_node_to_lane |
-| `DDS_PRODUCTS` | Product CRUD helper — wraps add_product, update_product, delete_product |
-| `DDS_FLOWS` | Flow CRUD helper — wraps add_flow, update_flow, delete_flow, reroute_flow, add/remove_product_to/from_flow |
-| `DDS_SKUS` | SKU CRUD helper — wraps add_sku, update_sku, remove_sku |
-| `DDS_BOMS` | BOM CRUD helper — wraps add_bom, delete_bom, add/update/remove_bom_component; updateComponents performs internal diff |
-| `DDS_DEMANDS` | Demand CRUD helper — wraps add_demand, update_demand, delete_demand; showOnMap/hideFromMap operate on presentation layer directly |
-| `DDS_ANNOTATIONS` | Annotation CRUD helper — wraps add_annotation, update_annotation, delete_annotation |
-
-
+| `DDS_NODES` | Node CRUD helper |
+| `DDS_PRODUCTS` | Product CRUD helper |
+| `DDS_FLOWS` | Flow CRUD helper |
+| `DDS_SKUS` | SKU CRUD helper |
+| `DDS_BOMS` | BOM CRUD helper |
+| `DDS_DEMANDS` | Demand CRUD helper |
+| `DDS_ANNOTATIONS` | Annotation CRUD helper |
 
 ### AI layer modules
 
 | Module | Block | Responsibility |
 |---|---|---|
 | `DDS_AI_CONTEXT` | SCRIPT 2200 | Serialises project to Claude context JSON |
-| `DDS_AI` | SCRIPT 2400 | System prompt assembly via `DDS_ACTIONS.getVocabularyText()`, Claude API call, response validation |
-| `DDS_AI_UI` | SCRIPT 2500 | AI panel, message bubbles, plan display via `DDS_ACTIONS.describe()`, confirm/cancel, error reporting |
-
+| `DDS_AI` | SCRIPT 2400 | System prompt assembly, Claude API call, response validation |
+| `DDS_AI_UI` | SCRIPT 2500 | AI panel, plan display, confirm/cancel, error reporting |
 
 ### Presentation layer modules (render-dependent)
 
@@ -106,7 +101,7 @@ UI modules call helpers for all functional writes and reads. Helpers translate s
 |---|---|---|
 | `DDS_MAP` (state) | SCRIPT 900 | DDS_MAP state + Cytoscape style definition |
 | `DDS_MAP` (load) | SCRIPT 1000 | loadMap, fitMap, runLayout |
-| `DDS_MAP` (style) | SCRIPT 1050 | Tag colors, legend overlay, node icon rendering (`applyAllNodeStyles`) |
+| `DDS_MAP` (style) | SCRIPT 1050 | Tag colors, legend overlay, node icon rendering |
 | `DDS_MAP` (CTT) | SCRIPT 1055 | CTT line HTML overlay |
 | `DDS_SWIMLANES` | SCRIPT 1100 | Swim-lane overlay + pan/zoom sync |
 | `DDS_SWIMLANE_GROUP` | SCRIPT 1150 | Swim-lane grouping logic |
@@ -125,43 +120,16 @@ UI modules call helpers for all functional writes and reads. Helpers translate s
 | `DDS_BOMS_UI` | SCRIPT 1900 | BOMs table view |
 | `DDS_DEMANDS_UI` | SCRIPT 1770 | Demand table view |
 | `DDS_ANNOTATIONS_UI` | SCRIPT 1780 | Annotations table view |
+| `DDS_NOTES_UI` | SCRIPT TBD | Notes panel below the canvas (FEAT-002) |
 | `DDS_SETTINGS_UI` | SCRIPT 2600 | Settings tab |
 
 ---
 
-## 4. Data Model Structure
+## 4. Data Model
 
-The project is held entirely in memory as a single JSON object (`DDS.state.project`). It contains 19 named arrays corresponding to the functional and presentation layers of the data model. Entity definitions and field descriptions are in [DDScope_DataModel.md](DDScope_DataModel.md).
+The project is held entirely in memory as a single JSON object. It contains named arrays for the functional and presentation layers.
 
-### Functional layer
-
-| Key | Description |
-|---|---|
-| `swim_lanes` | Swim-lane definitions — no canvas geometry |
-| `node_types` | Per-project node type definitions |
-| `product_types` | Per-project product type definitions |
-| `nodes` | Node definitions — no canvas position |
-| `products` | Product definitions |
-| `flows` | Flow definitions |
-| `skus` | Node × product associations — derived from flows |
-| `boms` | BOM headers — one output product per node |
-| `bom_components` | BOM lines — input components with quantities |
-| `tag_colors` | Tag → color associations for node background coloring |
-| `demands` | SKU-level demand records — CTT and demand per period |
-| `annotations` | Free-form map annotations — functional content and lane assignment |
-
-### Presentation layer
-
-| Key | Description |
-|---|---|
-| `maps` | Map definitions — name, tab order, direction, legend_visible |
-| `map_nodes` | Node visibility, canvas position, note overlay state, and CTT line geometry per map |
-| `map_flows` | Flow visibility per map + taxi bend position (`waypoint_pct`) + layout controls (`layout_offset`, `layout_direction_inverted`) + rendering flags (`show_notes_label`, `curve_style`) |
-| `map_swim_lanes` | Swim-lane canvas geometry per map |
-| `map_demands` | Demand visibility per map — presence = CTT line shown |
-| `map_annotations` | Annotation visibility and canvas position per map |
-
-Every record includes system fields: `id` (integer, auto-incremented in memory), `created_at`, `updated_at` (ISO timestamps).
+See **[DDScope_DataModel.md](DDScope_DataModel.md)** for the full table catalogue, entity field definitions, cascade rules, file format, and runtime defaults.
 
 ---
 
@@ -169,17 +137,16 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 
 ### 5.1 In-memory store — DDS_STORE
 
-`DDS_STORE` is the raw data access layer. It exposes a synchronous CRUD API operating on `DDS.state.project`.
+`DDS_STORE` is the raw data access layer. It exposes a synchronous CRUD API and is schema-agnostic — it does not know the list of tables. Tables are created on first access.
 
 **Write access rules:**
-- UI modules write exclusively through **helper modules** (`DDS_NODES`, `DDS_PRODUCTS`, `DDS_FLOWS`, `DDS_SKUS`, `DDS_BOMS`, `DDS_DEMANDS`, `DDS_ANNOTATIONS`).
+- UI modules write through helper modules (legacy domains) or `DDS_CMD` (notes domain).
 - Helper modules call `DDS_ACTIONS.execute()` for all functional writes.
+- `DDS_CMD` wraps `DDS_TRANSACTIONS.begin/commit/rollback` and calls `DDS_STORE` directly.
 - `DDS_ACTIONS` calls `DDS_STORE.insert/update/remove` (simple ops) or `DDS_MODEL.*` (cascade ops).
 - AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly.
-- Presentation layer modules manage `map_*` tables directly via `DDS_STORE` — this is the only exception.
+- Presentation layer modules manage `map_*` tables directly via `DDS_STORE` — the only exception.
 - `DDS_STORE.query` is unrestricted — any module may read any table.
-
-**Note:** Transaction ownership, begin/commit/rollback/undo/redo/clear, and related API details are documented in [DDScope_Modules.md](DDScope_Modules.md). This section only summarizes the architectural pattern.
 
 ### 5.2 File persistence
 
@@ -193,42 +160,11 @@ The project is persisted as a single `.json` file on the consultant's machine. N
 
 ### 5.3 Auto-reopen (Chrome / Edge only)
 
-The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On boot, DDScope checks whether the permission is already granted. If so, the file is reopened automatically with no user interaction. If the handle exists but permission has not been granted (e.g. after a browser restart), a prompt is triggered on the first user gesture. On other browsers, each session starts from scratch.
+The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On boot, DDScope checks whether the permission is already granted. If so, the file is reopened automatically with no user interaction. If the handle exists but permission has not been granted (e.g. after a browser restart), a prompt is triggered on the first user gesture.
 
 ### 5.4 Dirty state
 
-`DDS.state.dirty` is set to `true` on any `insert`, `update`, `remove`, or explicit `DDS_STORE.markDirty()` call. A bullet indicator (`•`) is appended to the project name in the navigation bar, and the **Save** button becomes active.
-
-`DDS.state.dirty` is reset to `false` on Load, Save, Save As, new project creation, and auto-reopen.
-
-### 5.5 File format
-
-```json
-{
-  "version": 1,
-  "project":        { "name": "...", "description": "...", "created_by": "...", "ai_instructions": "..." },
-  "swim_lanes":     [...],
-  "node_types":     [...],
-  "product_types":  [...],
-  "nodes":          [...],
-  "products":       [...],
-  "flows":          [...],
-  "skus":           [...],
-  "boms":           [...],
-  "bom_components": [...],
-  "tag_colors":     [...],
-  "demands":        [...],
-  "annotations":    [...],
-  "maps":           [...],
-  "map_nodes":      [...],
-  "map_flows":      [...],
-  "map_swim_lanes": [...],
-  "map_demands":    [...],
-  "map_annotations": [...]
-}
-```
-
-A file containing only a subset of keys is valid — absent arrays are initialised as empty on load. Fields absent from `map_nodes` records (`note_visible`, `note_dx`, `note_dy`) default to `false`, `0`, and `30` respectively at runtime. Fields absent from `map_nodes` records (`demand_x`, `demand_y`, `demand_length`) default to `0`, `60`, and `null` respectively at runtime. Fields absent from `map_nodes` records (`bfs_rank_min`, `bfs_rank_max`) default to `null` at runtime. `label_position` defaults to `null` (uses node type value) at runtime. Fields absent from `map_flows` records (`waypoint_pct`, `layout_offset`, `layout_direction_inverted`, `show_notes_label`, `notes_as_annotation`, `notes_annotation_dx`, `notes_annotation_dy`, `curve_style`) default to `0.5`, `1`, `false`, `false`, `false`, `0`, `-30`, and `"taxi"` respectively at runtime. Fields absent from `node_types` records (`icon_key`, `label_position`, `transparent_bg`) default to `null`, `"center"`, and `false` respectively at runtime.
+`DDS.state.dirty` is set to `true` on any `insert`, `update`, `remove`, or explicit `DDS_STORE.markDirty()` call. A bullet indicator (`•`) is appended to the project name in the navigation bar, and the **Save** button becomes active. Reset to `false` on Load, Save, Save As, new project creation, and auto-reopen.
 
 ---
 
@@ -238,9 +174,10 @@ Patterns that have been superseded. Do not use in any new code.
 
 | Pattern | Replaced by | Details |
 |---|---|---|
-| `skip_in_layout` on `map_flows` | `layout_offset: 0` | Old boolean field; `layout_offset` is the authoritative control — `0` excludes the flow from BFS, `N > 0` sets minimum column distance |
-| CommWise DataStore as persistence layer | File System Access API + `DDS_STORE` | DDScope persists to a local JSON file. DataStore is not used as a persistence layer. Any reference to DataStore as primary storage is obsolete. |
-| Sequential `insert()` loops | Batch inserts with `inserted_ids` for ID remapping | Sequential inserts across related tables fail to remap foreign keys correctly. Use batch insert patterns that return `inserted_ids` and remap references before the next insert. |
+| `skip_in_layout` on `map_flows` | `layout_offset: 0` | Old boolean field; `layout_offset` is the authoritative control |
+| CommWise DataStore as persistence layer | File System Access API + `DDS_STORE` | DDScope persists to a local JSON file. DataStore is not used. |
+| Sequential `insert()` loops | Batch inserts with `inserted_ids` for ID remapping | Sequential inserts across related tables fail to remap foreign keys correctly. |
+| Helper + DDS_ACTIONS pattern for new domains | `DDS_CMD.execute()` | New domains use DDS_CMD directly — no helper, no DDS_ACTIONS. |
 
 ---
 

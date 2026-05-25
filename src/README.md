@@ -89,24 +89,27 @@ After **every pull or push**, this table must be updated immediately.
 **Dirty status:**
 - `YES` — local changes pending push to CommWise.
 - `NO` — in sync with CommWise.
+- `NEW` — created locally this session, not yet pushed to CommWise.
 
 **Freshness check:** compare `Revision` with the current revision ID in CommWise. If different, re-extract.
 
 | File | CommWise block | Testability | Dirty | Last operation | Date | App version | Revision |
 |---|---|---|---|---|---|---|---|
-| `DDS_DURATION.js` | SCRIPT 1650 | pure | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_COLORS.js` | SCRIPT 105 | pure | NO | PULL | 2026-05-23 10:45:08 | v100 | #23900 |
+| `DDS_DURATION.js` | SCRIPT 1650 | pure | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_COLORS.js` | SCRIPT 105 | pure | NO | PULL | 2026-05-23 | v100 | #23900 |
 | `DDS_STORE.js` | SCRIPT 150 | store-dependent | NO | PULL | 2026-05-24 | v100 | #23962 |
-| `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_NODES.js` | SCRIPT 1560 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_PRODUCTS.js` | SCRIPT 1610 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_FLOWS.js` | SCRIPT 1620 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
-| `DDS_LANES.js` | SCRIPT 1640 | store-dependent | NO | PULL | 2026-05-23 10:34:01 | v101 | #23899 |
+| `DDS_ACTIONS.js` | SCRIPT 1850 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_MODEL.js` | SCRIPT 1550 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_BOMS.js` | SCRIPT 1800 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_NODES.js` | SCRIPT 1560 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_PRODUCTS.js` | SCRIPT 1610 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_FLOWS.js` | SCRIPT 1620 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_SKUS.js` | SCRIPT 1630 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_DEMANDS.js` | SCRIPT 1660 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
+| `DDS_LANES.js` | SCRIPT 1640 | store-dependent | NO | PULL | 2026-05-23 | v101 | #23899 |
 | `DDS_TOOLS.js` | SCRIPT 40 | pure | NO | PULL | 2026-05-23 | v100 | #23909 |
 | `DDS_TRANSACTIONS.js` | SCRIPT 1860 | store-dependent | NO | PUSH | 2026-05-24 | v100 | #23913 |
+| `DDS_TX.js` | SCRIPT 1865 | pure | NEW | — | 2026-05-25 | — | — |
+| `DDS_CMD.js` | SCRIPT 1866 | store-dependent | NEW | — | 2026-05-25 | — | — |
 
 *b2wise — Confidential*

@@ -1,5 +1,5 @@
 # DDScope — Test Environment
-*v0.7 — May 2026*
+*v0.8 — May 2026*
 
 ---
 
@@ -14,6 +14,7 @@
 | 0.5 | May 2026 | DDS_ACTIONS added to module boundaries; DDS_AI_EXECUTOR removed |
 | 0.6 | May 2026 | Unified environment: DEV/TEST split removed; Claude Desktop replaces VS Code extension and Copilot; Slack removed from scope |
 | 0.7 | May 2026 | Pull/Push workflow consolidated here (was split between CLAUDE.md and Module Extraction Workflow); CLAUDE.md now points here |
+| 0.8 | May 2026 | src/README.md tracking rule made mandatory for all agents — update after every local change to src/ |
 
 ---
 
@@ -169,6 +170,19 @@ Steps:
 7. Update tracking table in `src/README.md`: direction `PUSH`, timestamp, app version, revision ID.
 8. Re-extract into `src/` to confirm parity.
 
+### Mandatory tracking rule — applies to all agents
+
+**After any local change to a file in `src/`** (creation, modification, or deletion), immediately update the tracking table in `src/README.md`:
+
+| Situation | Dirty status | Action |
+|---|---|---|
+| New file created locally, not yet in CommWise | `NEW` | Set date = today, leave revision blank |
+| Existing file modified locally | `YES` | Set date = today |
+| File successfully pushed to CommWise | `NO` | Set app version and revision ID |
+| File pulled from CommWise | `NO` | Set app version and revision ID |
+
+This rule applies regardless of how minor the change is. The tracking table in `src/README.md` is the only reliable indicator of what is in sync with CommWise — an outdated table misleads any agent starting a new session.
+
 ### Module boundaries
 
 | Module | Responsibility | Testability |
@@ -181,6 +195,8 @@ Steps:
 | `DDS_PRODUCTS` | Product CRUD + SKU cascade | store-dependent |
 | `DDS_BOMS` | BOM CRUD + cascade | store-dependent |
 | `DDS_DEMANDS` | Demand CRUD + map_demands + cascade | store-dependent |
+| `DDS_TX` | Transaction label catalogue | pure |
+| `DDS_CMD` | Unified command layer — notes domain | store-dependent |
 
 Render-dependent modules (`DDS_MAP`, `DDS_SWIMLANES`, `DDS_LAYOUT`, all `*_UI` modules) are out of scope for unit testing.
 
@@ -219,6 +235,7 @@ Prioritisation follows the testability classification in `DDScope_Modules.md`. M
 | `DDS_STORE` | CRUD operations, ID auto-increment, cascade rules (node → flows → SKUs → demands → BOMs), dirty flag, counter seeding on load |
 | `DDS_DURATION` | `toHours`, `compare`, `toDisplay` for all unit combinations |
 | `DDS_ACTIONS` | `execute`: empty plan, unknown action rejection, `new_*` resolution across action fields, mid-plan failure reporting. `describe`: `new_*` label from plan, real ID from store, unknown action fallback. `ACTIONS`: all known actions present, required/optional fields match spec. `getVocabularyText`: non-empty, contains all action names |
+| `DDS_CMD` | Note categories and notes CRUD, map_notes cascade, MAP_DELETE cascade, undo/redo |
 | Serialization | Round-trip: `buildProjectJson` → `importProjectFromJson` → state equality; partial files; ID remapping on duplicate |
 
 ### Fixture files

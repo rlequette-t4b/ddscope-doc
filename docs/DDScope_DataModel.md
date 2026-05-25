@@ -1,7 +1,7 @@
 # DDScope — Data Model
-*v3.0 — Draft — May 2026*
+*v3.2 — Draft — May 2026*
 
-*See also: [DDScope_Architecture.md](DDScope_Architecture.md) for data structure and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
+*See also: [DDScope_Architecture.md](DDScope_Architecture.md) for layered architecture and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
 ---
 
@@ -37,6 +37,7 @@
 | 2.9 | May 2026 | notes_annotation_dx, notes_annotation_dy added to map_flows for flow note ghost offset |
 | 3.0 | May 2026 | annotations and map_annotations added (§9, §16); cascade rules updated (§17.1) |
 | 3.1 | May 2026 | note_categories and notes added (§10a, §10b); canvas_visible added to maps (§11); map_note_categories removed — category presence on a map is derived from its notes |
+| 3.2 | May 2026 | map_notes added (§17b) — notes are project-level but placed on maps via map_notes; cascade rules updated (§17.1); table catalogue and file format moved here from DDScope_Architecture.md |
 
 ---
 
@@ -51,6 +52,98 @@ Every entity includes the following system fields, not repeated in the field def
 - The **presentation layer** (maps and map-scoped entities) describes how elements are arranged and which elements are visible on a given map.
 
 **SKU lifecycle.** SKUs are not automatically synchronised with flows. Adding or removing a product from a flow does not create or delete SKUs. SKU coherence with the flow structure is the responsibility of the consultant, assisted by the future `validateSkus` function (see §17.4). The only automatic SKU operations are deletions triggered by `delete_node`, `delete_product`, and `remove_sku` (see §17.1).
+
+---
+
+## Table Catalogue
+
+### Functional layer
+
+| JSON key | Description |
+|---|---|
+| `swim_lanes` | Swim-lane definitions — no canvas geometry |
+| `node_types` | Per-project node type definitions |
+| `product_types` | Per-project product type definitions |
+| `nodes` | Node definitions — no canvas position |
+| `products` | Product definitions |
+| `flows` | Flow definitions |
+| `skus` | Node × product associations |
+| `boms` | BOM headers — one output product per node |
+| `bom_components` | BOM lines — input components with quantities |
+| `tag_colors` | Tag → color associations for node background coloring |
+| `demands` | SKU-level demand records — CTT and demand per period |
+| `annotations` | Free-form canvas annotations — functional content and lane assignment |
+| `note_categories` | Project-level note groupings |
+| `notes` | Project-level bullet-point observations, structured by category |
+
+### Presentation layer
+
+| JSON key | Description |
+|---|---|
+| `maps` | Map definitions — name, tab order, direction, legend_visible, canvas_visible |
+| `map_nodes` | Node visibility, canvas position, note overlay state, and CTT line geometry per map |
+| `map_flows` | Flow visibility per map + presentation attributes |
+| `map_swim_lanes` | Swim-lane canvas geometry per map |
+| `map_demands` | Demand (CTT line) visibility per map |
+| `map_annotations` | Annotation visibility and canvas position per map |
+| `map_notes` | Note visibility per map — which notes are placed on which map |
+
+---
+
+## File Format
+
+```json
+{
+  "version": 1,
+  "project":          { "name": "...", "description": "...", "created_by": "...", "ai_instructions": "..." },
+  "swim_lanes":       [...],
+  "node_types":       [...],
+  "product_types":    [...],
+  "nodes":            [...],
+  "products":         [...],
+  "flows":            [...],
+  "skus":             [...],
+  "boms":             [...],
+  "bom_components":   [...],
+  "tag_colors":       [...],
+  "demands":          [...],
+  "annotations":      [...],
+  "note_categories":  [...],
+  "notes":            [...],
+  "maps":             [...],
+  "map_nodes":        [...],
+  "map_flows":        [...],
+  "map_swim_lanes":   [...],
+  "map_demands":      [...],
+  "map_annotations":  [...],
+  "map_notes":        [...]
+}
+```
+
+A file containing only a subset of keys is valid — absent arrays are initialised as empty on load.
+
+**Runtime defaults for absent fields:**
+
+| Record type | Field | Default |
+|---|---|---|
+| `map_nodes` | `note_visible` | `false` |
+| `map_nodes` | `note_dx`, `note_dy` | `0`, `30` |
+| `map_nodes` | `demand_x`, `demand_y` | `0`, `60` |
+| `map_nodes` | `demand_length` | `null` |
+| `map_nodes` | `bfs_rank_min`, `bfs_rank_max` | `null` (not exported) |
+| `map_nodes` | `label_position` | `null` (uses node type value) |
+| `map_flows` | `waypoint_pct` | `0.5` |
+| `map_flows` | `layout_offset` | `1` |
+| `map_flows` | `layout_direction_inverted` | `false` |
+| `map_flows` | `show_notes_label` | `false` |
+| `map_flows` | `notes_as_annotation` | `false` |
+| `map_flows` | `notes_annotation_dx`, `notes_annotation_dy` | `0`, `-30` |
+| `map_flows` | `curve_style` | `"taxi"` |
+| `map_annotations` | `font_size` | `null` |
+| `node_types` | `icon_key` | `null` |
+| `node_types` | `label_position` | `"center"` |
+| `node_types` | `transparent_bg` | `false` |
+| `maps` | `canvas_visible` | `true` |
 
 ---
 
@@ -276,13 +369,13 @@ Project-level groupings for map notes. Defined and managed in the Settings tab. 
 
 A default `"General"` category is created automatically at project creation. Every note must belong to a category — there are no uncategorised notes.
 
-**Map presence.** There is no `map_note_categories` table. A category is considered present on a map when at least one of its notes has been placed on that map (see §10b). Collapsed/visible state per map is managed in the rendering layer only, not persisted in the data model.
+**Map presence.** A category is considered present on a map when at least one of its notes has a `map_notes` record for that map. There is no `map_note_categories` table — presence is derived. Collapsed/visible state per map is managed in the rendering layer only, not persisted.
 
 ---
 
 ## 10b. Notes
 
-Bullet-point observations captured during workshops, structured by category. Notes live at the project level and are independent of any specific map.
+Bullet-point observations captured during workshops, structured by category. Notes are project-level entities — they exist independently of any map and become visible on a map via `map_notes` records (see §17b).
 
 **JSON array:** `notes`
 
@@ -292,7 +385,7 @@ Bullet-point observations captured during workshops, structured by category. Not
 | content | text | Free-form text — the bullet point content |
 | position | integer | Display order within the category |
 
-**Notes are project-level entities.** All notes are visible in the notes panel on every map. There is no per-map filtering of notes — the panel always shows the full project note set, organised by category.
+A note is visible on a map if and only if a `map_notes` record exists for that note × map pair. A newly created note is automatically placed on the active map (a `map_notes` record is created).
 
 ---
 
@@ -360,8 +453,6 @@ Records that a flow is visible on a specific map, and stores per-map presentatio
 
 `notes_as_annotation` has no effect when `show_notes_label` is `false`. When `true`, the ghost node is excluded from fit-to-canvas and auto-layout, following the same exclusion rules as node note ghosts.
 
-Fields absent from `map_flows` records (`waypoint_pct`, `layout_offset`, `layout_direction_inverted`, `show_notes_label`, `notes_as_annotation`, `notes_annotation_dx`, `notes_annotation_dy`, `curve_style`) default to `0.5`, `1`, `false`, `false`, `false`, `0`, `-30`, and `"taxi"` respectively at runtime.
-
 ---
 
 ## 14. Map Swim-lane
@@ -409,11 +500,28 @@ Records that an annotation is visible on a specific map, and stores its canvas p
 | annotation_id | integer | Reference to `annotations[].id` |
 | x | numeric | Canvas position — horizontal |
 | y | numeric | Canvas position — vertical |
-| font_size | integer \| null | Per-map font size override in pixels. When null (default), the global ghost style applies (11px). Typical values: 8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32. |
+| font_size | integer \| null | Per-map font size override in pixels. When null (default), the global ghost style applies (11px). |
 
 **Cascade:** deleted when the referenced `annotation` is deleted, or when the referenced `map` is deleted.
 
-Fields absent from `map_annotations` records (`font_size`) default to `null` at runtime.
+---
+
+## 17b. Map Note
+
+Records that a note is visible on a specific map. Presence = note shown in the notes panel on that map; absence = note not shown.
+
+**JSON array:** `map_notes`
+
+| Field | Type | Description |
+|---|---|---|
+| map_id | integer | Reference to `maps[].id` |
+| note_id | integer | Reference to `notes[].id` |
+
+**Cascade:**
+- Deleted when the referenced `note` is deleted.
+- Deleted when the referenced `map` is deleted.
+
+**Automatic creation:** when a new note is created via `DDS_CMD`, a `map_notes` record is automatically created for the active map.
 
 ---
 
@@ -448,7 +556,7 @@ DDS_STORE              DDS_MODEL
 
 UI modules
     ↓  (notes domain — new pattern)
-DDS_CMD.execute(TX.KEY, params, mapId, onSuccess?)
+DDS_CMD.execute(DDS_TX.KEY, params, mapId, onSuccess?)
     ↓  wraps begin/commit/rollback automatically
 DDS_STORE / DDS_MODEL
 
@@ -468,11 +576,10 @@ AI modules (`DDS_AI`, `DDS_AI_UI`) call `DDS_ACTIONS.execute()` directly. Notes 
 ```javascript
 DDS_CMD.execute(txKey, params, mapId, onSuccess?)
 ```
-- `txKey` — constant from the `TX` catalogue (e.g. `TX.NOTE_CATEGORY_CREATE`).
+- `txKey` — constant from `DDS_TX` (e.g. `DDS_TX.NOTE_CATEGORY_CREATE`).
 - `params` — command-specific parameters object.
-- `mapId` — active map id, or `null` for commands with no map dimension.
+- `mapId` — active map id, passed to commands that create map-scoped entities (e.g. `DDS_TX.NOTE_CREATE` creates a `map_notes` record for this map); `null` for commands with no map dimension.
 - `onSuccess` — optional callback for DOM/Cytoscape side effects, called after commit.
-- Wraps `DDS_TRANSACTIONS.begin/commit/rollback` automatically.
 - Returns `{ ok: boolean, id?: integer }`.
 
 **Rule 4 — `DDS_ACTIONS.execute()` is synchronous (legacy).**
@@ -482,23 +589,25 @@ Returns `{ applied: action[], failed: action|null }` directly. No Promise.
 Any module may call `DDS_STORE.query` on any table at any time.
 
 **Exceptions — presentation layer:**
-Presentation layer modules manage `map_*` tables directly via `DDS_STORE`. Collapsed/visible state of note categories in the notes panel is managed in the rendering layer only and is not persisted.
+Presentation layer modules manage `map_*` tables directly via `DDS_STORE`. `map_notes` is managed by `DDS_CMD` as part of note commands — it is not a pure presentation-layer exception.
 
 ### 17.1 Delete operations and cascades
 
-The table below defines what is deleted when each destructive operation is performed. All cascade deletions are applied by `DDS_MODEL` in a single synchronous operation.
+The table below defines what is deleted when each destructive operation is performed. All cascade deletions are applied by `DDS_MODEL` (legacy domains) or `DDS_CMD` (notes domain) in a single synchronous operation.
 
 | Operation | What is deleted |
 |---|---|
-| `deleteNode(nodeId)` | All `flows` where this node is source or target. All `map_flows` for those flows across all maps. All `skus` where `node_id` matches. All `boms` for this node and their `bom_components`. All `demands` for this node and their `map_demands`. All `map_nodes` for this node across all maps. The `nodes` record. |
-| `deleteFlow(flowId)` | All `map_flows` for this flow across all maps. The `flows` record. **No SKU deletion.** |
-| `deleteProduct(productId)` | Removes `productId` from `flows[].product_ids` on all flows. All `skus` where `product_id` matches. All `boms` where `output_product_id` matches and their `bom_components`. All `bom_components` where `product_id` matches (and their parent `boms` if left with no components). All `demands` where `product_id` matches and their `map_demands`. The `products` record. |
-| `deleteSwimLane(swimLaneId)` | All nodes assigned to this swim-lane — each with its full `deleteNode` cascade. All `map_swim_lanes` for this lane across all maps. Clears `default_swim_lane_id` on any `node_types` record that referenced this lane. The `swim_lanes` record. |
+| `deleteNode(nodeId)` | All `flows` where this node is source or target. All `map_flows` for those flows. All `skus` where `node_id` matches. All `boms` for this node and their `bom_components`. All `demands` for this node and their `map_demands`. All `map_nodes` for this node. The `nodes` record. |
+| `deleteFlow(flowId)` | All `map_flows` for this flow. The `flows` record. **No SKU deletion.** |
+| `deleteProduct(productId)` | Removes `productId` from `flows[].product_ids`. All `skus` where `product_id` matches. All `boms` where `output_product_id` matches and their `bom_components`. All `bom_components` where `product_id` matches. All `demands` where `product_id` matches and their `map_demands`. The `products` record. |
+| `deleteSwimLane(swimLaneId)` | All nodes assigned to this swim-lane — each with its full `deleteNode` cascade. All `map_swim_lanes` for this lane. Clears `default_swim_lane_id` on any `node_types` that referenced this lane. The `swim_lanes` record. |
 | `removeSku(nodeId, productId)` | The `demands` record for this node × product pair if it exists, and its `map_demands`. The `skus` record. |
 | `deleteDemand(nodeId, productId)` | All `map_demands` where `demand_id` matches. The `demands` record. |
-| `delete_annotation` | Deletes the `annotations` record. Cascades to all `map_annotations` records for this annotation. |
+| `deleteAnnotation(annotationId)` | All `map_annotations` for this annotation. The `annotations` record. |
 | `deleteBom(bomId)` | All `bom_components` where `bom_id` matches. The `boms` record. |
-| `deleteNoteCategory(categoryId)` | All `notes` where `category_id` matches. The `note_categories` record. (No `map_note_categories` — table does not exist.) |
+| `deleteNote(noteId)` | All `map_notes` where `note_id` matches. The `notes` record. |
+| `deleteNoteCategory(categoryId)` | All `notes` where `category_id` matches — each with its `deleteNote` cascade (removes `map_notes`). The `note_categories` record. |
+| `deleteMap(mapId)` | All `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`, `map_annotations`, `map_notes` where `map_id` matches. The `maps` record. The last map cannot be deleted. |
 | `rerouteFlow(flowId, newSourceId?, newTargetId?)` | Updates `source_node_id` and/or `target_node_id`. **No SKU modification.** |
 | `addProductToFlow(flowId, productId)` | Appends `productId` to `flows[flowId].product_ids`. **No SKU creation.** |
 | `removeProductFromFlow(flowId, productId)` | Removes `productId` from `flows[flowId].product_ids`. **No SKU deletion.** |

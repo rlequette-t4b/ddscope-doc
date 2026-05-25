@@ -72,11 +72,22 @@ How Claude Code must operate in this specific environment. Not relevant to any o
 
 For partial edits: read the full file with `filesystem:read_text_file`, apply the change in memory, rewrite with `filesystem:write_file`.
 
+### Always verify writes
+After every `filesystem:write_file` call, immediately call `filesystem:list_directory` on the parent folder (or `filesystem:read_text_file` on the file) to confirm the file exists and is non-empty. The filesystem MCP can fail silently — never assume a write succeeded without verification.
+
 ### Read the file immediately before editing
 Always `filesystem:read_text_file` immediately before any write — never rely on a version read earlier in the session.
 
 ### tool_search before first use of any deferred tool
 All MCP tools (filesystem, CommWise, Slack, etc.) must be loaded via `tool_search` before their first call in a session. Do not guess parameter names — load the schema first.
+
+### src/ tracking — update after every local change
+After creating or modifying any file in `src/`, immediately update the tracking table in `src/README.md`:
+- New file created locally → status `NEW`, date = today, no revision.
+- Existing file modified locally → status `YES` (dirty), date = today.
+- After a successful push to CommWise → status `NO`, update app version and revision ID.
+
+This rule applies even when the change is minor — the tracking table is the only reliable indicator of what is in sync with CommWise.
 
 ---
 
