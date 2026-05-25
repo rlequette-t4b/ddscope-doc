@@ -9,6 +9,7 @@
 | Version | Date | Summary |
 |---|---|---|
 | 1.0 | May 2026 | Extracted from DDScope_Overview.md §5; FEAT-001 added |
+| 1.1 | May 2026 | §1.2: notes panel idea added |
 
 ---
 
@@ -56,6 +57,9 @@ A distinct visual style for selected nodes when tag-based coloring is active —
 
 **`DDS_MODEL` — deprecate legacy cascade modules**
 Once `DDS_MODEL` is implemented, progressively migrate callers of `DDS_PRODUCTS`, `DDS_BOMS`, `DDS_DEMANDS` to `DDS_MODEL` / `DDS_STORE` direct calls, then remove the deprecated modules. Tracked in `DDScope_Modules.md` backlog.
+
+**Notes panel below the map**
+A collapsible panel displayed below the map canvas, showing bullet-point notes. An annotation can appear on the map, in the notes panel, or both. The exact data model linking annotations to panel notes, and the toggle mechanism, require further design before scoping.
 
 ---
 

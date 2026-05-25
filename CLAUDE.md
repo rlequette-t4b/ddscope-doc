@@ -38,7 +38,7 @@ Example opening:
 
 ### Slack inbox (#ddscope-sync)
 
-`#ddscope-sync` serves as an asynchronous idea inbox (notes posted from phone or outside sessions).
+`#ddscope-sync` (channel ID: `C0B5RSURETF`) serves as an asynchronous idea inbox (notes posted from phone or outside sessions).
 
 On request at the start of a session: read the channel, present unprocessed messages, and discuss what to do with each. Once handled, add a ✅ reaction to mark it as processed. No deletion, no mandatory import target.
 
