@@ -1,7 +1,7 @@
 # DDScope — Architecture
-*v3.0 — Draft — May 2026*
+*v3.1 — Draft — May 2026*
 
-*See also: [DDScope_DataModel.md](DDScope_DataModel.md) · [DDScope_Presentation.md](DDScope_Presentation.md) · [DDScope_Rendering.md](../dev-local/DDScope_Rendering.md) · [DDScope_UI.md](../dev-local/DDScope_UI.md) · [DDScope_Modules.md](DDScope_Modules.md)*
+*See also: [DDScope_DataModel.md](DDScope_DataModel.md) · [DDScope_Presentation.md](DDScope_Presentation.md) · [DDScope_Rendering.md](DDScope_Rendering.md) · [DDScope_UI.md](DDScope_UI.md) · [DDScope_Modules.md](DDScope_Modules.md)*
 
 ---
 
@@ -13,6 +13,7 @@
 | 0.5–2.3 | May 2026 | Incremental updates (see prior history in git) |
 | 3.0 | May 2026 | Major restructure: implementation details extracted to dedicated documents; Architecture now describes layers and dependencies only |
 | 3.1 | May 2026 | §6 Key Implementation Details dispatched to Presentation, Rendering, and UI docs |
+| 3.2 | May 2026 | Internal links updated — single flat docs/ folder |
 
 ---
 
@@ -165,7 +166,6 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 
 ## 5. Persistence
 
-
 ### 5.1 In-memory store — DDS_STORE
 
 `DDS_STORE` is the raw data access layer. It exposes a synchronous CRUD API operating on `DDS.state.project`.
@@ -178,9 +178,7 @@ Every record includes system fields: `id` (integer, auto-incremented in memory),
 - Presentation layer modules manage `map_*` tables directly via `DDS_STORE` — this is the only exception.
 - `DDS_STORE.query` is unrestricted — any module may read any table.
 
----
-**Note:** Transaction ownership, begin/commit/rollback/undo/redo/clear, and related API details are now documented in [DDScope_Modules.md](DDScope_Modules.md). This section only summarizes the architectural pattern.
-
+**Note:** Transaction ownership, begin/commit/rollback/undo/redo/clear, and related API details are documented in [DDScope_Modules.md](DDScope_Modules.md). This section only summarizes the architectural pattern.
 
 ### 5.2 File persistence
 
@@ -219,13 +217,13 @@ The `FileSystemFileHandle` of the last open file is persisted in IndexedDB. On b
   "bom_components": [...],
   "tag_colors":     [...],
   "demands":        [...],
-   "annotations":    [...],
+  "annotations":    [...],
   "maps":           [...],
   "map_nodes":      [...],
   "map_flows":      [...],
   "map_swim_lanes": [...],
-   "map_demands":    [...],
-   "map_annotations": [...]
+  "map_demands":    [...],
+  "map_annotations": [...]
 }
 ```
 
@@ -233,4 +231,4 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 
 ---
 
-
+*b2wise — Confidential*

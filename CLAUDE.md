@@ -4,8 +4,7 @@ All documentation and code comments must be written in English, unless the user 
 
 # DDScope — Claude Code Context
 
-> This file is the primary context for Claude Code working in this repository.
-> It replaces the Claude.ai project memory and DEV/TEST bridge contract.
+> This file is the primary context for Claude Desktop working in this repository.
 > Keep it up to date. When something important is learned in a session, add it here.
 
 ---
@@ -38,15 +37,15 @@ All documentation and code comments must be written in English, unless the user 
 
 ## 3. Repository Structure
 
-This repo (`ddscope-tests`) is the **single working environment** — it contains both test code and documentation.
+This repo is the **single working environment** — design, documentation, code, and tests all live here.
 
 ```
-docs/
-  shared/          # Shared specs — source of truth for product behaviour
-  dev-local/       # Implementation notes (rendering, UI, undo/redo)
-  test-local/      # TEST-specific procedures
-src/               # Extracted functional modules (mirror of CommWise SCRIPT blocks)
-tests/             # Vitest unit tests + Playwright e2e specs
+docs/               # All documentation — flat, no sub-folders
+src/                # Extracted functional modules (mirror of CommWise SCRIPT blocks)
+tests/              # Vitest unit tests + Playwright e2e specs
+fixtures/           # JSON project files for automated tests
+samples/            # Realistic DDScope projects for demos and manual testing
+shims/              # Minimal stubs for CommWise/browser globals (Node.js compat)
 ```
 
 **Sources of truth:**
@@ -61,16 +60,17 @@ Read these before working on any feature area:
 
 | Document | Scope |
 |---|---|
-| `docs/shared/DDScope_Overview.md` | Product purpose, scope v1/v2, constraints |
-| `docs/shared/DDScope_DataModel.md` | All entities, fields, cascade rules |
-| `docs/shared/DDScope_Architecture.md` | Layered architecture, persistence pattern |
-| `docs/shared/DDScope_Modules.md` | Module registry — APIs, deps, testability |
-| `docs/shared/DDScope_Presentation.md` | map_* logic, layout algorithms, DI contract |
-| `docs/shared/DDScope_AI_Assistant.md` | Embedded AI assistant RFC |
-| `docs/shared/DDScope_Actions.md` | AI action vocabulary |
-| `docs/dev-local/DDScope_Rendering.md` | Cytoscape canvas, overlays, ghost nodes, styles |
-| `docs/dev-local/DDScope_UI.md` | UI implementation details |
-| `docs/dev-local/DDScope_UndoRedo.md` | Transaction pattern, call site inventory |
+| `docs/DDScope_Overview.md` | Product purpose, scope v1/v2, constraints |
+| `docs/DDScope_DataModel.md` | All entities, fields, cascade rules |
+| `docs/DDScope_Architecture.md` | Layered architecture, persistence pattern |
+| `docs/DDScope_Modules.md` | Module registry — APIs, deps, testability |
+| `docs/DDScope_Presentation.md` | map_* logic, layout algorithms, DI contract |
+| `docs/DDScope_AI_Assistant.md` | Embedded AI assistant RFC |
+| `docs/DDScope_Actions.md` | AI action vocabulary |
+| `docs/DDScope_Rendering.md` | Cytoscape canvas, overlays, ghost nodes, styles |
+| `docs/DDScope_UI.md` | UI implementation details |
+| `docs/DDScope_UndoRedo.md` | Transaction pattern, call site inventory |
+| `docs/DDScope_TestEnvironment.md` | Repo conventions, Vitest/Playwright setup, extraction workflow |
 
 ---
 
@@ -111,13 +111,47 @@ Model: `#dds-btn-save` in STYLE 300. Apply this pattern to every new nav button.
 
 ---
 
-## 6. Critical Bugs and Patterns
+## 6. Module Pull / Push Workflow
+
+`src/` contains extracted CommWise modules for unit testing and local debugging. CommWise is always the source of truth for code.
+
+### Pull (extract or refresh)
+
+Ask: *"Extract DDS_STORE from CommWise into src/"* or *"Refresh DDS_ACTIONS"*
+
+Steps:
+1. Look up the module in `docs/DDScope_Modules.md` — get block position and testability.
+2. Skip `render-dependent` and `out-of-scope` modules.
+3. `commwise_get_block` with `appID: 22645`, `code_type: 'script'`, `position: <N>`.
+4. Verify block title starts with `JS: DDS_` — abort if not.
+5. Append `export default <GLOBAL>;` for ESM compatibility.
+6. Write to `src/<MODULE>.js`.
+7. Update tracking table in `src/README.md`: `PULL`, timestamp, app version, revision ID.
+
+### Push (export corrected module to CommWise)
+
+Ask: *"Push DDS_STORE to CommWise"*
+
+**Eligibility:** only `pure` or `store-dependent` modules. Never push `render-dependent` modules from this repo.
+
+Steps:
+1. Look up module in `docs/DDScope_Modules.md` — confirm eligibility.
+2. `commwise_get_block` — fetch current live block, confirm intended diff.
+3. `commwise_start_session` — open a write session.
+4. Strip `export default <GLOBAL>;` from the push payload (extraction-only line).
+5. `commwise_update_block` with `create_revision: true`, `append_release_notes: true`.
+6. Re-fetch and verify exact content match.
+7. Update tracking table in `src/README.md`: `PUSH`, timestamp, app version, revision ID.
+8. Re-extract into `src/` to confirm parity.
+
+---
+
+## 7. Critical Bugs and Patterns
 
 ### Bug — drag corruption after `loadMap()` / `runLayout()`
 **Never call `loadMap()` or `runLayout()` inside a Cytoscape event handler** (`select`, `tap`, `dragfree`, etc.) **or via `setTimeout(0)`.**
 Calling `loadMap()` (remove + add elements) during an active Cytoscape event corrupts drag state.
 Safe contexts: project open, map switch only.
-Documented in CommWise META 2, app 22645.
 
 ### Persistence — File System Access API (not DataStore)
 DDScope persists to a **local JSON file** via the File System Access API. `DDS_STORE` is the in-memory layer. **CommWise DataStore is not used as a persistence layer.** Any reference to DataStore as primary storage is obsolete.
@@ -140,7 +174,7 @@ commwiseConfigClient.secureRequest('C3', 'CLAUDE', {
 
 ---
 
-## 7. Architecture Rules (Non-Negotiable)
+## 8. Architecture Rules (Non-Negotiable)
 
 - **No layer may depend on a layer above it.**
 - **UI writes only via helpers** (`DDS_NODES`, `DDS_PRODUCTS`, `DDS_FLOWS`, etc.) — never direct `DDS_ACTIONS.execute()` or `DDS_STORE` calls from UI modules.
@@ -151,7 +185,7 @@ commwiseConfigClient.secureRequest('C3', 'CLAUDE', {
 
 ---
 
-## 8. UI Conventions
+## 9. UI Conventions
 
 ### Modal pattern
 Opacity/visibility + `.visible` class (not `display: none`). `overflow: hidden` on modal container. Scroll on `.modal-body` only.
@@ -165,7 +199,7 @@ Centralized in STYLE 200 via CSS variables:
 
 ---
 
-## 9. Working Conventions
+## 10. Working Conventions
 
 - **Validate scope before implementing.** Explain what will be built and wait for confirmation before writing any code or CommWise edit.
 - **Surgical edits preferred.** Use `commwise_replace_text` over full block rewrites when possible.
@@ -177,7 +211,7 @@ Centralized in STYLE 200 via CSS variables:
 
 ---
 
-## 10. Module Testability Classes
+## 11. Module Testability Classes
 
 | Class | Condition | Test layer |
 |---|---|---|
@@ -190,13 +224,13 @@ Before creating any test, verify whether the scenario requires a prepared projec
 
 ---
 
-## 11. Memory Protocol
+## 12. Memory Protocol
 
 When a session produces a new pattern, bug discovery, or architectural decision worth keeping:
 
 > "Mémorise ça dans CLAUDE.md"
 
-Claude Code updates this file directly. Commit the change as part of the session.
+Claude Desktop updates this file directly. Commit the change as part of the session.
 
 ---
 

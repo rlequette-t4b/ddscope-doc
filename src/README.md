@@ -1,6 +1,6 @@
 # src/
 
-DDScope JavaScript modules synchronized with CommWise SCRIPT blocks. These files are the inputs for Vitest unit tests and local development of the modules. They are also naintained from an other place. Commwise is the source of truth so care must be taken to coordinate update.
+DDScope JavaScript modules extracted from CommWise SCRIPT blocks. These files are the inputs for Vitest unit tests and local debugging of non-UI modules. CommWise is the source of truth — `src/` is a synchronized working copy.
 
 ---
 
@@ -19,42 +19,44 @@ The authoritative list of all modules, their block addresses, and their testabil
 
 ---
 
-## How files move — AI-assisted pull and push
+## How files move — AI-assisted pull and push via Claude Desktop
 
-Files in this folder are synchronized by the AI assistants in VS Code through the CommWise MCP connection.
+Files in this folder are synchronized by Claude Desktop through the CommWise MCP connection.
 
-- `PULL` means extracting a module from CommWise into `src/`.
-- `PUSH` means exporting a corrected module from this repository back to CommWise.
-
-For push operations, always follow the dedicated workflow in [`docs/DDScope_CommWise_Push_Workflow.md`](../docs/DDScope_CommWise_Push_Workflow.md).
+- **PULL** — extracting a module from CommWise into `src/`.
+- **PUSH** — exporting a corrected module from `src/` back to CommWise.
 
 **No manual copy-paste or script is needed.**
 
-### To extract a module, just ask:
+### To pull (extract or refresh a module):
 
 > *"Extract DDS_DURATION from CommWise into src/"*
+> *"Refresh DDS_COLORS from CommWise"*
 > *"Extract all testable modules from CommWise"*
 
-### To refresh an existing extraction, just ask:
-
-> *"Refresh DDS_DURATION from CommWise"*
-> *"Re-extract DDS_COLORS from CommWise and overwrite src"*
-
-For pull operations, the AI assistant will:
-1. Look up the module in `docs/DDScope_Modules.md` (block position, global name, file path, testability).
+Claude will:
+1. Look up the module in `docs/DDScope_Modules.md` (block position, global name, testability).
 2. Skip modules with `testability: render-dependent` or `out-of-scope`.
 3. Fetch the block from CommWise (`commwise_get_block`, appID `22645`, code_type `script`).
 4. Verify the block title starts with `JS: DDS_` — abort if not.
-5. Read current app metadata/version from CommWise for traceability.
-6. Append `export default <GLOBAL>;` for ESM compatibility with Vitest.
-7. Write (or overwrite) the file in `src/`.
-8. Update the tracking table in this file with `Last operation = PULL`, operation date/time, CommWise app version, and CommWise revision id (`#xxxxx`).
+5. Append `export default <GLOBAL>;` for ESM compatibility with Vitest.
+6. Write (or overwrite) the file in `src/`.
+7. Update the tracking table below with `Last operation = PULL`, timestamp, app version, and revision ID.
 
-For push operations, follow the push workflow document and then update the same table with `Last operation = PUSH` using the verified push metadata.
+### To push (export a corrected module to CommWise):
 
-### Prerequisite
+> *"Push DDS_STORE to CommWise"*
 
-The AI assistant must be connected to the CommWise MCP server in VS Code. Verify via the tools panel — the CommWise server should show as connected.
+Claude will:
+1. Look up the module in `docs/DDScope_Modules.md` — confirm `testability` is `pure` or `store-dependent`.
+2. Fetch the current live block from CommWise and confirm the intended diff.
+3. Start a CommWise session (`commwise_start_session`).
+4. Strip the extraction-only line (`export default <GLOBAL>;`) from the push payload.
+5. Update the block with `create_revision: true` and `append_release_notes: true`.
+6. Re-fetch the updated block and verify exact content match.
+7. Update the tracking table below with `Last operation = PUSH`, timestamp, app version, and revision ID.
+
+**Push eligibility:** only modules with `testability: pure` or `store-dependent` in `DDScope_Modules.md`. Never push `render-dependent` modules from this repo.
 
 ---
 
@@ -73,32 +75,22 @@ var DDS_DURATION = (function () {
 export default DDS_DURATION;
 ```
 
-Do not edit the body of these files for production fixes without a controlled sync workflow. If a fix is needed:
+If a fix is needed:
 1. Correct the file locally.
-2. Use the push workflow in `docs/DDScope_CommWise_Push_Workflow.md` to export safely to CommWise.
-3. Re-extract here to confirm parity.
+2. Ask Claude Desktop to push it to CommWise.
+3. Claude re-extracts here to confirm parity.
 
 ---
 
 ## Operation Tracking
 
-After **every pull or push**, this table must be updated immediately with:
-- dirty status (`YES` if local changes are pending push, `NO` if synced)
-- last operation (`PULL` or `PUSH`)
-- operation timestamp
-- CommWise app version used for that operation
-- CommWise revision id used for that operation
+After **every pull or push**, this table must be updated immediately.
 
-Dirty status workflow:
-1. Set `Dirty = YES` when a module is modified locally and not yet exported to CommWise.
-2. Keep `Dirty = YES` until push is completed and verified.
-3. Set `Dirty = NO` immediately after a successful and verified push.
-4. A generic "push" request should target only rows where `Dirty = YES`.
+**Dirty status:**
+- `YES` — local changes pending push to CommWise.
+- `NO` — in sync with CommWise.
 
-How to check if a local module is up to date:
-1. Compare module row value in **Revision** with current revision id in CommWise.
-2. If revision differs, run a new synchronization operation for the module.
-3. **App version** is informational only and must not be used as the freshness gate.
+**Freshness check:** compare `Revision` with the current revision ID in CommWise. If different, re-extract.
 
 | File | CommWise block | Testability | Dirty | Last operation | Date | App version | Revision |
 |---|---|---|---|---|---|---|---|
