@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import DDS_ACTIONS from '../../../src/DDS_ACTIONS.js';
-import DDS_STORE from '../../../src/DDS_STORE.js';
 
 describe('DDS_ACTIONS', () => {
   beforeEach(() => {

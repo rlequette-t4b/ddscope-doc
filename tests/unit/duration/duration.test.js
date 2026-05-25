@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import DDS_DURATION from '../../../src/DDS_DURATION.js';
 
 // ============================================================
 // DDS_DURATION — test scope from DDScope_Modules.md

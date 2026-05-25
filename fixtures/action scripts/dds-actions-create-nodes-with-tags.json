@@ -1,0 +1,63 @@
+[
+  {
+    "ts": "10:43:37",
+    "actions": [
+      {
+        "type": "add_node",
+        "name": "Customers in France",
+        "type_code": "CUSTOMER",
+        "swim_lane_id": "1",
+        "tags": "domestic",
+        "id": "new_node_1"
+      }
+    ]
+  },
+  {
+    "ts": "10:44:34",
+    "actions": [
+      {
+        "type": "add_node",
+        "name": "Customers in France",
+        "type_code": "CUSTOMER",
+        "swim_lane_id": "1",
+        "tags": "domestic"
+      }
+    ]
+  },
+  {
+    "ts": "10:45:32",
+    "actions": [
+      {
+        "type": "add_node",
+        "name": "Customers France",
+        "type_code": "CUSTOMER",
+        "swim_lane_id": "1",
+        "tags": "domestic"
+      }
+    ]
+  },
+  {
+    "ts": "10:46:15",
+    "actions": [
+      {
+        "type": "add_node",
+        "id": "new_node_1",
+        "name": "Export",
+        "type_code": "CUSTOMER",
+        "swim_lane_id": "1",
+        "tags": "export"
+      }
+    ]
+  },
+  {
+    "ts": "10:47:14",
+    "actions": [
+      {
+        "type": "add_node",
+        "name": "Assembly Shop",
+        "type_code": "SHOP",
+        "swim_lane_id": "3"
+      }
+    ]
+  }
+]

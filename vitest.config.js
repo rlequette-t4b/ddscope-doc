@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/unit/**/*.test.js'],
-    setupFiles: ['./shims/window.js', './shims/tools.js']
+    setupFiles: ['./shims/setup-globals.js', './shims/modules.js', './shims/tools.js']
   }
 });

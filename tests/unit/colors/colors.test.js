@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import DDS_COLORS from '../../../src/DDS_COLORS.js';
 
 describe('DDS_COLORS palette', () => {
   it('exposes exactly 8 colors', () => {

@@ -1,11 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import DDS_ACTIONS from '../../../src/DDS_ACTIONS.js';
-import DDS_FLOWS from '../../../src/DDS_FLOWS.js';
-import DDS_MODEL from '../../../src/DDS_MODEL.js';
-import DDS_NODES from '../../../src/DDS_NODES.js';
-import DDS_PRODUCTS from '../../../src/DDS_PRODUCTS.js';
-import DDS_SKUS from '../../../src/DDS_SKUS.js';
-import DDS_STORE from '../../../src/DDS_STORE.js';
 
 describe('DDS_PRODUCTS helper facade', () => {
   async function createNode(name, typeCode) {

@@ -1,13 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import DDS_ACTIONS from '../../../src/DDS_ACTIONS.js';
-import DDS_BOMS from '../../../src/DDS_BOMS.js';
-import DDS_DEMANDS from '../../../src/DDS_DEMANDS.js';
-import DDS_FLOWS from '../../../src/DDS_FLOWS.js';
-import DDS_MODEL from '../../../src/DDS_MODEL.js';
-import DDS_NODES from '../../../src/DDS_NODES.js';
-import DDS_PRODUCTS from '../../../src/DDS_PRODUCTS.js';
-import DDS_SKUS from '../../../src/DDS_SKUS.js';
-import DDS_STORE from '../../../src/DDS_STORE.js';
 
 describe('DDS_MODEL integrity rules', () => {
   async function createNode(name, swimLaneId) {

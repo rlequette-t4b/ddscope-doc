@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import DDS_STORE from '../../../src/DDS_STORE.js';
 
 describe('DDS_STORE Deltas', () => {
   let deltas;

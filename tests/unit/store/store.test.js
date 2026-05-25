@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import DDS_STORE from '../../../src/DDS_STORE.js';
 
 describe('DDS_STORE core behavior', () => {
   beforeEach(() => {
