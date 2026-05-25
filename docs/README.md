@@ -17,6 +17,7 @@ Single source of truth for all DDScope documentation. All files are flat in this
 | [DDScope_Presentation.md](DDScope_Presentation.md) | Active | Presentation layer — map_* logic, layout algorithms, DI contract |
 | [DDScope_Actions.md](DDScope_Actions.md) | Active | AI action vocabulary |
 | [DDScope_AI_Assistant.md](DDScope_AI_Assistant.md) | Active | Embedded AI assistant RFC |
+| [DDScope_Backlog.md](DDScope_Backlog.md) | Active | Feature backlog — pre-backlog candidates, committed features, user manual copy |
 
 ### Implementation details
 

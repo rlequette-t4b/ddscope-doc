@@ -408,7 +408,7 @@ Tested: `yes` | `partial` | `no` | `—` (n/a or to-do)
 | CTT line drag (mouseup) — `map_nodes.demand_x/y` | `TX.MAP_MOVE_CTT` | Move CTT line | to-do | — |
 | CTT handle drag (mouseup) — `map_nodes.demand_length` | `TX.MAP_RESIZE_CTT` | Resize CTT line | to-do | — |
 | Flow note ghost drag (`dragfree`) — `map_flows.notes_annotation_dx/dy` | `TX.MAP_MOVE_FLOW_NOTE_GHOST` | Move flow note | to-do | — |
-| Annotation drag (`dragfree`) — `map_annotations.x/y` | `TX.MAP_MOVE_ANNOTATION` | Move annotation | to-do | — |
+| Annotation drag (`dragfree`) — `map_annotations.x/y` | `TX.MAP_MOVE_ANNOTATION` | Move annotation | done | yes |
 
 > Swim-lane drag and resize use the **begin-at-mousedown** pattern (§1.5) — `onMove` mutates `msl` directly by reference for real-time rendering.
 >

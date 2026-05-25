@@ -7,9 +7,7 @@
     - [4.1 Version 1 — Target](#41-version-1--target)
     - [4.2 Future scope](#42-future-scope)
     - [4.3 Permanently out of scope](#43-permanently-out-of-scope)
-  - [5. Pre-backlog](#5-pre-backlog)
-    - [5.1 Candidates](#51-candidates)
-    - [5.2 Ideas](#52-ideas)
+  - [5. Backlog](#5-backlog)
   - [6. Constraints and Assumptions](#6-constraints-and-assumptions)
   - [7. Open Questions](#7-open-questions)
 
@@ -40,6 +38,7 @@
 | 1.9 | May 2026 | Annotations entity added to §5.1; Unicode symbols in text fields added to §5.1 |
 | 2.0 | May 2026 | Annotations entity renamed to Notes (notes / map_notes) |
 | 2.1 | May 2026 | Annotations feature promoted from pre-backlog to v1 scope |
+| 2.2 | May 2026 | §5 Pre-backlog extracted to DDScope_Backlog.md |
 
 ---
 
@@ -128,50 +127,9 @@ Navigation tab order (v1): `Map — Nodes — Flows — Products — BOMs — De
 
 ---
 
-## 5. Pre-backlog
+## 5. Backlog
 
-Items below are collected but not yet committed to any version. They are not to-do items — they are inputs for future planning sessions.
-
-**§5.1** contains items with sufficient definition to be discussed for prioritisation. **§5.2** contains fragments and early ideas that need further thinking before they can be scoped.
-
-### 5.1 Candidates
-
-**Node badges on the map canvas**
-Display visual indicators directly on Cytoscape nodes. Two categories:
-- *Tag-triggered badges* — a badge appears when a specific tag is present on the node. Target tags: `warning` (⚠️), `info` (ℹ️), `buffer` (dedicated icon). Configurable list, potential link with `tag_colors`.
-- *Demand badge* — displayed when at least one SKU on the node has a `demands` record.
-Multiple badges may coexist on the same node (e.g. warning + demand). Layout: horizontal row, top-right corner. Proposed rendering: Cytoscape ghost nodes (same pattern as note ghosts) for automatic pan/zoom sync and html2canvas compatibility. Visibility scope (all maps vs per-map toggle) to be defined.
-
-**Unicode symbols in text fields displayed on the canvas**
-Node notes (displayed as ghost overlays) and annotation content accept free Unicode text, including symbols and emoji (⚠ ▲ ℹ ✓ ✗ 🔴 🟡 🟢 …). Cytoscape renders these natively via its Canvas 2D label engine. Cross-platform rendering is best-effort — no guarantee of visual consistency across OS and browser combinations.
-
-UX complement (future): a small symbol picker in the relevant text fields offering a curated shortlist of supply-chain-relevant Unicode characters. To be specified at implementation time.
-
-**Tag color conflict resolution**
-Define a visual behaviour for nodes matching multiple `tag_colors` entries simultaneously — currently the first match wins. Candidate: display a special pattern or overlay to signal the conflict rather than silently picking the first match.
-
-**Pain points and objectives**
-Capture supply chain pain points and project objectives as structured entities. Proposed categories aligned with the 7 DDMRP buffer reasons (with custom additions). Linked to nodes with badge display on the map. Dedicated side panel. Requires a separate spec document before implementation.
-
-**Information flows**
-Model information flows and planning processes as a separate layer alongside material flows. Roles, entities, and planning cycles. Requires a separate spec document.
-
-**Swim-lane layout offset**
-Configurable margin between swim-lane boundary and the first/last node column in auto-layout. Currently hardcoded.
-
-**Lead time display on swim-lanes**
-Display cumulative or per-lane lead time as a label or overlay on swim-lane headers. Rendering approach to be defined.
-
-**`DDS_PRESENTATION` — presentation rules module**
-A module symmetric to `DDS_MODEL` for the presentation layer: the single authoritative layer for rules governing map state, independent of the web UI and Cytoscape. Would encapsulate: default node placement when added to a map, auto-layout rules (BFS ranking, column assignment, vertical placement), fit-to-canvas bounding box computation, map duplication logic (copy of `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`), and any other rule that determines *how* elements are arranged on a map without depending on the DOM or the Cytoscape instance. Current logic is spread across `DDS_MAP`, `DDS_LAYOUT`, and `DDS_MAP_UI`.
-
-### 5.2 Ideas
-
-**Tag-specific selection style**
-A distinct visual style for selected nodes when tag-based coloring is active — to avoid confusion between selection highlight and tag color. Approach undefined.
-
-**`DDS_MODEL` — deprecate legacy cascade modules**
-Once `DDS_MODEL` is implemented, progressively migrate callers of `DDS_PRODUCTS`, `DDS_BOMS`, `DDS_DEMANDS` to `DDS_MODEL` / `DDS_STORE` direct calls, then remove the deprecated modules. Tracked in `DDScope_Modules.md` backlog.
+See **[DDScope_Backlog.md](DDScope_Backlog.md)** — pre-backlog candidates, ideas, and committed features with implementation notes and user manual copy.
 
 ---
 

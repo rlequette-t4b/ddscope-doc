@@ -56,21 +56,9 @@ shims/              # Minimal stubs for CommWise/browser globals (Node.js compat
 
 ## 4. Key Documentation Pointers
 
-Read these before working on any feature area:
+See **`docs/README.md`** for the full document index with descriptions and reading order. Read the relevant files before working on any feature area.
 
-| Document | Scope |
-|---|---|
-| `docs/DDScope_Overview.md` | Product purpose, scope v1/v2, constraints |
-| `docs/DDScope_DataModel.md` | All entities, fields, cascade rules |
-| `docs/DDScope_Architecture.md` | Layered architecture, persistence pattern |
-| `docs/DDScope_Modules.md` | Module registry — APIs, deps, testability |
-| `docs/DDScope_Presentation.md` | map_* logic, layout algorithms, DI contract |
-| `docs/DDScope_AI_Assistant.md` | Embedded AI assistant RFC |
-| `docs/DDScope_Actions.md` | AI action vocabulary |
-| `docs/DDScope_Rendering.md` | Cytoscape canvas, overlays, ghost nodes, styles |
-| `docs/DDScope_UI.md` | UI implementation details |
-| `docs/DDScope_UndoRedo.md` | Transaction pattern, call site inventory |
-| `docs/DDScope_TestEnvironment.md` | Repo conventions, Vitest/Playwright setup, extraction workflow |
+`docs/README.md` is the single source of truth for the document list — do not duplicate it here.
 
 ---
 
