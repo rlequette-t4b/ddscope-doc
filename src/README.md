@@ -110,6 +110,6 @@ After **every pull or push**, this table must be updated immediately.
 | `DDS_TOOLS.js` | SCRIPT 40 | pure | NO | PULL | 2026-05-23 | v100 | #23909 |
 | `DDS_TRANSACTIONS.js` | SCRIPT 1860 | store-dependent | NO | PUSH | 2026-05-24 | v100 | #23913 |
 | `DDS_TX.js` | SCRIPT 1865 | pure | NEW | — | 2026-05-25 | — | — |
-| `DDS_CMD.js` | SCRIPT 1866 | store-dependent | NEW | — | 2026-05-25 | — | — |
+| `DDS_CMD.js` | SCRIPT 1875 | store-dependent | NEW | — | 2026-05-25 | — | — |
 
 *b2wise — Confidential*

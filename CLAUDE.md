@@ -56,8 +56,7 @@ Wait for confirmation before loading new domain documents or proceeding.
 ### General rules
 
 - Never add UI elements or features not explicitly requested. Propose first.
-- Explain the plan and wait for explicit confirmation before writing any code or CommWise edit.
-- Break tasks in focused steps and describe them before executing sequentially to avoid long work between interactions, unless the user confirms to execute in one pass.
+- **One step at a time — no exceptions.** Before any work: decompose the task into focused steps and present them. Wait for confirmation. Then execute one focused step at a time, describing each before executing it and waiting for confirmation. This applies to the initial plan and to every decision made during execution — including steps that seem obvious or minor. A step not in the confirmed plan is a new step: stop, describe, wait.
 
 ---
 
@@ -88,6 +87,9 @@ After creating or modifying any file in `src/`, immediately update the tracking 
 - After a successful push to CommWise → status `NO`, update app version and revision ID.
 
 This rule applies even when the change is minor — the tracking table is the only reliable indicator of what is in sync with CommWise.
+
+### Check src/README.md before any CommWise block write
+Before writing to any CommWise block that has a corresponding file in `src/`, check the tracking table in `src/README.md`. If the module is marked `YES` (dirty) or `NEW`, the local version diverges from CommWise — clarify with the developer before writing to CommWise.
 
 ---
 

@@ -162,6 +162,9 @@ The domains section of this document and the table below should help you locate 
 - Proactive (read before starting) → body of the relevant doc.
 - Reactive (consulted when something breaks) → "Known Traps" section at the end of the relevant doc. Propose to create if it does not exist.
 
+**Keeping this file in sync**
+Any creation, rename, or deletion of a file in `docs/` must be reflected in this document before the end of the session: update the Documents table, the affected domain lists, and the "Where to Place Information" table.
+
 **What does NOT belong in `docs/`:**
 Anything specific to an AI assistant's execution environment, tool constraints, or operational patterns. Those go in the AI assistant's instruction file at the repo root.
 
