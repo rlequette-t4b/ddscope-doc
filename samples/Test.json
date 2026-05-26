@@ -626,5 +626,92 @@
       "updated_at": "2026-05-24T09:37:19.267Z",
       "font_size": 18
     }
+  ],
+  "note_categories": [
+    {
+      "label": "Customer Service",
+      "position": 0,
+      "id": 1,
+      "created_at": "2026-05-26T06:53:46.304Z",
+      "updated_at": "2026-05-26T07:01:10.932Z"
+    },
+    {
+      "label": "Inventory",
+      "position": 1,
+      "id": 2,
+      "created_at": "2026-05-26T06:53:58.844Z",
+      "updated_at": "2026-05-26T07:01:10.932Z"
+    },
+    {
+      "label": "Purchasing",
+      "position": 2,
+      "id": 3,
+      "created_at": "2026-05-26T06:54:10.368Z",
+      "updated_at": "2026-05-26T07:01:10.932Z"
+    }
+  ],
+  "map_notes": [
+    {
+      "map_id": 2,
+      "note_id": 1,
+      "id": 1,
+      "created_at": "2026-05-26T06:54:54.294Z",
+      "updated_at": "2026-05-26T06:54:54.294Z"
+    },
+    {
+      "map_id": 2,
+      "note_id": 2,
+      "id": 2,
+      "created_at": "2026-05-26T06:55:25.725Z",
+      "updated_at": "2026-05-26T06:55:25.725Z"
+    },
+    {
+      "map_id": 2,
+      "note_id": 3,
+      "id": 3,
+      "created_at": "2026-05-26T06:55:35.414Z",
+      "updated_at": "2026-05-26T06:55:35.414Z"
+    },
+    {
+      "map_id": 2,
+      "note_id": 4,
+      "id": 4,
+      "created_at": "2026-05-26T06:56:02.830Z",
+      "updated_at": "2026-05-26T06:56:02.830Z"
+    }
+  ],
+  "notes": [
+    {
+      "category_id": 1,
+      "content": "Low service level",
+      "position": 0,
+      "id": 1,
+      "created_at": "2026-05-26T06:54:54.294Z",
+      "updated_at": "2026-05-26T06:55:20.691Z"
+    },
+    {
+      "category_id": 2,
+      "content": "many stockouts for new products",
+      "position": 0,
+      "id": 2,
+      "created_at": "2026-05-26T06:55:25.725Z",
+      "updated_at": "2026-05-26T06:56:01.142Z"
+    },
+    {
+      "category_id": 3,
+      "content": "",
+      "position": 0,
+      "id": 3,
+      "created_at": "2026-05-26T06:55:35.413Z",
+      "updated_at": "2026-05-26T06:55:35.413Z"
+    },
+    {
+      "category_id": 2,
+      "content": "excees stock for low runners",
+      "position": 1,
+      "id": 4,
+      "created_at": "2026-05-26T06:56:02.830Z",
+      "updated_at": "2026-05-26T06:56:16.926Z"
+    }
   ]
 }

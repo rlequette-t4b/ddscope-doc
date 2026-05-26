@@ -35,6 +35,8 @@ Single source of truth for all DDScope documentation. All files are flat in this
 | Document | Status | Notes |
 |---|---|---|
 | [DDScope_TestEnvironment.md](DDScope_TestEnvironment.md) | Active | Repo conventions, Vitest/Playwright setup, module pull/push workflow |
+| [../tests/DDScope_TestUI.md](../tests/DDScope_TestUI.md) | Active | Manual UI test tracker — non-regression reference and Playwright input |
+| [../tests/DDScope_TestUI_watcher.md](../tests/DDScope_TestUI_watcher.md) | Active | Auto-watcher pipeline — VS Code task that regenerates the HTML viewer on save |
 
 ---
 
@@ -114,11 +116,13 @@ This list is open-ended — add a domain when a combination of documents recurs 
 ---
 
 ### Testing (French: Tests)
-*Vitest, Playwright, pull/push extraction, fixtures.*
+*Vitest, Playwright, pull/push extraction, fixtures, manual UI tests.*
 
 | Document | Why |
 |---|---|
-| `DDScope_TestEnvironment.md` | Full setup, pull/push workflow, Playwright backdoors |
+| `DDScope_TestEnvironment.md` | Full setup, pull/push workflow, Playwright backdoors, manual UI tracker reference |
+| `../tests/DDScope_TestUI.md` | Manual UI test scenarios — non-regression and Playwright input |
+| `../tests/DDScope_TestUI_watcher.md` | Auto-watcher setup — VS Code task configuration |
 | `DDScope_Modules.md` | Module testability, extraction contracts |
 | `DDScope_CommWise.md` | Session lifecycle for push operations |
 
@@ -156,6 +160,7 @@ The domains section of this document and the table below should help you locate 
 | Command layer, TX catalogue, call site inventory | `DDScope_Commands.md` |
 | AI assistant feature (contract, context, validation) | `DDScope_AI_Assistant.md` |
 | Test convention, fixture, pull/push workflow | `DDScope_TestEnvironment.md` |
+| Manual UI test scenario | `../tests/DDScope_TestUI.md` |
 | Feature backlog or design note | `DDScope_Backlog.md` |
 
 **Criterion 2 — Is it proactive or reactive knowledge?**

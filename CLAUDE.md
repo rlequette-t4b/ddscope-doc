@@ -88,6 +88,9 @@ After creating or modifying any file in `src/`, immediately update the tracking 
 
 This rule applies even when the change is minor — the tracking table is the only reliable indicator of what is in sync with CommWise.
 
+### UI test tracking
+When telling the developer to test something that relates to a scenario in `tests/DDScope_TestUI.md`, always reference the scenario index (C.S format) and its short description. Example: *"À tester : **2.3** Categories from Settings appear, **2.9** Collapse and expand the whole panel."*
+
 ### Check src/README.md before any CommWise block write
 Before writing to any CommWise block that has a corresponding file in `src/`, check the tracking table in `src/README.md`. If the module is marked `YES` (dirty) or `NEW`, the local version diverges from CommWise — clarify with the developer before writing to CommWise.
 

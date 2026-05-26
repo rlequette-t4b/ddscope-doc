@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Auto-Watch Markdown Source",
+      "type": "shell",
+      "command": "node --watch --watch-path=tests/DDScope_TestUI.md tests/generate_viewer.js",
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 # DDScope — Test Environment
-*v0.8 — May 2026*
+*v0.9 — May 2026*
 
 ---
 
@@ -15,6 +15,7 @@
 | 0.6 | May 2026 | Unified environment: DEV/TEST split removed; Claude Desktop replaces VS Code extension and Copilot; Slack removed from scope |
 | 0.7 | May 2026 | Pull/Push workflow consolidated here (was split between CLAUDE.md and Module Extraction Workflow); CLAUDE.md now points here |
 | 0.8 | May 2026 | src/README.md tracking rule made mandatory for all agents — update after every local change to src/ |
+| 0.9 | May 2026 | Manual UI test tracker added — tests/DDScope_TestUI.md |
 
 ---
 
@@ -25,6 +26,7 @@ This document defines the architecture and conventions for the DDScope test envi
 The environment covers three concerns:
 - **Functional testing** — unit and integration tests on extracted DDScope JS modules, running locally in Node.js
 - **UI testing** — browser-based end-to-end tests against the live CommWise app URL, replayed via Playwright
+- **Manual UI testing** — scenario-by-scenario records of UI tests performed during development sessions, tracked in `tests/DDScope_TestUI.md`
 - **Ticket integration** — future link between failing tests and issue tracker (Jira or Linear), non-blocking for now
 
 ---
@@ -45,6 +47,7 @@ ddscope/
 │   └── window.js               ← window, document stubs for Node.js compat
 │
 ├── tests/
+│   ├── DDScope_TestUI.md       ← Manual UI test tracker (non-regression + Playwright input)
 │   ├── unit/                   ← Pure logic, no DOM, no Cytoscape
 │   │   ├── store/
 │   │   │   ├── crud.test.js
@@ -87,6 +90,17 @@ ddscope/
 ├── vitest.config.js
 └── package.json
 ```
+
+---
+
+## Manual UI Test Tracker
+
+Manual UI tests are recorded in **`tests/DDScope_TestUI.md`**. Each entry documents a scenario tested by hand during a development session: steps, result, and whether a Playwright test covers it. The tracker serves as:
+
+- A non-regression reference — before shipping a feature, re-run the scenarios listed for that area.
+- An input for Playwright authoring — scenarios marked without Playwright coverage are candidates for automation.
+
+When completing a development session that includes manual UI testing, add or update entries in `tests/DDScope_TestUI.md`.
 
 ---
 
