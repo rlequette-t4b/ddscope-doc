@@ -1,5 +1,5 @@
 # DDScope — Data Model
-*v3.2 — Draft — May 2026*
+*v3.3 — Draft — May 2026*
 
 *See also: [DDScope_Architecture.md](DDScope_Architecture.md) for layered architecture and persistence. [DDScope_Modules.md](DDScope_Modules.md) for the `DDS_MODEL` module which is the authoritative runtime implementation of cascade rules.*
 
@@ -38,6 +38,7 @@
 | 3.0 | May 2026 | annotations and map_annotations added (§9, §16); cascade rules updated (§17.1) |
 | 3.1 | May 2026 | note_categories and notes added (§10a, §10b); canvas_visible added to maps (§11); map_note_categories removed — category presence on a map is derived from its notes |
 | 3.2 | May 2026 | map_notes added (§17b) — notes are project-level but placed on maps via map_notes; cascade rules updated (§17.1); table catalogue and file format moved here from DDScope_Architecture.md |
+| 3.3 | May 2026 | notes_panel_collapsed and notes_panel_height added to maps (§11); runtime defaults updated |
 
 ---
 
@@ -80,7 +81,7 @@ Every entity includes the following system fields, not repeated in the field def
 
 | JSON key | Description |
 |---|---|
-| `maps` | Map definitions — name, tab order, direction, legend_visible, canvas_visible |
+| `maps` | Map definitions — name, tab order, direction, legend_visible, canvas_visible, notes panel state |
 | `map_nodes` | Node visibility, canvas position, note overlay state, and CTT line geometry per map |
 | `map_flows` | Flow visibility per map + presentation attributes |
 | `map_swim_lanes` | Swim-lane canvas geometry per map |
@@ -144,6 +145,8 @@ A file containing only a subset of keys is valid — absent arrays are initialis
 | `node_types` | `label_position` | `"center"` |
 | `node_types` | `transparent_bg` | `false` |
 | `maps` | `canvas_visible` | `true` |
+| `maps` | `notes_panel_collapsed` | `false` |
+| `maps` | `notes_panel_height` | `null` (renders at default height) |
 
 ---
 
@@ -402,6 +405,8 @@ A named view of a subset of the project's supply chain elements. Each project ha
 | direction | text | Flow display direction — `right-left` (default) or `left-right` |
 | legend_visible | boolean | Whether the legend overlay is visible on this map. Defaults to `true`. |
 | canvas_visible | boolean | When `false`, the Cytoscape canvas is hidden and the notes panel fills the full height. Map data is preserved. Defaults to `true`. |
+| notes_panel_collapsed | boolean | Whether the notes panel is collapsed to header height on this map. Persisted on toggle. Defaults to `false`. When `true` on load, the panel renders collapsed but the header must remain visible and clickable to allow re-expansion. |
+| notes_panel_height | integer \| null | Height of the notes panel in pixels, as set by the user via the drag handle. Persisted on drag end. When `null` (default), the panel renders at its default height. Restored on re-expansion after collapse. |
 
 ---
 
@@ -589,7 +594,7 @@ Returns `{ applied: action[], failed: action|null }` directly. No Promise.
 Any module may call `DDS_STORE.query` on any table at any time.
 
 **Exceptions — presentation layer:**
-Presentation layer modules manage `map_*` tables directly via `DDS_STORE`. `map_notes` is managed by `DDS_CMD` as part of note commands — it is not a pure presentation-layer exception.
+Presentation layer modules manage `map_*` tables directly via `DDS_STORE`. `map_notes` is managed by `DDS_CMD` as part of note commands — it is not a pure presentation-layer exception. `maps.notes_panel_collapsed` and `maps.notes_panel_height` are managed directly by `DDS_NOTES_UI` via `DDS_STORE.update` — no transaction wrapping, same pattern as `legend_visible` and `canvas_visible`.
 
 ### 17.1 Delete operations and cascades
 

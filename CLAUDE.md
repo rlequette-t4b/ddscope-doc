@@ -36,7 +36,9 @@ When memorizing something, apply this test: *could another AI working via CommWi
 Example opening:
 > "Cette session semble concerner les domaines **Rendering** et **CommWise**. Je vais charger : `DDScope_Rendering.md`, `DDScope_Presentation.md`, `DDScope_Modules.md`, `DDScope_CommWise.md`. C'est bien ça ?"
 
-### Slack inbox (#ddscope-sync)
+### Idea inboxes
+
+#### Slack (#ddscope-sync)
 
 `#ddscope-sync` (channel ID: `C0B5RSURETF`) serves as an asynchronous idea inbox (notes posted from phone or outside sessions).
 
@@ -45,6 +47,14 @@ On request at the start of a session: read the channel, present unprocessed mess
 **Reading the channel — reaction check (mandatory):**
 
 `slack_read_channel` does not return reactions. To identify already-processed messages, call `slack_get_reactions` on each message individually after reading the channel. Messages with a ✅ reaction are already processed and must be skipped. Only present messages without a ✅ reaction.
+
+#### Notion (Canal DDScope)
+
+Database URL: `https://www.notion.so/8845001f0d0c83efa0098157aef9677c`  
+Columns of interest: `Details` (content), `Statut` (status).  
+Status values: `À faire` | `En cours` | `Retour IA` | `Traité`.
+
+On request at the start of a session: read the database, present unprocessed entries (all entries where `Statut ≠ Traité`), and discuss what to do with each. Once handled, update `Statut` to `Traité`.
 
 ### During the session
 
@@ -89,7 +99,11 @@ After creating or modifying any file in `src/`, immediately update the tracking 
 This rule applies even when the change is minor — the tracking table is the only reliable indicator of what is in sync with CommWise.
 
 ### UI test tracking
-When telling the developer to test something that relates to a scenario in `tests/DDScope_TestUI.md`, always reference the scenario index (C.S format) and its short description. Example: *"À tester : **2.3** Categories from Settings appear, **2.9** Collapse and expand the whole panel."*
+When telling the developer to test something that relates to a scenario in `docs/DDScope_TestUI.md`, always reference the scenario index (C.S format) and its short description. Example: *"À tester : **2.3** Categories in Note Panel, **2.9** Collapse and expand the whole panel."*
+
+After every MCP SQLite write to `tests/ddscope_tests.db`:
+1. Immediately write a timestamp to `tests/.db-updated` (sentinel file) via `filesystem:write_file` to trigger the HTML viewer regeneration.
+2. If the write included a schema change (CREATE TABLE, ALTER TABLE, CREATE VIEW, DROP TABLE, DROP VIEW) — immediately update `tests/schema.sql` to reflect the current schema. This is mandatory and must not be deferred.
 
 ### Check src/README.md before any CommWise block write
 Before writing to any CommWise block that has a corresponding file in `src/`, check the tracking table in `src/README.md`. If the module is marked `YES` (dirty) or `NEW`, the local version diverges from CommWise — clarify with the developer before writing to CommWise.

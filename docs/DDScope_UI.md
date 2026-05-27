@@ -33,6 +33,7 @@
     - [Swim-lane panel](#swim-lane-panel)
     - [Annotation panel](#annotation-panel)
   - [7. Settings Tab](#7-settings-tab)
+  - [8. Notes Panel](#8-notes-panel)
 
 # DDScope — User Interface
 
@@ -42,7 +43,7 @@ See **[DDScope_AI_UI.md](DDScope_AI_UI.md)** for the full AI assistant panel spe
 
 ---
 
-*v1.13 — Draft — May 2026*
+*v1.14 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -72,6 +73,7 @@ See **[DDScope_AI_UI.md](DDScope_AI_UI.md)** for the full AI assistant panel spe
 | 1.11    | May 2026 | Annotations feature: toolbar button, canvas interactions, side panel, table view, Elements panel, Remove modal |
 | 1.12    | May 2026 | Undo/Redo buttons in nav bar: placement, keyboard shortcuts, state sync via DDS_TRANSACTION.onChange, view refresh after undo/redo |
 | 1.13    | May 2026 | AI Assistant Panel extracted to DDScope_AI_UI.md |
+| 1.14    | May 2026 | §8 Notes panel added: collapse/expand toggle, drag-to-resize, persistence of collapsed state and height per map |
 
 ---
 
@@ -446,7 +448,38 @@ All changes are persisted on Save. If no project is open, a placeholder is shown
 
 ---
 
-## 8. Known Traps
+## 8. Notes Panel
+
+The notes panel is displayed below the Cytoscape canvas when a project is open on the Map tab. It shows all project notes organised by category. See `DDScope_DataModel.md` §10a–§10b for the note and note_category data model.
+
+### Collapse / expand
+
+A toggle button in the panel header collapses the panel to header height or restores it to its previous height. The collapsed/expanded state is persisted per map in `maps[].notes_panel_collapsed` (boolean, default `false`).
+
+**Critical constraint:** when the panel loads in collapsed state, the header must remain visible and the toggle button must remain clickable — there must always be a way to re-expand. The toggle button must never be hidden or inaccessible in the collapsed state.
+
+### Drag to resize
+
+A drag handle on the top edge of the panel allows resizing it vertically. The height is persisted per map in `maps[].notes_panel_height` (integer px, default `null` = renders at default height). The persisted height is restored when the panel is re-expanded after a collapse.
+
+### Persistence behaviour
+
+Both fields are written directly to `DDS_STORE` by `DDS_NOTES_UI` without transaction wrapping — same pattern as `legend_visible` and `canvas_visible`. No undo/redo for panel layout state.
+
+| Action | Field updated | Default |
+|---|---|---|
+| Toggle collapse | `maps[activeMapId].notes_panel_collapsed` | `false` |
+| Drag handle released | `maps[activeMapId].notes_panel_height` | `null` |
+
+On project open and map switch, `DDS_NOTES_UI` reads these two fields and applies them immediately before rendering the panel content.
+
+### Category visibility
+
+By default, only categories that have at least one note visible on the active map (i.e. with a `map_notes` record for this map) are shown. A **Show all categories** toggle in the panel header (default off) overrides this filter and shows all categories, including empty ones — required to add a note to a category that has no notes on the active map yet. This toggle is not persisted.
+
+---
+
+## 9. Known Traps
 
 ### Disabled nav buttons — CommWise visibility override
 

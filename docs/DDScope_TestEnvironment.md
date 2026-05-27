@@ -1,5 +1,5 @@
 # DDScope — Test Environment
-*v0.9 — May 2026*
+*v0.10 — May 2026*
 
 ---
 
@@ -15,7 +15,8 @@
 | 0.6 | May 2026 | Unified environment: DEV/TEST split removed; Claude Desktop replaces VS Code extension and Copilot; Slack removed from scope |
 | 0.7 | May 2026 | Pull/Push workflow consolidated here (was split between CLAUDE.md and Module Extraction Workflow); CLAUDE.md now points here |
 | 0.8 | May 2026 | src/README.md tracking rule made mandatory for all agents — update after every local change to src/ |
-| 0.9 | May 2026 | Manual UI test tracker added — tests/DDScope_TestUI.md |
+| 0.9 | May 2026 | Manual UI test tracker added — docs/DDScope_TestUI.md |
+| 0.10 | May 2026 | DDScope_TestUI.md and DDScope_TestUI_watcher.md moved from tests/ to docs/ |
 
 ---
 
@@ -26,7 +27,7 @@ This document defines the architecture and conventions for the DDScope test envi
 The environment covers three concerns:
 - **Functional testing** — unit and integration tests on extracted DDScope JS modules, running locally in Node.js
 - **UI testing** — browser-based end-to-end tests against the live CommWise app URL, replayed via Playwright
-- **Manual UI testing** — scenario-by-scenario records of UI tests performed during development sessions, tracked in `tests/DDScope_TestUI.md`
+- **Manual UI testing** — scenario-by-scenario records of UI tests performed during development sessions, tracked in `docs/DDScope_TestUI.md`
 - **Ticket integration** — future link between failing tests and issue tracker (Jira or Linear), non-blocking for now
 
 ---
@@ -47,7 +48,10 @@ ddscope/
 │   └── window.js               ← window, document stubs for Node.js compat
 │
 ├── tests/
-│   ├── DDScope_TestUI.md       ← Manual UI test tracker (non-regression + Playwright input)
+│   ├── ddscope_tests.db        ← Manual UI test data (SQLite, gitignored)
+│   ├── schema.sql              ← DB schema versioned in Git
+│   ├── generate_viewer.js      ← Reads DB, generates HTML viewer
+│   ├── DDScope_TestUI_viewer.html ← Generated, never edited manually
 │   ├── unit/                   ← Pure logic, no DOM, no Cytoscape
 │   │   ├── store/
 │   │   │   ├── crud.test.js
@@ -71,6 +75,9 @@ ddscope/
 │           └── .auth/          ← Playwright storageState (gitignored)
 │
 ├── docs/                       ← DDScope design documentation (source of truth)
+│   ├── DDScope_TestUI.md       ← Manual UI test tracker protocol
+│   ├── DDScope_TestUI_watcher.md ← Auto-watcher VS Code task
+│   └── ...
 │
 ├── fixtures/                   ← JSON inputs for automated tests (Vitest + Playwright)
 │   ├── README.md
@@ -95,12 +102,12 @@ ddscope/
 
 ## Manual UI Test Tracker
 
-Manual UI tests are recorded in **`tests/DDScope_TestUI.md`**. Each entry documents a scenario tested by hand during a development session: steps, result, and whether a Playwright test covers it. The tracker serves as:
+Manual UI tests are tracked via **`tests/ddscope_tests.db`** (SQLite). The protocol document is **`docs/DDScope_TestUI.md`**. Each scenario has linked issues (bugs or improvements) — the scenario status is calculated automatically from the issue statuses. The tracker serves as:
 
 - A non-regression reference — before shipping a feature, re-run the scenarios listed for that area.
-- An input for Playwright authoring — scenarios marked without Playwright coverage are candidates for automation.
+- An input for Playwright authoring — scenarios with no Playwright coverage are candidates for automation.
 
-When completing a development session that includes manual UI testing, add or update entries in `tests/DDScope_TestUI.md`.
+When completing a development session that includes manual UI testing, update the SQLite DB and regenerate the HTML viewer (`node tests/generate_viewer.js`).
 
 ---
 

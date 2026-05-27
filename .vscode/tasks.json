@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Auto-Watch Markdown Source",
+      "label": "Auto-Watch DB Sentinel",
       "type": "shell",
-      "command": "node --watch --watch-path=tests/DDScope_TestUI.md tests/generate_viewer.js",
+      "command": "node --watch --watch-path=tests/.db-updated tests/generate_viewer.js",
       "runOptions": {
         "runOn": "folderOpen"
       },

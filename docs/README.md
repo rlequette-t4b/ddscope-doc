@@ -35,8 +35,9 @@ Single source of truth for all DDScope documentation. All files are flat in this
 | Document | Status | Notes |
 |---|---|---|
 | [DDScope_TestEnvironment.md](DDScope_TestEnvironment.md) | Active | Repo conventions, Vitest/Playwright setup, module pull/push workflow |
-| [../tests/DDScope_TestUI.md](../tests/DDScope_TestUI.md) | Active | Manual UI test tracker — non-regression reference and Playwright input |
-| [../tests/DDScope_TestUI_watcher.md](../tests/DDScope_TestUI_watcher.md) | Active | Auto-watcher pipeline — VS Code task that regenerates the HTML viewer on save |
+| [DDScope_SQLite_Setup.md](DDScope_SQLite_Setup.md) | Active | MCP SQLite setup — UI test tracker database, schema, queries, backup |
+| [DDScope_TestUI.md](DDScope_TestUI.md) | Active | Manual UI test tracker — protocol only (data in SQLite DB) |
+| [DDScope_TestUI_watcher.md](DDScope_TestUI_watcher.md) | Active | Auto-watcher pipeline — VS Code task that regenerates the HTML viewer on save |
 
 ---
 
@@ -89,7 +90,7 @@ This list is open-ended — add a domain when a combination of documents recurs 
 ---
 
 ### Interface (French: Interface)
-*Panels, modals, nav bar, table views, user interactions.*
+*Panels, modals, nav bar, table views, user interactions — design and implementation only, no test scenarios.*
 
 | Document | Why |
 |---|---|
@@ -98,6 +99,23 @@ This list is open-ended — add a domain when a combination of documents recurs 
 | `DDScope_ElementsLifecycle.md` | Element lifecycle on maps |
 | `DDScope_Modules.md` | UI modules, CommWise positions |
 | `DDScope_CommWise.md` | Session lifecycle, editing, regex traps |
+
+---
+
+### UI Testing (French: Tests UI)
+*Manual UI validation, creation and update of UI test scenarios. Load this domain when working on test coverage or running through the test tracker — not during design or implementation.*
+
+**Data source:** test scenarios and issues are stored in `tests/ddscope_tests.db` (SQLite, MCP-queryable). Load `DDScope_SQLite_Setup.md` for the schema and query patterns. Do NOT load `DDScope_TestUI.md` expecting data — it contains protocol only.
+
+| Document | Why |
+|---|---|
+| `DDScope_UI.md` | UI spec — reference for expected behaviour |
+| `DDScope_AI_UI.md` | AI assistant panel spec |
+| `DDScope_ElementsLifecycle.md` | Element lifecycle on maps |
+| `DDScope_Modules.md` | UI modules, CommWise positions |
+| `DDScope_CommWise.md` | Session lifecycle, editing, regex traps |
+| `DDScope_TestUI.md` | Test protocol — conventions, status values, category definitions |
+| `DDScope_SQLite_Setup.md` | Schema, query patterns, backup procedure |
 
 ---
 
@@ -115,14 +133,15 @@ This list is open-ended — add a domain when a combination of documents recurs 
 
 ---
 
-### Testing (French: Tests)
-*Vitest, Playwright, pull/push extraction, fixtures, manual UI tests.*
+### Testing (French: Infrastructure de test)
+*Test infrastructure — Vitest, Playwright, pull/push extraction, fixtures. Not for UI test scenario work.*
 
 | Document | Why |
 |---|---|
 | `DDScope_TestEnvironment.md` | Full setup, pull/push workflow, Playwright backdoors, manual UI tracker reference |
-| `../tests/DDScope_TestUI.md` | Manual UI test scenarios — non-regression and Playwright input |
-| `../tests/DDScope_TestUI_watcher.md` | Auto-watcher setup — VS Code task configuration |
+| `DDScope_SQLite_Setup.md` | SQLite DB setup, schema, backup — shared with UI Testing domain |
+| `DDScope_TestUI.md` | Test protocol reference |
+| `DDScope_TestUI_watcher.md` | Auto-watcher setup — VS Code task configuration |
 | `DDScope_Modules.md` | Module testability, extraction contracts |
 | `DDScope_CommWise.md` | Session lifecycle for push operations |
 
@@ -160,7 +179,9 @@ The domains section of this document and the table below should help you locate 
 | Command layer, TX catalogue, call site inventory | `DDScope_Commands.md` |
 | AI assistant feature (contract, context, validation) | `DDScope_AI_Assistant.md` |
 | Test convention, fixture, pull/push workflow | `DDScope_TestEnvironment.md` |
-| Manual UI test scenario | `../tests/DDScope_TestUI.md` |
+| UI test scenario or issue (data) | `tests/ddscope_tests.db` (via MCP SQLite) |
+| UI test protocol, conventions, status values | `DDScope_TestUI.md` |
+| SQLite schema, queries, backup | `DDScope_SQLite_Setup.md` |
 | Feature backlog or design note | `DDScope_Backlog.md` |
 
 **Criterion 2 — Is it proactive or reactive knowledge?**

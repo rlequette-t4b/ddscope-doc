@@ -14,6 +14,7 @@
 | 1.3 | May 2026 | §1.1: DDS_CMD architecture refactor added |
 | 1.4 | May 2026 | FEAT-002 (map notes), FEAT-003 (canvas toggle), FEAT-004 (copy modal) added; §1.2 notes panel idea promoted and superseded |
 | 1.5 | May 2026 | FEAT-002 revised: map_note_categories removed (presence derived from notes); DDS_CMD bootstrapped on notes domain; DDS_CMD.execute signature defined |
+| 1.6 | May 2026 | §1.1: nested transactions note added to DDS_CMD; §1.2: glossary and philosophy document ideas added |
 
 ---
 
@@ -42,6 +43,8 @@ AI  →  DDS_CMD.executeList([{ type, params }], onSuccess?)  →  (single wrapp
 - Commands do not call each other (except in the AI case below).
 - `DDS_CMD.executeList` is the AI entry point: executes a list of commands sequentially inside a **single global transaction** representing the AI call site. Equivalent to the current `TX.AI_APPLY_ACTIONS` wrapping.
 - `DDS_ACTIONS.getVocabularyText()` and `DDS_ACTIONS.describe()` are replaced by equivalent methods on `DDS_CMD`, derived directly from the command definitions.
+
+*Nested transactions for AI execution:* `DDS_CMD.executeList` must support nested transactions — each individual command in the list runs its own begin/commit/rollback, nested inside the global AI transaction. This ensures that a failure in one command rolls back only that command while the global transaction remains open, and the full list can be rolled back as a unit on global failure. Design of the nesting mechanism to be specified at implementation time.
 
 *Delete unification:* all deletion variants (node, flow, lane, annotation, multi-selection, map-only removal) are unified into a single `TX.DELETE` command with options: entity type(s), ids, and a `mapOnly` flag. The current proliferation of `TX.NODE_DELETE`, `TX.FLOW_DELETE`, `TX.LANE_DELETE`, `TX.ANNOTATION_DELETE`, `TX.MULTI_DELETE`, `TX.MAP_REMOVE_*` is replaced by this single command.
 
@@ -95,6 +98,12 @@ A distinct visual style for selected nodes when tag-based coloring is active —
 
 **`DDS_MODEL` — deprecate legacy cascade modules**
 Once `DDS_MODEL` is implemented, progressively migrate callers of `DDS_PRODUCTS`, `DDS_BOMS`, `DDS_DEMANDS` to `DDS_MODEL` / `DDS_STORE` direct calls, then remove the deprecated modules. Tracked in `DDScope_Modules.md` backlog.
+
+**Glossary**
+Two separate glossary documents: one functional (user-facing terminology — concepts, entities, DDMRP vocabulary as used in DDScope), one internal (architecture and implementation vocabulary — module names, layer names, key patterns). Both cross-referenced from `docs/README.md`. Scope and format to be defined before creating the files.
+
+**Philosophy and selling points document**
+A document capturing DDScope's design philosophy (structured, simple, flexible) and its positioning relative to existing tools. Intended audience and format (internal reference vs. client-facing) to be decided. Any new feature must be validated against the philosophy before implementation — this document would make that criterion explicit and shareable.
 
 ---
 

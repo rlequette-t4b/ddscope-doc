@@ -5,3 +5,12 @@ coverage/
 .env
 tests/ui/auth/.auth/*.json
 samples/Test.json
+
+# SQLite test tracker database (data stored locally, schema versioned in tests/schema.sql)
+tests/*.db
+tests/*.sqlite
+
+# Backup directory contents (keep the directory itself via .gitkeep)
+tests/backup/*.db
+tests/backup/*.sqlite
+tests/backup/*.sql
