@@ -10,6 +10,9 @@ samples/Test.json
 tests/*.db
 tests/*.sqlite
 
+# Generated HTML viewer (regenerate with: node tests/generate_viewer.js)
+tests/DDScope_TestUI_viewer.html
+
 # Backup directory contents (keep the directory itself via .gitkeep)
 tests/backup/*.db
 tests/backup/*.sqlite

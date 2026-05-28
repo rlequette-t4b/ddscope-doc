@@ -55,7 +55,8 @@ const ISSUES = db.prepare('SELECT * FROM test_issues ORDER BY id').all().map(fun
     type:        r.type,
     description: r.description,
     priority:    r.priority,
-    status:      r.status || 'open'   // open | fixed | wontfix
+    status:      r.status || 'open',  // open | fixed | wontfix
+    notes:       r.notes || ''
   };
 });
 
@@ -100,7 +101,7 @@ function scenariosJson() {
 function issuesJson() {
   return '[\n' + ISSUES.map(function(i) {
     return '  {id:' + jsStr(i.id) + ',type:' + jsStr(i.type) + ',description:' + jsStr(i.description) +
-      ',priority:' + jsStr(i.priority) + ',status:' + jsStr(i.status) + '}';
+      ',priority:' + jsStr(i.priority) + ',status:' + jsStr(i.status) + ',notes:' + jsStr(i.notes) + '}';
   }).join(',\n') + '\n]';
 }
 
@@ -212,6 +213,7 @@ var html = `<!DOCTYPE html>
   .badge-wontfix {background:var(--wontfix-bg); color:var(--wontfix); border:1px solid var(--wontfix-bd)}
   .badge-bug     {background:var(--fail-bg);    color:var(--fail);    border:1px solid var(--fail-bd)}
   .badge-improvement{background:var(--accent-bg);color:var(--accent); border:1px solid var(--accent-bd)}
+  .badge-test    {background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
   .prio-high  {color:var(--fail);   font-weight:700;font-size:11px}
   .prio-medium{color:var(--partial);font-weight:700;font-size:11px}
   .prio-low   {color:var(--subtle); font-weight:600;font-size:11px}
@@ -313,6 +315,7 @@ var html = `<!DOCTYPE html>
       <button class="filter-btn active" data-if="type" data-value="all">All</button>
       <button class="filter-btn" data-if="type" data-value="Bug">Bug</button>
       <button class="filter-btn" data-if="type" data-value="Improvement">Improvement</button>
+      <button class="filter-btn" data-if="type" data-value="Test">Test</button>
     </div>
     <div class="filter-group">
       <span class="filter-label">Status</span>
@@ -352,6 +355,10 @@ var html = `<!DOCTYPE html>
       <button class="detail-close" id="di-close">&times;</button>
     </div>
     <div class="detail-meta" id="di-meta"></div>
+    <div class="detail-section" id="di-notes-section" style="display:none">
+      <div class="detail-section-title">Notes</div>
+      <div class="detail-instructions" id="di-notes"></div>
+    </div>
     <div class="detail-section">
       <div class="detail-section-title">Linked scenarios</div>
       <div class="detail-list" id="di-scenarios"></div>
@@ -377,7 +384,7 @@ function badge(cls, label) {
   return '<span class="badge badge-'+cls+'">'+label+'</span>';
 }
 function statusBadge(s) { return badge(s, s); }
-function typeBadge(t)   { return badge(t==='Bug'?'bug':'improvement', t); }
+function typeBadge(t)   { return badge(t==='Bug'?'bug':t==='Improvement'?'improvement':'test', t); }
 function prioBadge(p)   { return '<span class="prio-'+p+'">'+p+'</span>'; }
 
 // ── View switch ────────────────────────────────────────────────────────────
@@ -609,6 +616,16 @@ function selectIssue(id) {
     '<span class="detail-meta-item"><strong>Type</strong> '+typeBadge(issue.type)+'</span>'+
     '<span class="detail-meta-item"><strong>Status</strong> '+statusBadge(issue.status)+'</span>'+
     '<span class="detail-meta-item"><strong>Priority</strong> '+prioBadge(issue.priority)+'</span>';
+
+  // Notes
+  var diNotesSection = document.getElementById('di-notes-section');
+  var diNotesEl = document.getElementById('di-notes');
+  if (issue.notes) {
+    diNotesEl.textContent = issue.notes;
+    diNotesSection.style.display = '';
+  } else {
+    diNotesSection.style.display = 'none';
+  }
 
   var scenEl = document.getElementById('di-scenarios');
   scenEl.innerHTML = '';

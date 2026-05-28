@@ -101,9 +101,13 @@ This rule applies even when the change is minor — the tracking table is the on
 ### UI test tracking
 When telling the developer to test something that relates to a scenario in `docs/DDScope_TestUI.md`, always reference the scenario index (C.S format) and its short description. Example: *"À tester : **2.3** Categories in Note Panel, **2.9** Collapse and expand the whole panel."*
 
-After every MCP SQLite write to `tests/ddscope_tests.db`:
-1. Immediately write a timestamp to `tests/.db-updated` (sentinel file) via `filesystem:write_file` to trigger the HTML viewer regeneration.
-2. If the write included a schema change (CREATE TABLE, ALTER TABLE, CREATE VIEW, DROP TABLE, DROP VIEW) — immediately update `tests/schema.sql` to reflect the current schema. This is mandatory and must not be deferred.
+After every MCP SQLite write to `tests/ddscope_tests.db`, immediately regenerate the HTML viewer:
+
+```
+commands:execute_command  command="node"  args=["C:\\Users\\RemiLequette\\Development\\projects\\ddscope\\tests\\generate_viewer.js"]
+```
+
+If the write included a schema change (CREATE TABLE, ALTER TABLE, CREATE VIEW, DROP TABLE, DROP VIEW) — immediately update `tests/schema.sql` to reflect the current schema. This is mandatory and must not be deferred.
 
 ### Check src/README.md before any CommWise block write
 Before writing to any CommWise block that has a corresponding file in `src/`, check the tracking table in `src/README.md`. If the module is marked `YES` (dirty) or `NEW`, the local version diverges from CommWise — clarify with the developer before writing to CommWise.

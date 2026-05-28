@@ -1,6 +1,6 @@
 -- DDScope UI Test Tracker — SQLite schema
 -- Versioned in Git. The .db file is excluded via .gitignore.
--- Last updated: 2026-05-27
+-- Last updated: 2026-05-28
 
 -- UI test scenarios
 CREATE TABLE IF NOT EXISTS test_scenarios (
@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS test_issues (
   description TEXT NOT NULL,
   scenarios   TEXT,               -- legacy field — superseded by test_scenario_issues join table
   priority    TEXT NOT NULL,      -- high | medium | low
-  status      TEXT NOT NULL DEFAULT 'open' -- open | fixed | wontfix
+  status      TEXT NOT NULL DEFAULT 'open', -- open | fixed | wontfix
+  notes       TEXT                           -- free-text annotations (context, repro steps, decisions)
 );
 
 -- Scenario ↔ issue join table (replaces test_issues.scenarios)
