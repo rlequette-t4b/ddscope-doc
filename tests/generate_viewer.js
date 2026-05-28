@@ -413,6 +413,85 @@ function statusBadge(s) { return badge(s, s); }
 function typeBadge(t)   { return badge(t==='Bug'?'bug':t==='Improvement'?'improvement':'test', t); }
 function prioBadge(p)   { return '<span class="prio-'+p+'">'+p+'</span>'; }
 
+// ── State persistence ──────────────────────────────────────────────────────
+
+var LS_KEY = 'dds_test_viewer_state';
+
+function saveState() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      view: _view,
+      sfa: _sfa, sfs: _sfs, sq: _sq, ssc: _ssc, ssd: _ssd,
+      ift: _ift, ifs: _ifs, ifp: _ifp, iq: _iq, isc: _isc, isd: _isd
+    }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    var s = JSON.parse(raw);
+    if (s.view) _view = s.view;
+    if (s.sfa)  _sfa  = s.sfa;
+    if (s.sfs)  _sfs  = s.sfs;
+    if (s.sq)   _sq   = s.sq;
+    if (s.ssc)  _ssc  = s.ssc;
+    if (s.ssd !== undefined) _ssd = s.ssd;
+    if (s.ift)  _ift  = s.ift;
+    if (s.ifs)  _ifs  = s.ifs;
+    if (s.ifp)  _ifp  = s.ifp;
+    if (s.iq)   _iq   = s.iq;
+    if (s.isc)  _isc  = s.isc;
+    if (s.isd !== undefined) _isd = s.isd;
+  } catch(e) {}
+}
+
+function applyStateToUI() {
+  // View toggle buttons
+  document.getElementById('btn-view-scenarios').classList.toggle('active', _view==='scenarios');
+  document.getElementById('btn-view-issues').classList.toggle('active',    _view==='issues');
+  document.getElementById('view-scenarios').style.display = _view==='scenarios'?'':'none';
+  document.getElementById('view-issues').style.display    = _view==='issues'?'':'none';
+
+  // Area select
+  document.getElementById('select-area').value = _sfa;
+
+  // Scenario status filter buttons
+  document.querySelectorAll('[data-sf="status"]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.value===_sfs);
+  });
+
+  // Issue filter buttons
+  document.querySelectorAll('[data-if="type"]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.value===_ift);
+  });
+  document.querySelectorAll('[data-if="status"]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.value===_ifs);
+  });
+  document.querySelectorAll('[data-if="priority"]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.value===_ifp);
+  });
+
+  // Search inputs
+  document.getElementById('search-scenarios').value = _sq;
+  document.getElementById('search-issues').value    = _iq;
+
+  // Sort indicators — scenarios
+  document.querySelectorAll('th[data-sc]').forEach(function(th){
+    var col = th.dataset.sc;
+    th.classList.toggle('sorted', col===_ssc);
+    th.querySelector('.sa').textContent = col!==_ssc ? '\u2195' : (_ssd===1?'\u2191':'\u2193');
+  });
+
+  // Sort indicators — issues
+  document.querySelectorAll('th[data-ic]').forEach(function(th){
+    var col = th.dataset.ic;
+    th.classList.toggle('sorted', col===_isc);
+    th.querySelector('.sa').textContent = col!==_isc ? '\u2195' : (_isd===1?'\u2191':'\u2193');
+  });
+}
+
 // ── View switch ────────────────────────────────────────────────────────────
 
 var _view = 'scenarios';
@@ -428,6 +507,7 @@ function switchView(v) {
   _selS = null; _selI = null;
   document.getElementById('detail-scenario').classList.remove('visible');
   document.getElementById('detail-issue').classList.remove('visible');
+  saveState();
   if (v==='scenarios') renderScenarios();
   else renderIssues();
 }
@@ -545,6 +625,7 @@ function selectScenario(id) {
 // Scenario filters — Area select
 document.getElementById('select-area').addEventListener('change', function(){
   _sfa = this.value;
+  saveState();
   renderScenarios();
 });
 
@@ -555,11 +636,14 @@ document.querySelectorAll('[data-sf]').forEach(function(btn){
     document.querySelectorAll('[data-sf="'+f+'"]').forEach(function(b){b.classList.remove('active');});
     btn.classList.add('active');
     if(f==='status') _sfs=v;
+    saveState();
     renderScenarios();
   });
 });
 document.getElementById('search-scenarios').addEventListener('input', function(){
-  _sq=this.value.trim().toLowerCase(); renderScenarios();
+  _sq=this.value.trim().toLowerCase();
+  saveState();
+  renderScenarios();
 });
 document.querySelectorAll('th[data-sc]').forEach(function(th){
   th.addEventListener('click', function(){
@@ -569,6 +653,7 @@ document.querySelectorAll('th[data-sc]').forEach(function(th){
       h.classList.remove('sorted'); h.querySelector('.sa').textContent='\u2195';
     });
     th.classList.add('sorted'); th.querySelector('.sa').textContent=_ssd===1?'\u2191':'\u2193';
+    saveState();
     renderScenarios();
   });
 });
@@ -686,11 +771,14 @@ document.querySelectorAll('[data-if]').forEach(function(btn){
     document.querySelectorAll('[data-if="'+f+'"]').forEach(function(b){b.classList.remove('active');});
     btn.classList.add('active');
     if(f==='type') _ift=v; else if(f==='status') _ifs=v; else if(f==='priority') _ifp=v;
+    saveState();
     renderIssues();
   });
 });
 document.getElementById('search-issues').addEventListener('input', function(){
-  _iq=this.value.trim().toLowerCase(); renderIssues();
+  _iq=this.value.trim().toLowerCase();
+  saveState();
+  renderIssues();
 });
 document.querySelectorAll('th[data-ic]').forEach(function(th){
   th.addEventListener('click', function(){
@@ -700,6 +788,7 @@ document.querySelectorAll('th[data-ic]').forEach(function(th){
       h.classList.remove('sorted'); h.querySelector('.sa').textContent='\u2195';
     });
     th.classList.add('sorted'); th.querySelector('.sa').textContent=_isd===1?'\u2191':'\u2193';
+    saveState();
     renderIssues();
   });
 });
@@ -708,7 +797,10 @@ document.getElementById('di-close').addEventListener('click', function(){
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────────
-renderScenarios();
+loadState();
+applyStateToUI();
+if (_view==='issues') renderIssues();
+else renderScenarios();
 </script>
 </body>
 </html>`;

@@ -252,14 +252,14 @@
 <script>
 var SCENARIOS      = [
   {id:"1.1",area:"Settings",scenario:"Note category CRUD",feature:"FEAT-002",status:"pass",playwright:"—",instructions:"",issue_count:5,open_count:0,waiting_count:0,fixed_count:5,wontfix_count:0},
-  {id:"2.1",area:"Notes panel",scenario:"Notes panel visibility & state",feature:"FEAT-002",status:"open",playwright:"—",instructions:"",issue_count:4,open_count:3,waiting_count:0,fixed_count:1,wontfix_count:0},
-  {id:"2.2",area:"Notes panel",scenario:"Notes panel structure & organisation",feature:"FEAT-002",status:"fail",playwright:"—",instructions:"",issue_count:5,open_count:3,waiting_count:0,fixed_count:2,wontfix_count:0},
-  {id:"2.3",area:"Notes panel",scenario:"Notes panel CRUD",feature:"FEAT-002",status:"fail",playwright:"—",instructions:"",issue_count:3,open_count:3,waiting_count:0,fixed_count:0,wontfix_count:0},
+  {id:"2.1",area:"Notes panel",scenario:"Notes panel visibility & state",feature:"FEAT-002",status:"open",playwright:"—",instructions:"",issue_count:5,open_count:4,waiting_count:0,fixed_count:1,wontfix_count:0},
+  {id:"2.2",area:"Notes panel",scenario:"Notes panel structure & organisation",feature:"FEAT-002",status:"open",playwright:"—",instructions:"",issue_count:5,open_count:2,waiting_count:0,fixed_count:3,wontfix_count:0},
+  {id:"2.3",area:"Notes panel",scenario:"Notes panel CRUD",feature:"FEAT-002",status:"fail",playwright:"—",instructions:"",issue_count:3,open_count:2,waiting_count:0,fixed_count:1,wontfix_count:0},
   {id:"3.1",area:"Workspace & Projects",scenario:"New, Open, Save, Close",feature:"FEAT-002",status:"open",playwright:"—",instructions:"",issue_count:1,open_count:1,waiting_count:0,fixed_count:0,wontfix_count:0}
 ];
 var ISSUES         = [
-  {id:"B2",type:"Bug",description:"Empty note created when clicking outside after \"+ note\" with no text",priority:"medium",status:"open",notes:""},
-  {id:"B3",type:"Bug",description:"Empty categories (no notes) shown in panel — should be hidden by default",priority:"medium",status:"open",notes:""},
+  {id:"B2",type:"Bug",description:"Empty note created when clicking outside after \"+ note\" with no text",priority:"medium",status:"fixed",notes:""},
+  {id:"B3",type:"Bug",description:"Empty categories (no notes) shown in panel — should be hidden by default",priority:"medium",status:"fixed",notes:""},
   {id:"B4",type:"Bug",description:"No way to re-expand the panel once collapsed — blocking on project reopen if collapsed state was persisted",priority:"high",status:"fixed",notes:""},
   {id:"B5",type:"Bug",description:"Undo on note create only clears the content — note record not removed",priority:"high",status:"open",notes:""},
   {id:"B6",type:"Bug",description:"Double Edit/Delete buttons rendered per row in Settings note categories table — regression",priority:"high",status:"fixed",notes:""},
@@ -269,6 +269,8 @@ var ISSUES         = [
   {id:"I4",type:"Improvement",description:"Panel collapse/expand state should persist across map switches",priority:"medium",status:"open",notes:""},
   {id:"I5",type:"Improvement",description:"Add a Close project button (note for backlog)",priority:"low",status:"open",notes:""},
   {id:"I6",type:"Improvement",description:"Add toggle Show all categories in notes panel header (default off) — IMPLEMENTED",priority:"medium",status:"fixed",notes:""},
+  {id:"I7",type:"Improvement",description:"Restore last active map on project open — localStorage key dds_active_map_{projectId}, session comfort only (not persisted in project file)",priority:"low",status:"open",notes:""},
+  {id:"I8",type:"Improvement",description:"Persist note category collapsed/expanded state per map — store in map_note_categories.collapsed (boolean)",priority:"medium",status:"open",notes:""},
   {id:"T1",type:"Test",description:"Panel appears below canvas when a project is opened",priority:"low",status:"fixed",notes:""},
   {id:"T2",type:"Test",description:"Note CRUD: add, edit inline, delete",priority:"low",status:"fixed",notes:""},
   {id:"T3",type:"Test",description:"Click category header to collapse, click again to expand",priority:"low",status:"fixed",notes:""},
@@ -282,7 +284,7 @@ var ISSUES         = [
 var SCENARIO_ISSUES = {
   "1.1":["T6","B6","T7","T8","T9"],
   "3.1":["I5"],
-  "2.1":["I4","I5","B4","T5"],
+  "2.1":["I4","I5","B4","T5","I8"],
   "2.2":["B3","I1","I2","I6","T3"],
   "2.3":["B2","B5","I3"]
 };
@@ -303,7 +305,8 @@ var ISSUE_SCENARIOS = {
   "T3":["2.2"],
   "B2":["2.3"],
   "B5":["2.3"],
-  "I3":["2.3"]
+  "I3":["2.3"],
+  "I8":["2.1"]
 };
 var SCENARIO_MAP   = {};
 SCENARIOS.forEach(function(s){ SCENARIO_MAP[s.id]=s; });
@@ -318,6 +321,85 @@ function badge(cls, label) {
 function statusBadge(s) { return badge(s, s); }
 function typeBadge(t)   { return badge(t==='Bug'?'bug':t==='Improvement'?'improvement':'test', t); }
 function prioBadge(p)   { return '<span class="prio-'+p+'">'+p+'</span>'; }
+
+// ── State persistence ──────────────────────────────────────────────────────
+
+var LS_KEY = 'dds_test_viewer_state';
+
+function saveState() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      view: _view,
+      sfa: _sfa, sfs: _sfs, sq: _sq, ssc: _ssc, ssd: _ssd,
+      ift: _ift, ifs: _ifs, ifp: _ifp, iq: _iq, isc: _isc, isd: _isd
+    }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    var s = JSON.parse(raw);
+    if (s.view) _view = s.view;
+    if (s.sfa)  _sfa  = s.sfa;
+    if (s.sfs)  _sfs  = s.sfs;
+    if (s.sq)   _sq   = s.sq;
+    if (s.ssc)  _ssc  = s.ssc;
+    if (s.ssd !== undefined) _ssd = s.ssd;
+    if (s.ift)  _ift  = s.ift;
+    if (s.ifs)  _ifs  = s.ifs;
+    if (s.ifp)  _ifp  = s.ifp;
+    if (s.iq)   _iq   = s.iq;
+    if (s.isc)  _isc  = s.isc;
+    if (s.isd !== undefined) _isd = s.isd;
+  } catch(e) {}
+}
+
+function applyStateToUI() {
+  // View toggle buttons
+  document.getElementById('btn-view-scenarios').classList.toggle('active', _view==='scenarios');
+  document.getElementById('btn-view-issues').classList.toggle('active',    _view==='issues');
+  document.getElementById('view-scenarios').style.display = _view==='scenarios'?'':'none';
+  document.getElementById('view-issues').style.display    = _view==='issues'?'':'none';
+
+  // Area select
+  document.getElementById('select-area').value = _sfa;
+
+  // Scenario status filter buttons
+  document.querySelectorAll('[data-sf="status"]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.value===_sfs);
+  });
+
+  // Issue filter buttons
+  document.querySelectorAll('[data-if="type"]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.value===_ift);
+  });
+  document.querySelectorAll('[data-if="status"]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.value===_ifs);
+  });
+  document.querySelectorAll('[data-if="priority"]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.value===_ifp);
+  });
+
+  // Search inputs
+  document.getElementById('search-scenarios').value = _sq;
+  document.getElementById('search-issues').value    = _iq;
+
+  // Sort indicators — scenarios
+  document.querySelectorAll('th[data-sc]').forEach(function(th){
+    var col = th.dataset.sc;
+    th.classList.toggle('sorted', col===_ssc);
+    th.querySelector('.sa').textContent = col!==_ssc ? '↕' : (_ssd===1?'↑':'↓');
+  });
+
+  // Sort indicators — issues
+  document.querySelectorAll('th[data-ic]').forEach(function(th){
+    var col = th.dataset.ic;
+    th.classList.toggle('sorted', col===_isc);
+    th.querySelector('.sa').textContent = col!==_isc ? '↕' : (_isd===1?'↑':'↓');
+  });
+}
 
 // ── View switch ────────────────────────────────────────────────────────────
 
@@ -334,6 +416,7 @@ function switchView(v) {
   _selS = null; _selI = null;
   document.getElementById('detail-scenario').classList.remove('visible');
   document.getElementById('detail-issue').classList.remove('visible');
+  saveState();
   if (v==='scenarios') renderScenarios();
   else renderIssues();
 }
@@ -451,6 +534,7 @@ function selectScenario(id) {
 // Scenario filters — Area select
 document.getElementById('select-area').addEventListener('change', function(){
   _sfa = this.value;
+  saveState();
   renderScenarios();
 });
 
@@ -461,11 +545,14 @@ document.querySelectorAll('[data-sf]').forEach(function(btn){
     document.querySelectorAll('[data-sf="'+f+'"]').forEach(function(b){b.classList.remove('active');});
     btn.classList.add('active');
     if(f==='status') _sfs=v;
+    saveState();
     renderScenarios();
   });
 });
 document.getElementById('search-scenarios').addEventListener('input', function(){
-  _sq=this.value.trim().toLowerCase(); renderScenarios();
+  _sq=this.value.trim().toLowerCase();
+  saveState();
+  renderScenarios();
 });
 document.querySelectorAll('th[data-sc]').forEach(function(th){
   th.addEventListener('click', function(){
@@ -475,6 +562,7 @@ document.querySelectorAll('th[data-sc]').forEach(function(th){
       h.classList.remove('sorted'); h.querySelector('.sa').textContent='↕';
     });
     th.classList.add('sorted'); th.querySelector('.sa').textContent=_ssd===1?'↑':'↓';
+    saveState();
     renderScenarios();
   });
 });
@@ -592,11 +680,14 @@ document.querySelectorAll('[data-if]').forEach(function(btn){
     document.querySelectorAll('[data-if="'+f+'"]').forEach(function(b){b.classList.remove('active');});
     btn.classList.add('active');
     if(f==='type') _ift=v; else if(f==='status') _ifs=v; else if(f==='priority') _ifp=v;
+    saveState();
     renderIssues();
   });
 });
 document.getElementById('search-issues').addEventListener('input', function(){
-  _iq=this.value.trim().toLowerCase(); renderIssues();
+  _iq=this.value.trim().toLowerCase();
+  saveState();
+  renderIssues();
 });
 document.querySelectorAll('th[data-ic]').forEach(function(th){
   th.addEventListener('click', function(){
@@ -606,6 +697,7 @@ document.querySelectorAll('th[data-ic]').forEach(function(th){
       h.classList.remove('sorted'); h.querySelector('.sa').textContent='↕';
     });
     th.classList.add('sorted'); th.querySelector('.sa').textContent=_isd===1?'↑':'↓';
+    saveState();
     renderIssues();
   });
 });
@@ -614,7 +706,10 @@ document.getElementById('di-close').addEventListener('click', function(){
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────────
-renderScenarios();
+loadState();
+applyStateToUI();
+if (_view==='issues') renderIssues();
+else renderScenarios();
 </script>
 </body>
 </html>
