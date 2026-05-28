@@ -9,7 +9,8 @@
 //
 // Data sources:
 //   view  v_scenario_status     → SCENARIOS (id, area, scenario, feature, status [calculated],
-//                                             playwright, instructions, open_count, fixed_count, wontfix_count)
+//                                             playwright, instructions, open_count, waiting_count,
+//                                             fixed_count, wontfix_count)
 //   table test_issues           → ISSUES (id, type, description, priority, status)
 //   table test_scenario_issues  → join table (scenario_id, issue_id)
 //
@@ -35,17 +36,18 @@ const db = new Database(DB_PATH, { readonly: true });
 
 const SCENARIOS = db.prepare('SELECT * FROM v_scenario_status ORDER BY id').all().map(function(r) {
   return {
-    id:           r.id,
-    area:         r.area,
-    scenario:     r.scenario,
-    feature:      r.feature,
-    status:       r.status,           // calculated: pass | fail | empty
-    playwright:   r.playwright || '—',
-    instructions: r.instructions || '',
-    issue_count:  r.issue_count  || 0,
-    open_count:   r.open_count   || 0,
-    fixed_count:  r.fixed_count  || 0,
-    wontfix_count:r.wontfix_count|| 0
+    id:            r.id,
+    area:          r.area,
+    scenario:      r.scenario,
+    feature:       r.feature,
+    status:        r.status,           // calculated: pass | fail | open | waiting | empty
+    playwright:    r.playwright || '—',
+    instructions:  r.instructions || '',
+    issue_count:   r.issue_count   || 0,
+    open_count:    r.open_count    || 0,
+    waiting_count: r.waiting_count || 0,
+    fixed_count:   r.fixed_count   || 0,
+    wontfix_count: r.wontfix_count || 0
   };
 });
 
@@ -55,7 +57,7 @@ const ISSUES = db.prepare('SELECT * FROM test_issues ORDER BY id').all().map(fun
     type:        r.type,
     description: r.description,
     priority:    r.priority,
-    status:      r.status || 'open',  // open | fixed | wontfix
+    status:      r.status || 'open',  // open | waiting | fixed | wontfix
     notes:       r.notes || ''
   };
 });
@@ -93,8 +95,11 @@ function scenariosJson() {
     return '  {id:' + jsStr(s.id) + ',area:' + jsStr(s.area) + ',scenario:' + jsStr(s.scenario) +
       ',feature:' + jsStr(s.feature) + ',status:' + jsStr(s.status) +
       ',playwright:' + jsStr(s.playwright) + ',instructions:' + jsStr(s.instructions) +
-      ',issue_count:' + jsNum(s.issue_count) + ',open_count:' + jsNum(s.open_count) +
-      ',fixed_count:' + jsNum(s.fixed_count) + ',wontfix_count:' + jsNum(s.wontfix_count) + '}';
+      ',issue_count:' + jsNum(s.issue_count) +
+      ',open_count:' + jsNum(s.open_count) +
+      ',waiting_count:' + jsNum(s.waiting_count) +
+      ',fixed_count:' + jsNum(s.fixed_count) +
+      ',wontfix_count:' + jsNum(s.wontfix_count) + '}';
   }).join(',\n') + '\n]';
 }
 
@@ -119,6 +124,21 @@ function issueScenariosJson() {
   return '{\n' + entries.join(',\n') + '\n}';
 }
 
+// ── Area select — generated dynamically from distinct areas in SCENARIOS ──
+
+function areaSelectHtml() {
+  const seen = new Set();
+  const areas = [];
+  SCENARIOS.forEach(function(s) {
+    if (!seen.has(s.area)) { seen.add(s.area); areas.push(s.area); }
+  });
+  const options = ['<option value="all">All</option>']
+    .concat(areas.map(function(a) {
+      return '<option value="' + a.replace(/"/g, '&quot;') + '">' + a + '</option>';
+    }));
+  return '<select id="select-area" class="filter-select">' + options.join('') + '</select>';
+}
+
 var today = new Date().toISOString().slice(0, 10);
 
 // ── HTML ───────────────────────────────────────────────────────────────────
@@ -135,9 +155,10 @@ var html = `<!DOCTYPE html>
     --bg:#f5f6f8; --surface:#fff; --border:#e2e5eb; --text:#1a2130; --muted:#6b7280; --subtle:#9ca3af;
     --pass:#16a34a;    --pass-bg:#f0fdf4;   --pass-bd:#bbf7d0;
     --fail:#dc2626;    --fail-bg:#fef2f2;   --fail-bd:#fecaca;
+    --open:#d97706;    --open-bg:#fffbeb;   --open-bd:#fde68a;
+    --waiting:#7c3aed; --waiting-bg:#f5f3ff;--waiting-bd:#ddd6fe;
     --empty:#9ca3af;   --empty-bg:#f8f9fb;  --empty-bd:#e5e7eb;
     --fixed:#16a34a;   --fixed-bg:#f0fdf4;  --fixed-bd:#bbf7d0;
-    --open:#dc2626;    --open-bg:#fef2f2;   --open-bd:#fecaca;
     --wontfix:#6b7280; --wontfix-bg:#f8f9fb;--wontfix-bd:#e5e7eb;
     --accent:#2563eb;  --accent-bg:#eff6ff; --accent-bd:#bfdbfe;
     --partial:#d97706; --partial-bg:#fffbeb;--partial-bd:#fde68a;
@@ -164,18 +185,21 @@ var html = `<!DOCTYPE html>
   .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
   .stat-pass    .stat-num{color:var(--pass)}
   .stat-fail    .stat-num{color:var(--fail)}
-  .stat-empty   .stat-num{color:var(--empty)}
   .stat-open    .stat-num{color:var(--open)}
+  .stat-waiting .stat-num{color:var(--waiting)}
+  .stat-empty   .stat-num{color:var(--empty)}
   .stat-fixed   .stat-num{color:var(--fixed)}
   .stat-wontfix .stat-num{color:var(--wontfix)}
 
   /* Filters */
   .filters{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-  .filter-group{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px}
-  .filter-label{font-size:10px;color:var(--muted);padding:0 6px;text-transform:uppercase;letter-spacing:.08em}
+  .filter-group{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 6px}
+  .filter-label{font-size:10px;color:var(--muted);padding:0 4px;text-transform:uppercase;letter-spacing:.08em}
   .filter-btn{font-size:12px;font-family:inherit;padding:3px 10px;border-radius:4px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;transition:all .1s}
   .filter-btn:hover{background:var(--bg);color:var(--text)}
   .filter-btn.active{background:var(--accent);color:#fff}
+  .filter-select{font-family:inherit;font-size:12px;color:var(--text);background:var(--surface);border:none;outline:none;padding:3px 6px;cursor:pointer;border-radius:4px}
+  .filter-select:focus{outline:2px solid var(--accent-bd)}
   .search-wrap{margin-left:auto}
   .search-input{font-family:inherit;font-size:13px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 11px;width:220px;outline:none;transition:border-color .12s}
   .search-input:focus{border-color:var(--accent)}
@@ -207,8 +231,9 @@ var html = `<!DOCTYPE html>
   .badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em}
   .badge-pass    {background:var(--pass-bg);    color:var(--pass);    border:1px solid var(--pass-bd)}
   .badge-fail    {background:var(--fail-bg);    color:var(--fail);    border:1px solid var(--fail-bd)}
-  .badge-empty   {background:var(--empty-bg);   color:var(--empty);   border:1px solid var(--empty-bd)}
   .badge-open    {background:var(--open-bg);    color:var(--open);    border:1px solid var(--open-bd)}
+  .badge-waiting {background:var(--waiting-bg); color:var(--waiting); border:1px solid var(--waiting-bd)}
+  .badge-empty   {background:var(--empty-bg);   color:var(--empty);   border:1px solid var(--empty-bd)}
   .badge-fixed   {background:var(--fixed-bg);   color:var(--fixed);   border:1px solid var(--fixed-bd)}
   .badge-wontfix {background:var(--wontfix-bg); color:var(--wontfix); border:1px solid var(--wontfix-bd)}
   .badge-bug     {background:var(--fail-bg);    color:var(--fail);    border:1px solid var(--fail-bd)}
@@ -259,15 +284,15 @@ var html = `<!DOCTYPE html>
   <div class="filters" id="filters-scenarios">
     <div class="filter-group">
       <span class="filter-label">Area</span>
-      <button class="filter-btn active" data-sf="area" data-value="all">All</button>
-      <button class="filter-btn" data-sf="area" data-value="Settings">C1 Settings</button>
-      <button class="filter-btn" data-sf="area" data-value="Notes panel">C2 Notes panel</button>
+      ${areaSelectHtml()}
     </div>
     <div class="filter-group">
       <span class="filter-label">Status</span>
       <button class="filter-btn active" data-sf="status" data-value="all">All</button>
       <button class="filter-btn" data-sf="status" data-value="pass">Pass</button>
       <button class="filter-btn" data-sf="status" data-value="fail">Fail</button>
+      <button class="filter-btn" data-sf="status" data-value="open">Open</button>
+      <button class="filter-btn" data-sf="status" data-value="waiting">Waiting</button>
       <button class="filter-btn" data-sf="status" data-value="empty">Empty</button>
     </div>
     <div class="search-wrap"><input class="search-input" id="search-scenarios" type="text" placeholder="Search scenarios\u2026"></div>
@@ -321,6 +346,7 @@ var html = `<!DOCTYPE html>
       <span class="filter-label">Status</span>
       <button class="filter-btn active" data-if="status" data-value="all">All</button>
       <button class="filter-btn" data-if="status" data-value="open">Open</button>
+      <button class="filter-btn" data-if="status" data-value="waiting">Waiting</button>
       <button class="filter-btn" data-if="status" data-value="fixed">Fixed</button>
       <button class="filter-btn" data-if="status" data-value="wontfix">Wontfix</button>
     </div>
@@ -431,14 +457,14 @@ function renderScenarios() {
     var tr = document.createElement('tr');
     if (!match) { tr.classList.add('hidden'); } else { vis++; }
     if (s.id===_selS) tr.classList.add('selected');
-    // issue count display
-    var countHtml = s.issue_count===0
+    var countParts = [];
+    if (s.open_count    > 0) countParts.push('<span style="color:var(--open)">'+s.open_count+' open</span>');
+    if (s.waiting_count > 0) countParts.push('<span style="color:var(--waiting)">'+s.waiting_count+' waiting</span>');
+    if (s.fixed_count   > 0) countParts.push('<span style="color:var(--fixed)">'+s.fixed_count+' fixed</span>');
+    if (s.wontfix_count > 0) countParts.push('<span style="color:var(--wontfix)">'+s.wontfix_count+' wontfix</span>');
+    var countHtml = s.issue_count === 0
       ? '<span style="color:var(--subtle)">—</span>'
-      : '<span style="font-size:11px">'+(s.open_count>0?'<span style="color:var(--open)">'+s.open_count+' open</span>':'')
-        +(s.open_count>0&&s.fixed_count>0?' · ':'')
-        +(s.fixed_count>0?'<span style="color:var(--fixed)">'+s.fixed_count+' fixed</span>':'')
-        +(s.wontfix_count>0?' · <span style="color:var(--wontfix)">'+s.wontfix_count+' wontfix</span>':'')
-        +'</span>';
+      : '<span style="font-size:11px">'+countParts.join(' · ')+'</span>';
     tr.innerHTML = '<td class="cell-id">'+s.id+'</td>'
       +'<td class="cell-area">'+s.area+'</td>'
       +'<td class="cell-scenario">'+s.scenario+'</td>'
@@ -455,7 +481,7 @@ function renderScenarios() {
 }
 
 function renderStatsScenarios(vis) {
-  var c = {pass:0, fail:0, empty:0};
+  var c = {pass:0, fail:0, open:0, waiting:0, empty:0};
   SCENARIOS.forEach(function(s){
     if ((_sfa==='all'||s.area===_sfa) && (_sfs==='all'||s.status===_sfs) && (!_sq||s.scenario.toLowerCase().includes(_sq)))
       c[s.status] = (c[s.status]||0)+1;
@@ -463,6 +489,8 @@ function renderStatsScenarios(vis) {
   document.getElementById('stats-scenarios').innerHTML =
     '<div class="stat stat-pass"><div class="stat-num">'+c.pass+'</div><div class="stat-label">Pass</div></div>'+
     '<div class="stat stat-fail"><div class="stat-num">'+c.fail+'</div><div class="stat-label">Fail</div></div>'+
+    '<div class="stat stat-open"><div class="stat-num">'+c.open+'</div><div class="stat-label">Open</div></div>'+
+    '<div class="stat stat-waiting"><div class="stat-num">'+c.waiting+'</div><div class="stat-label">Waiting</div></div>'+
     '<div class="stat stat-empty"><div class="stat-num">'+c.empty+'</div><div class="stat-label">Empty</div></div>'+
     '<div class="stat"><div class="stat-num" style="color:var(--muted)">'+vis+' / '+SCENARIOS.length+'</div><div class="stat-label">Showing</div></div>';
 }
@@ -483,7 +511,6 @@ function selectScenario(id) {
     '<span class="detail-meta-item"><strong>Status</strong> '+statusBadge(s.status)+'</span>'+
     '<span class="detail-meta-item"><strong>Playwright</strong> '+s.playwright+'</span>';
 
-  // Instructions
   var instrSection = document.getElementById('ds-instructions-section');
   var instrEl = document.getElementById('ds-instructions');
   if (s.instructions) {
@@ -493,7 +520,6 @@ function selectScenario(id) {
     instrSection.style.display = 'none';
   }
 
-  // Linked issues
   var issuesEl = document.getElementById('ds-issues');
   issuesEl.innerHTML = '';
   var issueIds = SCENARIO_ISSUES[id] || [];
@@ -516,13 +542,19 @@ function selectScenario(id) {
   panel.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
-// Scenario filters
+// Scenario filters — Area select
+document.getElementById('select-area').addEventListener('change', function(){
+  _sfa = this.value;
+  renderScenarios();
+});
+
+// Scenario filters — Status buttons
 document.querySelectorAll('[data-sf]').forEach(function(btn){
   btn.addEventListener('click', function(){
     var f=btn.dataset.sf, v=btn.dataset.value;
     document.querySelectorAll('[data-sf="'+f+'"]').forEach(function(b){b.classList.remove('active');});
     btn.classList.add('active');
-    if(f==='area') _sfa=v; else if(f==='status') _sfs=v;
+    if(f==='status') _sfs=v;
     renderScenarios();
   });
 });
@@ -551,7 +583,6 @@ var _ift='all', _ifs='all', _ifp='all', _iq='', _isc='id', _isd=1, _selI=null;
 function renderIssues() {
   var rows = ISSUES.slice().sort(function(a,b){
     if (_isc==='id') {
-      // sort B before I, then numeric
       var ap=a.id.match(/([A-Z]+)(\\d+)/), bp=b.id.match(/([A-Z]+)(\\d+)/);
       if (!ap||!bp) return 0;
       return _isd*((ap[1]<bp[1]?-1:ap[1]>bp[1]?1:0) || (parseInt(ap[2])-parseInt(bp[2])));
@@ -590,7 +621,7 @@ function renderIssues() {
 }
 
 function renderStatsIssues(vis) {
-  var c = {open:0, fixed:0, wontfix:0};
+  var c = {open:0, waiting:0, fixed:0, wontfix:0};
   ISSUES.forEach(function(i){
     if ((_ift==='all'||i.type===_ift) && (_ifs==='all'||i.status===_ifs) && (_ifp==='all'||i.priority===_ifp)
         && (!_iq||i.description.toLowerCase().includes(_iq)))
@@ -598,6 +629,7 @@ function renderStatsIssues(vis) {
   });
   document.getElementById('stats-issues').innerHTML =
     '<div class="stat stat-open"><div class="stat-num">'+c.open+'</div><div class="stat-label">Open</div></div>'+
+    '<div class="stat stat-waiting"><div class="stat-num">'+c.waiting+'</div><div class="stat-label">Waiting</div></div>'+
     '<div class="stat stat-fixed"><div class="stat-num">'+c.fixed+'</div><div class="stat-label">Fixed</div></div>'+
     '<div class="stat stat-wontfix"><div class="stat-num">'+c.wontfix+'</div><div class="stat-label">Wontfix</div></div>'+
     '<div class="stat"><div class="stat-num" style="color:var(--muted)">'+vis+' / '+ISSUES.length+'</div><div class="stat-label">Showing</div></div>';
@@ -617,7 +649,6 @@ function selectIssue(id) {
     '<span class="detail-meta-item"><strong>Status</strong> '+statusBadge(issue.status)+'</span>'+
     '<span class="detail-meta-item"><strong>Priority</strong> '+prioBadge(issue.priority)+'</span>';
 
-  // Notes
   var diNotesSection = document.getElementById('di-notes-section');
   var diNotesEl = document.getElementById('di-notes');
   if (issue.notes) {

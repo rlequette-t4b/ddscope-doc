@@ -80,6 +80,7 @@ Reads `ddscope_tests.db` directly and rewrites `DDScope_TestUI_viewer.html`. Nev
 
 - **C1** — Settings
 - **C2** — Notes panel
+- **C3** — Workspace & Projects
 
 ### Issue id format
 

@@ -18,11 +18,11 @@ CREATE TABLE IF NOT EXISTS test_scenarios (
 -- Bugs and improvements
 CREATE TABLE IF NOT EXISTS test_issues (
   id          TEXT PRIMARY KEY,   -- e.g. "B4", "I1"
-  type        TEXT NOT NULL,      -- Bug | Improvement
+  type        TEXT NOT NULL,      -- Bug | Improvement | Test
   description TEXT NOT NULL,
   scenarios   TEXT,               -- legacy field — superseded by test_scenario_issues join table
   priority    TEXT NOT NULL,      -- high | medium | low
-  status      TEXT NOT NULL DEFAULT 'open', -- open | fixed | wontfix
+  status      TEXT NOT NULL DEFAULT 'open', -- open | waiting | fixed | wontfix
   notes       TEXT                           -- free-text annotations (context, repro steps, decisions)
 );
 
@@ -36,10 +36,13 @@ CREATE TABLE IF NOT EXISTS test_scenario_issues (
 );
 
 -- Calculated scenario status view
--- status rules:
---   no linked issues          → 'empty'
---   at least one issue 'open' → 'fail'
---   all issues 'fixed' or 'wontfix' → 'pass'
+-- status rules (in priority order):
+--   no linked issues                        → 'empty'
+--   at least one Bug with status 'open'     → 'fail'
+--   at least one issue with status 'open'   → 'open'
+--   at least one issue with status 'waiting'→ 'waiting'
+--   all issues 'fixed' or 'wontfix'         → 'pass'
+--   fallback                                → 'empty'
 CREATE VIEW IF NOT EXISTS v_scenario_status AS
 SELECT
   s.id,
@@ -51,13 +54,17 @@ SELECT
   s.notes,
   CASE
     WHEN COUNT(si.issue_id) = 0 THEN 'empty'
-    WHEN SUM(CASE WHEN i.status = 'open' THEN 1 ELSE 0 END) > 0 THEN 'fail'
-    ELSE 'pass'
+    WHEN SUM(CASE WHEN i.type = 'Bug' AND i.status = 'open' THEN 1 ELSE 0 END) > 0 THEN 'fail'
+    WHEN SUM(CASE WHEN i.status = 'open'    THEN 1 ELSE 0 END) > 0 THEN 'open'
+    WHEN SUM(CASE WHEN i.status = 'waiting' THEN 1 ELSE 0 END) > 0 THEN 'waiting'
+    WHEN SUM(CASE WHEN i.status IN ('fixed','wontfix') THEN 1 ELSE 0 END) = COUNT(si.issue_id) THEN 'pass'
+    ELSE 'empty'
   END AS status,
-  COUNT(si.issue_id)                                          AS issue_count,
-  SUM(CASE WHEN i.status = 'open'    THEN 1 ELSE 0 END)      AS open_count,
-  SUM(CASE WHEN i.status = 'fixed'   THEN 1 ELSE 0 END)      AS fixed_count,
-  SUM(CASE WHEN i.status = 'wontfix' THEN 1 ELSE 0 END)      AS wontfix_count
+  COUNT(si.issue_id)                                             AS issue_count,
+  SUM(CASE WHEN i.status = 'open'    THEN 1 ELSE 0 END)         AS open_count,
+  SUM(CASE WHEN i.status = 'waiting' THEN 1 ELSE 0 END)         AS waiting_count,
+  SUM(CASE WHEN i.status = 'fixed'   THEN 1 ELSE 0 END)         AS fixed_count,
+  SUM(CASE WHEN i.status = 'wontfix' THEN 1 ELSE 0 END)         AS wontfix_count
 FROM test_scenarios s
 LEFT JOIN test_scenario_issues si ON si.scenario_id = s.id
 LEFT JOIN test_issues i ON i.id = si.issue_id
