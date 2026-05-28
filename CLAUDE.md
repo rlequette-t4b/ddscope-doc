@@ -98,6 +98,12 @@ After creating or modifying any file in `src/`, immediately update the tracking 
 
 This rule applies even when the change is minor — the tracking table is the only reliable indicator of what is in sync with CommWise.
 
+### Check src/README.md before any CommWise block write
+Before writing to any CommWise block that has a corresponding file in `src/`, check the tracking table in `src/README.md`. If the module is marked `YES` (dirty) or `NEW`, the local version diverges from CommWise — clarify with the developer before writing to CommWise.
+
+**render-dependent modules have no file in src/ — go directly to CommWise.**
+Modules with `testability: render-dependent` (e.g. `DDS_NOTES_UI`, `DDS_MAP`, `DDS_PANEL`, `DDS_MAP_UI`, `DDS_SWIMLANES`, `DDS_FLOW_UI`, `DDS_NODE_UI`, `DDS_AI_UI`, etc.) are never extracted to `src/`. Do not look for them there. To read or modify them, use `commwise_get_block` directly.
+
 ### UI test tracking
 When telling the developer to test something that relates to a scenario in `docs/DDScope_TestUI.md`, always reference the scenario index (C.S format) and its short description. Example: *"À tester : **2.3** Categories in Note Panel, **2.9** Collapse and expand the whole panel."*
 
@@ -109,8 +115,12 @@ commands:execute_command  command="node"  args=["C:\\Users\\RemiLequette\\Develo
 
 If the write included a schema change (CREATE TABLE, ALTER TABLE, CREATE VIEW, DROP TABLE, DROP VIEW) — immediately update `tests/schema.sql` to reflect the current schema. This is mandatory and must not be deferred.
 
-### Check src/README.md before any CommWise block write
-Before writing to any CommWise block that has a corresponding file in `src/`, check the tracking table in `src/README.md`. If the module is marked `YES` (dirty) or `NEW`, the local version diverges from CommWise — clarify with the developer before writing to CommWise.
+### Debug and fix — keep responses concise
+When diagnosing and fixing bugs, minimise chat volume:
+- State the cause in one sentence.
+- State the fix in one sentence.
+- Execute without further commentary.
+- No intermediate summaries, no re-quoting of source code, no step-by-step narration after the plan is confirmed.
 
 ---
 

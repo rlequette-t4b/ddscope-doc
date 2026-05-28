@@ -73,7 +73,7 @@ See **[DDScope_AI_UI.md](DDScope_AI_UI.md)** for the full AI assistant panel spe
 | 1.11    | May 2026 | Annotations feature: toolbar button, canvas interactions, side panel, table view, Elements panel, Remove modal |
 | 1.12    | May 2026 | Undo/Redo buttons in nav bar: placement, keyboard shortcuts, state sync via DDS_TRANSACTION.onChange, view refresh after undo/redo |
 | 1.13    | May 2026 | AI Assistant Panel extracted to DDScope_AI_UI.md |
-| 1.14    | May 2026 | §8 Notes panel added: collapse/expand toggle, drag-to-resize, persistence of collapsed state and height per map |
+| 1.14    | May 2026 | §8 Notes panel added: Notes toolbar button (toggle show/hide), drag-to-resize, persistence of visible state and height per map |
 
 ---
 
@@ -312,6 +312,7 @@ Y snap uses neighbours aligned on the same X column; X snap uses neighbours alig
 | **Layout**           | BFS-based auto-layout per swim-lane. Nodes without a swim-lane are not repositioned. Ghost note nodes are excluded. Flows with `layout_offset = 0` are excluded from rank computation. Flows with `layout_offset = N > 1` impose a minimum column distance of `N` between source and target. Bidirectional flows with `layout_direction_inverted = true` have their source and target swapped in the BFS graph. Positions saved to `map_nodes`. |
 | **Direction toggle** | Toggles `direction` between `right-left` (← ←, default) and `left-right` (→ →). Saved to `maps[].direction`.                             |
 | **Legend**           | Toggles the legend overlay. State persisted in `maps[].legend_visible`.                                                                   |
+| **Notes**            | Toggles the notes panel (show/hide). Placed to the right of Legend. State persisted in `maps[].notes_panel_visible`.                      |
 | **Remove**           | Active when a node, flow, or swim-lane is selected. Opens the Remove modal (see §5 — Remove modal). |
 
 ### Remove modal
@@ -452,15 +453,15 @@ All changes are persisted on Save. If no project is open, a placeholder is shown
 
 The notes panel is displayed below the Cytoscape canvas when a project is open on the Map tab. It shows all project notes organised by category. See `DDScope_DataModel.md` §10a–§10b for the note and note_category data model.
 
-### Collapse / expand
+### Show / hide
 
-A toggle button in the panel header collapses the panel to header height or restores it to its previous height. The collapsed/expanded state is persisted per map in `maps[].notes_panel_collapsed` (boolean, default `false`).
+The panel is controlled by the **Notes** button in the map toolbar (to the right of Legend). Clicking it toggles the panel between fully visible and fully hidden (`display: none`). The visible state is persisted per map in `maps[].notes_panel_visible` (boolean, default `false` — hidden by default).
 
-**Critical constraint:** when the panel loads in collapsed state, the header must remain visible and the toggle button must remain clickable — there must always be a way to re-expand. The toggle button must never be hidden or inaccessible in the collapsed state.
+On project open and map switch, `DDS_NOTES_UI` reads `notes_panel_visible` and applies it immediately before rendering the panel content.
 
 ### Drag to resize
 
-A drag handle on the top edge of the panel allows resizing it vertically. The height is persisted per map in `maps[].notes_panel_height` (integer px, default `null` = renders at default height). The persisted height is restored when the panel is re-expanded after a collapse.
+A drag handle on the top edge of the panel allows resizing it vertically. The height is persisted per map in `maps[].notes_panel_height` (integer px, default `null` = renders at default height). The persisted height is restored when the panel is shown after being hidden.
 
 ### Persistence behaviour
 
@@ -468,10 +469,8 @@ Both fields are written directly to `DDS_STORE` by `DDS_NOTES_UI` without transa
 
 | Action | Field updated | Default |
 |---|---|---|
-| Toggle collapse | `maps[activeMapId].notes_panel_collapsed` | `false` |
+| Notes toolbar button click | `maps[activeMapId].notes_panel_visible` | `false` |
 | Drag handle released | `maps[activeMapId].notes_panel_height` | `null` |
-
-On project open and map switch, `DDS_NOTES_UI` reads these two fields and applies them immediately before rendering the panel content.
 
 ### Category visibility
 
