@@ -44,8 +44,6 @@
     - [Drag to resize](#drag-to-resize)
     - [Persistence behaviour](#persistence-behaviour)
     - [Category visibility](#category-visibility)
-  - [9. Known Traps](#9-known-traps)
-    - [Disabled nav buttons — CommWise visibility override](#disabled-nav-buttons--commwise-visibility-override)
 
 # DDScope — User Interface
 
@@ -94,7 +92,7 @@ See **[DDScope_AI_UI.md](DDScope_AI_UI.md)** for the full AI assistant panel spe
 
 ---
 
-*v1.15 — Draft — May 2026*
+*v1.16 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -126,6 +124,7 @@ See **[DDScope_AI_UI.md](DDScope_AI_UI.md)** for the full AI assistant panel spe
 | 1.13    | May 2026 | AI Assistant Panel extracted to DDScope_AI_UI.md |
 | 1.14    | May 2026 | §8 Notes panel added: Notes toolbar button (toggle show/hide), drag-to-resize, persistence of visible state and height per map |
 | 1.15    | May 2026 | UI Overview section added: screen zones diagram (Mermaid) and zone reference table; to-be note on map tabs consolidation |
+| 1.16    | May 2026 | §9 Known Traps removed — modal and disabled-button traps moved to claude-knowledge commwise-modals.md |
 
 ---
 
@@ -527,18 +526,6 @@ Both fields are written directly to `DDS_STORE` by `DDS_NOTES_UI` without transa
 ### Category visibility
 
 By default, only categories that have at least one note visible on the active map (i.e. with a `map_notes` record for this map) are shown. A **Show all categories** toggle in the panel header (default off) overrides this filter and shows all categories, including empty ones — required to add a note to a category that has no notes on the active map yet. This toggle is not persisted.
-
----
-
-## 9. Known Traps
-
-### Disabled nav buttons — CommWise visibility override
-
-CommWise applies `visibility: hidden` on all disabled buttons via a high-specificity global rule. Class-level overrides (e.g. `.dds-btn-ghost:disabled`) are insufficient.
-
-**Fix:** target each button by ID with `visibility: visible !important` + `display: inline-flex !important` on both normal and `:disabled` states.
-
-Model: `#dds-btn-save` in STYLE 300. Apply this pattern to every new nav button.
 
 ---
 
