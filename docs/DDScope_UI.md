@@ -1,4 +1,8 @@
-  - [DDScope — User Interface](#ddscope--user-interface)
+- [DDScope — User Interface](#ddscope--user-interface)
+  - [UI Overview](#ui-overview)
+    - [Screen zones](#screen-zones)
+    - [Zone reference](#zone-reference)
+  - [AI Assistant Panel](#ai-assistant-panel)
   - [Version History](#version-history)
   - [1. Workflow](#1-workflow)
   - [2. Views](#2-views)
@@ -11,6 +15,7 @@
     - [2.7 Table — Annotations](#27-table--annotations)
   - [3. Navigation Bar](#3-navigation-bar)
     - [Project name](#project-name)
+    - [Undo / Redo buttons](#undo--redo-buttons)
     - [Save button](#save-button)
   - [4. Map Tabs](#4-map-tabs)
     - [Tab bar](#tab-bar)
@@ -19,10 +24,11 @@
     - [Node interactions](#node-interactions)
     - [Add product on map](#add-product-on-map)
     - [Note ghost interactions](#note-ghost-interactions)
+    - [Annotation interactions](#annotation-interactions)
     - [CTT line interactions](#ctt-line-interactions)
     - [Flow interactions](#flow-interactions)
     - [Swim-lane interactions](#swim-lane-interactions)
-    - [Vertical snap](#vertical-snap)
+    - [Vertical and horizontal snap on node drag](#vertical-and-horizontal-snap-on-node-drag)
     - [Canvas controls](#canvas-controls)
     - [Remove modal](#remove-modal)
     - [Auto-layout behaviour](#auto-layout-behaviour)
@@ -34,8 +40,53 @@
     - [Annotation panel](#annotation-panel)
   - [7. Settings Tab](#7-settings-tab)
   - [8. Notes Panel](#8-notes-panel)
+    - [Show / hide](#show--hide)
+    - [Drag to resize](#drag-to-resize)
+    - [Persistence behaviour](#persistence-behaviour)
+    - [Category visibility](#category-visibility)
+  - [9. Known Traps](#9-known-traps)
+    - [Disabled nav buttons — CommWise visibility override](#disabled-nav-buttons--commwise-visibility-override)
 
 # DDScope — User Interface
+
+## UI Overview
+
+### Screen zones
+
+```mermaid
+graph TD
+    NAV["🟣 Nav bar — #dds-navbar\nTabs de vues · Nom projet · Save · Undo/Redo"]
+
+    subgraph MAIN["Zone principale"]
+        direction LR
+        AI["🟠 AI panel\n#dds-ai-panel\nToggle à la demande"]
+        subgraph CENTER["Centre"]
+            direction TB
+            TOOLBAR["🟢 Map toolbar — #dds-map-toolbar\nSélecteur map · Layout · Fit · Direction · Legend · Notes · Éléments"]
+            CANVAS["🔵 Canvas — #dds-canvas\nZone Cytoscape"]
+            NOTES["⬜ Notes panel — #dds-notes-panel\nCollapsible · Toggle via toolbar"]
+            TOOLBAR --> CANVAS --> NOTES
+        end
+        SIDE["🟡 Side panel\n#dds-side-panel\nPanneau contextuel"]
+        AI --- CENTER --- SIDE
+    end
+
+    NAV --> MAIN
+```
+
+### Zone reference
+
+| Zone | DOM ID | Role | Toggle |
+|---|---|---|---|
+| **Nav bar** | `#dds-navbar` | View tabs, project name, Save, Undo/Redo | Always visible |
+| **AI panel** | `#dds-ai-panel` | Embedded AI assistant — conversation, replay, export | On demand (left) |
+| **Map toolbar** | `#dds-map-toolbar` | Map selector, layout actions, canvas controls | Always visible on Map view |
+| **Canvas** | `#dds-canvas` | Cytoscape rendering area — nodes, flows, swim-lanes, overlays | Always visible on Map view |
+| **Side panel** | `#dds-side-panel` | Contextual editor for the selected element | Opens on selection (right) |
+| **Notes panel** | `#dds-notes-panel` | Project notes organised by category, below the canvas | Toggle via toolbar |
+
+
+---
 
 ## AI Assistant Panel
 
@@ -43,7 +94,7 @@ See **[DDScope_AI_UI.md](DDScope_AI_UI.md)** for the full AI assistant panel spe
 
 ---
 
-*v1.14 — Draft — May 2026*
+*v1.15 — Draft — May 2026*
 
 *See also: [DDScope_DataModel.md](DDScope_DataModel.md) for entity definitions. [DDScope_Overview.md](DDScope_Overview.md) for project copy modes.*
 
@@ -74,6 +125,7 @@ See **[DDScope_AI_UI.md](DDScope_AI_UI.md)** for the full AI assistant panel spe
 | 1.12    | May 2026 | Undo/Redo buttons in nav bar: placement, keyboard shortcuts, state sync via DDS_TRANSACTION.onChange, view refresh after undo/redo |
 | 1.13    | May 2026 | AI Assistant Panel extracted to DDScope_AI_UI.md |
 | 1.14    | May 2026 | §8 Notes panel added: Notes toolbar button (toggle show/hide), drag-to-resize, persistence of visible state and height per map |
+| 1.15    | May 2026 | UI Overview section added: screen zones diagram (Mermaid) and zone reference table; to-be note on map tabs consolidation |
 
 ---
 

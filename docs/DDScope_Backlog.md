@@ -15,6 +15,7 @@
 | 1.4 | May 2026 | FEAT-002 (map notes), FEAT-003 (canvas toggle), FEAT-004 (copy modal) added; §1.2 notes panel idea promoted and superseded |
 | 1.5 | May 2026 | FEAT-002 revised: map_note_categories removed (presence derived from notes); DDS_CMD bootstrapped on notes domain; DDS_CMD.execute signature defined |
 | 1.6 | May 2026 | §1.1: nested transactions note added to DDS_CMD; §1.2: glossary and philosophy document ideas added |
+| 1.7 | May 2026 | §1.2: DOM structure documentation added |
 
 ---
 
@@ -105,6 +106,9 @@ Two separate glossary documents: one functional (user-facing terminology — con
 **Philosophy and selling points document**
 A document capturing DDScope's design philosophy (structured, simple, flexible) and its positioning relative to existing tools. Intended audience and format (internal reference vs. client-facing) to be decided. Any new feature must be validated against the philosophy before implementation — this document would make that criterion explicit and shareable.
 
+**DOM structure documentation**
+The HTML structure of the main zone (Cytoscape canvas, side panel, notes panel) is not documented. To document in `DDScope_UI.md` after reading the CommWise source: element IDs, flex or grid layout, relationships between zones. Prerequisite for any layout refactor of the side panel or notes panel.
+
 ---
 
 ## 2. Committed features
@@ -176,7 +180,7 @@ Planned in two sessions:
 
 > **Moving nodes and annotations within a swim lane**
 >
-> When you drag a node or annotation on the map, it stays within its assigned swim lane — it slides along the lane border if you push it to the edge, keeping your map organised automatically.
+> When you drag a node or annotation on the map, it stays within its assigned swim lane — it slides along the lane border instead of leaving it (cursor-on-screen-edge behaviour). Nodes without an assigned lane are blocked from entering any lane.
 >
 > **Reassigning to a different lane**
 >
