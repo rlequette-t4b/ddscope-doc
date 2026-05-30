@@ -19,6 +19,7 @@ Single source of truth for all DDScope documentation. All files are flat in this
 | [DDScope_AI_Assistant.md](DDScope_AI_Assistant.md) | Active | Embedded AI assistant RFC |
 | [DDScope_Backlog.md](DDScope_Backlog.md) | Active | Feature backlog — pre-backlog candidates, committed features, user manual copy |
 | [DDScope_CommWise.md](DDScope_CommWise.md) | Active | CommWise platform conventions — session lifecycle, editing, AI proxy, known traps |
+| [DDScope_InformationFlows_RFC.md](DDScope_InformationFlows_RFC.md) | Draft | Information flows feature — pre-spec design decisions and open questions |
 
 ### Implementation details
 
@@ -178,6 +179,7 @@ The domains section of this document and the table below should help you locate 
 | AI action vocabulary (current) | `DDScope_Actions.md` |
 | Command layer, TX catalogue, call site inventory | `DDScope_Commands.md` |
 | AI assistant feature (contract, context, validation) | `DDScope_AI_Assistant.md` |
+| Information flows feature design | `DDScope_InformationFlows_RFC.md` |
 | Test convention, fixture, pull/push workflow | `DDScope_TestEnvironment.md` |
 | UI test scenario or issue (data) | `tests/ddscope_tests.db` (via MCP SQLite) |
 | UI test protocol, conventions, status values | `DDScope_TestUI.md` |

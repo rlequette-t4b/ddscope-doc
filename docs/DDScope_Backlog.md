@@ -16,6 +16,7 @@
 | 1.5 | May 2026 | FEAT-002 revised: map_note_categories removed (presence derived from notes); DDS_CMD bootstrapped on notes domain; DDS_CMD.execute signature defined |
 | 1.6 | May 2026 | §1.1: nested transactions note added to DDS_CMD; §1.2: glossary and philosophy document ideas added |
 | 1.7 | May 2026 | §1.2: DOM structure documentation added |
+| 1.8 | May 2026 | §1.2: tag-styles on flows (undocumented gap) added; Information flows candidate updated with RFC reference |
 
 ---
 
@@ -77,11 +78,8 @@ UX complement (future): a small symbol picker in the relevant text fields offeri
 **Tag color conflict resolution**
 Define a visual behaviour for nodes matching multiple `tag_colors` entries simultaneously — currently the first match wins. Candidate: display a special pattern or overlay to signal the conflict rather than silently picking the first match.
 
-**Pain points and objectives**
-Capture supply chain pain points and project objectives as structured entities. Proposed categories aligned with the 7 DDMRP buffer reasons (with custom additions). Linked to nodes with badge display on the map. Dedicated side panel. Requires a separate spec document before implementation.
-
 **Information flows**
-Model information flows and planning processes as a separate layer alongside material flows. Roles, entities, and planning cycles. Requires a separate spec document.
+Model information flows and planning processes as a separate layer alongside material flows. Design decisions and open questions documented in `DDScope_InformationFlows_RFC.md`. Requires full spec before implementation.
 
 **Swim-lane layout offset**
 Configurable margin between swim-lane boundary and the first/last node column in auto-layout. Currently hardcoded.
@@ -93,6 +91,9 @@ Display cumulative or per-lane lead time as a label or overlay on swim-lane head
 A module symmetric to `DDS_MODEL` for the presentation layer: the single authoritative layer for rules governing map state, independent of the web UI and Cytoscape. Would encapsulate: default node placement when added to a map, auto-layout rules (BFS ranking, column assignment, vertical placement), fit-to-canvas bounding box computation, map duplication logic (copy of `map_nodes`, `map_flows`, `map_swim_lanes`, `map_demands`), and any other rule that determines *how* elements are arranged on a map without depending on the DOM or the Cytoscape instance. Current logic is spread across `DDS_MAP`, `DDS_LAYOUT`, and `DDS_MAP_UI`.
 
 ### 1.2 Ideas
+
+**Tag-styles on flows — undocumented gap**
+The `tag_colors` mechanism colors node backgrounds based on tags. No equivalent exists for flows — all edges are rendered with a uniform style regardless of their tags. A `tag_styles` mechanism for flows would allow visual differentiation by tag (e.g. line style, color, width). This is the natural rendering complement to the information flows feature: a flow tagged `information` could render as a dashed line, distinct from a material flow. Approach undefined — to be designed in a dedicated session. See `DDScope_InformationFlows_RFC.md` §6 Q3.
 
 **Tag-specific selection style**
 A distinct visual style for selected nodes when tag-based coloring is active — to avoid confusion between selection highlight and tag color. Approach undefined.
